@@ -18,7 +18,7 @@ llvm_ver="$(cat ${KISS_ROOT}/var/db/kiss/installed/llvm/version | cut -d " " -f 
 if [ $llvm_ver != $2 ] && [ -z $KISS_ROOT ]; then
     bootstrap="1"
 fi
-
+t s
 # If this is a cross, use a toolchain file
 if [ ! -z $KISS_ROOT ];  then
     toolchain="-DCMAKE_TOOLCHAIN_FILE=$(realpath cmake.config)"
