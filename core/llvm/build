@@ -17,8 +17,10 @@ llvm_ver="$(cat ${KISS_ROOT}/var/db/kiss/installed/llvm/version | cut -d " " -f 
 # Bootstrap only if version is different it's not a crossbuild
 if [ $llvm_ver != $2 ] && [ -z $KISS_ROOT ]; then
     bootstrap="1"
+elif [ "$KISS_FORCE" = 1 ]; then
+    bootstrap="1"
 fi
-t s
+
 # If this is a cross, use a toolchain file
 if [ ! -z $KISS_ROOT ];  then
     toolchain="-DCMAKE_TOOLCHAIN_FILE=$(realpath cmake.config)"
@@ -86,6 +88,8 @@ else
     cmake -B build \
     -G Ninja \
     -C Distribution-stage2.cmake \
+    -DCMAKE_POLICY_DEFAULT_CMP0076="NEW" \
+    -DCMAKE_POLICY_DEFAULT_CMP0114="NEW" \
     -DCMAKE_ASM_FLAGS="$CF" \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_CXX_COMPILER=clang++ \

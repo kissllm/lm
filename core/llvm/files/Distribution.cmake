@@ -1,5 +1,5 @@
 #Enable LLVM projects and runtimes
-set(LLVM_ENABLE_PROJECTS "llvm;clang;lld;polly;clang-tools-extra" CACHE STRING "")
+set(LLVM_ENABLE_PROJECTS "llvm;clang;lld;openmp;polly;clang-tools-extra" CACHE STRING "")
 set(LLVM_ENABLE_RUNTIMES "compiler-rt;libcxx;libcxxabi;libunwind" CACHE STRING "")
 
 set(LLVM_CCACHE_BUILD "OFF" CACHE STRING "")

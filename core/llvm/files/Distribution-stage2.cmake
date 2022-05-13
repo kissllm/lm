@@ -1,6 +1,6 @@
 set(CMAKE_SYSTEM_NAME Linux CACHE STRING "")
 
-set(LLVM_ENABLE_PROJECTS "llvm;clang;lld;polly;clang-tools-extra" CACHE STRING "")
+set(LLVM_ENABLE_PROJECTS "llvm;clang;lld;openmp;polly;clang-tools-extra" CACHE STRING "")
 set(LLVM_TARGETS_TO_BUILD ARM;AArch64;AMDGPU;PowerPC;RISCV;X86 CACHE STRING "")
 
 set(LLVM_CCACHE_BUILD "OFF" CACHE STRING "")
@@ -108,6 +108,7 @@ set(LLVM_DISTRIBUTION_COMPONENTS
   libclang-headers
   clang-cpp
   lld
+  libomp
   clangd
   LTO
   Polly

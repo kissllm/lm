@@ -4,3 +4,12 @@
 [submodule "modules/community"]
 	path = modules/community
 	url = https://github.com/kiss-community/repo-community.git
+[submodule "modules/sauzer"]
+	path = modules/sauzer
+	url = https://github.com/sauzerOS/repo.git
+[submodule "modules/eudaldgr"]
+	path = modules/eudaldgr
+	url = https://github.com/eudaldgr/kiss-repo
+[submodule "modules/periish"]
+	path = modules/periish
+	url = https://github.com/periish/kiss-all
