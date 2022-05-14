@@ -108,7 +108,6 @@ set(LLVM_DISTRIBUTION_COMPONENTS
   libclang-headers
   clang-cpp
   lld
-  libomp
   clangd
   LTO
   Polly
