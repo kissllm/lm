@@ -13,3 +13,6 @@
 [submodule "modules/periish"]
 	path = modules/periish
 	url = https://github.com/periish/kiss-all
+[submodule "modules/kisslinux"]
+	path = modules/kisslinux
+	url = https://github.com/kisslinux/repo.git
