@@ -17,7 +17,7 @@ llvm_ver="$(cat ${KISS_ROOT}/var/db/kiss/installed/llvm/version | cut -d " " -f 
 # Bootstrap only if version is different it's not a crossbuild
 if [ $llvm_ver != $2 ] && [ -z $KISS_ROOT ]; then
     bootstrap="1"
-elif [ "$KISS_FORCE" = 1 ]; then
+elif [ "$BOOTSTRAP" = 1 ]; then
     bootstrap="1"
 fi
 
@@ -97,13 +97,31 @@ else
     -DCMAKE_C_COMPILER=clang \
     -DCMAKE_C_FLAGS="$CF" \
     $toolchain \
+    -DLLVM_TARGETS_TO_BUILD="host;AMDGPU" \
     -DKISS_ROOT=$KISS_ROOT \
     -DLIBUNWIND_SYSROOT=$KISS_ROOT \
     -DLLVM_ENABLE_LTO=OFF \
     -DLLVM_DEFAULT_TARGET_TRIPLE=$KISS_XHOST_TRIPLE \
     -DLLVM_ENABLE_RUNTIMES="$runtimes" \
     -DLLVM_HOST_TRIPLE=$KISS_XHOST_TRIPLE \
-    -DLLVM_LINK_LLVM_DYLIB=OFF \
+    -DLLVM_BUILD_LLVM_DYLIB=ON \
+    -DLLVM_LINK_LLVM_DYLIB=ON \
+    -DLLVM_ENABLE_RTTI=ON \
+    -DLLVM_ENABLE_LIBCXX=ON \
+    -DLLVM_ENABLE_ASSERTIONS=ON \
+    -DLLVM_INSTALL_BINUTILS_SYMLINKS=ON \
+    -DLIBUNWIND_USE_COMPILER_RT=ON \
+    -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+    -DLIBCXXABI_USE_COMPILER_RT=ON \
+    -DLIBCXX_CXX_ABI=libcxxabi \
+    -DLIBCXX_USE_COMPILER_RT=ON \
+    -DLIBCXX_HAS_MUSL_LIBC=ON \
+    -DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON \
+    -DCLANG_DEFAULT_CXX_STDLIB=libc++ \
+    -DCLANG_DEFAULT_RTLIB=compiler-rt \
+    -DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=OFF \
+    -DLIBOMP_ENABLE_SHARED=ON \
+    -DLLVM_HOST_TRIPLE=$KISS_XHOST_TRIPLE \
     -DLLVM_TARGET_ARCH=$TARGET_ARCH \
     llvm
 

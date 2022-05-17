@@ -69,6 +69,7 @@ set(CLANG_BOOTSTRAP_TARGETS
   llvm-test-depends
   clang-test-depends
   LTO
+  Polly
   llvm-lto
   llvm-lto2
   distribution
