@@ -16,3 +16,15 @@
 [submodule "modules/kisslinux"]
 	path = modules/kisslinux
 	url = https://github.com/kisslinux/repo.git
+[submodule "modules/ioraff"]
+	path = modules/ioraff
+	url = https://github.com/ioraff/kiss-personal.git
+[submodule "modules/dilyn"]
+	path = modules/dilyn
+	url = https://github.com/dilyn-corner/KISS-me.git
+[submodule "modules/noir"]
+	path = modules/noir
+	url = https://github.com/noirlinux/main.git
+[submodule "modules/python"]
+	path = modules/python
+	url = https://github.com/kiss-community/community.git
