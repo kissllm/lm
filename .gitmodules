@@ -24,7 +24,10 @@
 	url = https://github.com/dilyn-corner/KISS-me.git
 [submodule "modules/noir"]
 	path = modules/noir
-	url = https://github.com/noirlinux/main.git
-[submodule "modules/python"]
-	path = modules/python
+    url = https://github.com/noirlinux/main.git
+[submodule "modules/boost"]
+	path = modules/boost
 	url = https://github.com/kiss-community/community.git
+[submodule "modules/lang"]
+	path = modules/lang
+	url = https://github.com/mmatongo/kiss-lang
