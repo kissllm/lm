@@ -31,3 +31,6 @@
 [submodule "modules/lang"]
 	path = modules/lang
 	url = https://github.com/mmatongo/kiss-lang
+[submodule "modules/repos"]
+	path = modules/repos
+	url = https://github.com/jedahan/kiss-repo-repos.git
