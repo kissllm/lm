@@ -34,3 +34,6 @@
 [submodule "modules/repos"]
 	path = modules/repos
 	url = https://github.com/jedahan/kiss-repo-repos.git
+[submodule "modules/dumpsterfire"]
+	path = modules/dumpsterfire
+	url = https://github.com/hovercats/kiss-dumpsterfire.git
