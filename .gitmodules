@@ -37,3 +37,9 @@
 [submodule "modules/dumpsterfire"]
 	path = modules/dumpsterfire
 	url = https://github.com/hovercats/kiss-dumpsterfire.git
+[submodule "modules/games"]
+	path = modules/games
+	url = https://github.com/sdsddsd1/kiss-games.git
+[submodule "modules/mmatongo"]
+	path = modules/mmatongo
+	url = https://github.com/mmatongo/kiss.git

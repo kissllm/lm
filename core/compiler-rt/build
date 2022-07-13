@@ -1,0 +1,17 @@
+#!/bin/sh -e
+
+mv Modules/* cmake/Modules/
+
+cmake -B build \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCOMPILER_RT_BUILD_XRAY=OFF \
+    -DCMAKE_CXX_FLAGS="-lexecinfo $CMAKE_CXX_FLAGS" \
+    -DCOMPILER_RT_BUILD_SANITIZERS=ON
+
+cmake --build   build
+cmake --install build
+
+cd "$1"
+mkdir -p usr/lib/clang/$2/lib
+mv usr/lib/linux usr/lib/clang/$2/lib
