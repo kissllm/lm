@@ -43,3 +43,6 @@
 [submodule "modules/mmatongo"]
 	path = modules/mmatongo
 	url = https://github.com/mmatongo/kiss.git
+[submodule "modules/wyvertux"]
+	path = modules/wyvertux
+	url = https://github.com/wyvertux/wyverkiss.git

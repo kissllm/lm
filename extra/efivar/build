@@ -1,7 +1,5 @@
 #!/bin/sh -e
 
-# patch -p1 < no-add-needed.patch
-
 # CCLD="clang"
 export CFLAGS="$CFLAGS -Wno-unused-command-line-argument"
 
@@ -16,5 +14,21 @@ export HOSTCC="clang"
 export HOST_CFLAGS=""
 export HOST_LDFLAGS=""
 
-make HOST_MARCH="" COMPILER="$CC"
-make libdir=/usr/lib/ install
+CC=clang
+CXX=clang++
+LD=/usr/bin/ld.lld
+
+# Avoid repeating ourselves.
+mk() {
+    make HOST_MARCH="" COMPILER="$CC" \
+        libdir=/usr/lib/              \
+        bindir=/usr/bin/              \
+        mandir=/usr/share/man/        \
+        includedir=/usr/include/      \
+        "$@"
+    }
+
+export CC="${CC:-cc}"
+
+mk
+mk DESTDIR="$1" install

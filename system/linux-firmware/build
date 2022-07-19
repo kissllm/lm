@@ -1,0 +1,2 @@
+#!/bin/sh -e
+doas make install

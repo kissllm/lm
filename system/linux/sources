@@ -1,0 +1,3 @@
+# https://github.com/kissllm/linux-stable/releases/download/VERSION/linux-stable.tar.xz
+git+https://github.com/kissllm/linux-stable@master
+files/config

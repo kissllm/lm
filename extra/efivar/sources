@@ -1,1 +1,1 @@
-https://github.com/kissllm/efivar/archive/VERSION.tar.gz
+git+https://github.com/kissllm/efivar@llvm

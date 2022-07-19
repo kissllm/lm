@@ -1,0 +1,31 @@
+#!/bin/sh -e
+
+# patch -p1 < no-perl.patch
+# patch -p1 < make-yacc-usage-POSIX-compliant.diff
+
+cp config .config
+cp .config oldconfig
+make olddefconfig
+
+LLVM=1
+LLVM_IAS=1
+CC=clang
+HOSTCC=clang
+# VERSION="$(make kernelversion)"
+# Store the build version in a file and a variable.
+make kernelrelease > version
+read ver < version
+
+make LLVM=1 LLVM_IAS=1 -j13
+make CC=clang HOSTCC=clang -no-intergrated-as LLVM=1 LLVM_IAS=1 modules
+
+doas make LLVM=1 LLVM_IAS=1 modules_install
+doas make LLVM=1 LLVM_IAS=1 install
+
+[ ! -d "/boot/efi/EFI/efistub" ] && doas mkdir -p "/boot/efi/EFI/efistub"
+doas cp -f /boot/vmlinuz /boot/efi/EFI/efistub/vmlinuz.efi
+# doas sh /mnt/b "kiss on nvme1" "/dev/nvme1n1" "p3" "p2"
+
+doas mv /boot/vmlinuz /boot/vmlinuz-${ver}
+doas mv /boot/System.map /boot/System.map-${ver}
+doas cp .config /boot/config-${ver}

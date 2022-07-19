@@ -1,0 +1,14 @@
+# https://download.qt.io/official_releases/qt/$(echo "$VERSION"| cut -d  . -f 1,2)/VERSION/submodules/qtwebengine-everywhere-src-VERSION.tar.xz
+https://download.qt.io/official_releases/qt/MAJOR.MINOR/VERSION/submodules/qtwebengine-everywhere-src-VERSION.tar.xz
+patches/0001-Enable-building-on-musl.patch
+patches/0002-musl-fixes.patch
+patches/0003-qt-musl-mallinfo.patch
+patches/0004-qt-musl-resolve.patch
+patches/0005-qt-musl-crashpad.patch
+patches/0006-musl-hacks.patch
+patches/0007-musl-sandbox.patch
+patches/0008-musl-stat.patch
+patches/0009-close.patch
+patches/default-pthread-stacksize.patch
+
+# https://download.qt.io/$_rel/qt/${pkgver%.*}/${pkgver/_/-}/submodules/qtwebengine-everywhere-src-${pkgver/_/-}.tar.xz
