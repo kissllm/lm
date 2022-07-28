@@ -1,0 +1,22 @@
+#!/bin/sh -e
+
+export DESTDIR="$1"
+export LDFLAGS="$LDFLAGS -static"
+
+sed "s/expat'/expat', static: true/" meson.build > _
+mv -f _ meson.build
+sed "s/ffi'/ffi', static: true/"     meson.build > _
+mv -f _ meson.build
+sed "s/subdir('tests')//"            meson.build > _
+mv -f _ meson.build
+
+meson \
+    --prefix=/usr \
+    -Ddefault_library=static \
+    -Dbuildtype=release \
+    -Ddocumentation=false \
+    -Ddtd_validation=false \
+    . build
+
+ninja -C build
+ninja -C build install

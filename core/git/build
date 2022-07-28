@@ -1,6 +1,10 @@
 #!/bin/sh -e
 
-export CFLAGS="$CFLAGS -static"
+mkdir -p bin
+ln -s /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
+export LDFLAGS="$LDFLAGS -static"
 
 cat > config.mak <<EOF
 NO_GETTEXT=YesPlease
@@ -13,23 +17,17 @@ NO_PERL=YesPlease
 NO_SYS_POLL_H=1
 NO_CROSS_DIRECTORY_HARDLINKS=1
 NO_INSTALL_HARDLINKS=1
-NO_ICONV=YesPlease
+NO_OPENSSL=YesPlease
 EOF
 
 ./configure \
     --prefix=/usr \
     --libexecdir=/usr/lib \
-    --build=$KISS_XBUILD_TRIPLE \
-    --host=$KISS_XHOST_TRIPLE \
     ac_cv_lib_curl_curl_global_init=yes \
     ac_cv_snprintf_returns_bogus=no \
-    ac_cv_fread_reads_directories=yes \
-    ac_cv_iconv_omits_bom=no
+    ac_cv_fread_reads_directories=yes
 
-
-LIBS="$KISS_ROOT/usr/lib/libcurl.a --sysroot=$KISS_ROOT/usr -L$KISS_ROOT/usr/lib -lssl -lcrypto -lssl -lcrypto -lz"
-
-make LIBS="$LIBS libgit.a xdiff/lib.a"
+make LIBS="$(curl-config --static-libs) libgit.a reftable/libreftable.a xdiff/lib.a -lz"
 make install
 
 cp -Rf man "$1/usr/share/man"

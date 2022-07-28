@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+mkdir -p bin                          
+ln -s /usr/bin/gmake "$PWD/bin/make"  
+export PATH="$PWD/bin:$PATH"          
+
+make amalg   PREFIX=/usr
+make install PREFIX=/usr DESTDIR="$1"
+
+# Create these symlinks ourselves as luajit relies
+# on ldconfig to do so and musl does not provide it.
+ln -s libluajit-5.1.so.2.0.5 "$1/usr/lib/libluajit-5.1.so"
+ln -s libluajit-5.1.so.2.0.5 "$1/usr/lib/libluajit-5.1.so.2"

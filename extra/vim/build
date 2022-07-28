@@ -1,5 +1,9 @@
 #!/bin/sh -e
 
+mkdir -p bin
+ln -s /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
 vim_cv_toupper_broken=yes \
 vim_cv_terminfo=yes \
 vim_cv_tty_group=world vim_cv_getcwd_broken=no \

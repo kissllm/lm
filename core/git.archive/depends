@@ -1,0 +1,3 @@
+curl    make
+openssl make
+zlib    make

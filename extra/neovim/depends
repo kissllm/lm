@@ -1,1 +1,9 @@
-../../modules/boost/community/neovim/depends
+automake  gmake
+cmake     gmake
+libtool
+luv
+libtermkey
+libvterm
+unibilium gmake
+pkgconf   gmake
+msgpack-c gmake

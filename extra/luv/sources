@@ -1,0 +1,5 @@
+# git+https://github.com/libuv/libuv                         luv/deps
+# git+https://github.com/lua/lua@master                      luv/deps
+# git+https://github.com/keplerproject/lua-compat-5.3@master luv/deps
+# git+https://github.com/LuaJIT/LuaJIT@master                luv/deps
+git+https://github.com/luvit/luv@master

@@ -1,5 +1,9 @@
 #!/bin/sh -e
 
+mkdir -p bin
+ln -s /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
 export PKG_CONFIG_SYSROOT_DIR=
 export HOST_CC=clang
 export HOST_CC=clang

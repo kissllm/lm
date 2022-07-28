@@ -1,0 +1,18 @@
+#!/bin/sh -e
+
+mkdir -p bin
+ln -s /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
+make
+mkdir -p "$1/usr/lib/"
+# install -Dm644 libtermkey.so "$1/usr/lib/libtermkey.so"
+lib=$(find . -type f -name "libtermkey.so")
+[ -n "$lib" ] && cp $lib $1/usr/lib/libtermkey.so
+
+patch -p1 < static-no-libtool.patch
+
+make libtermkey.a
+install -Dm644 libtermkey.a  "$1/usr/lib/libtermkey.a"
+
+make PREFIX=/usr DESTDIR="$1" install

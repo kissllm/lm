@@ -1,1 +1,4 @@
-../../modules/boost/community/neovim/sources
+# git+https://github.com/neovim/neovim@stable
+# git+https://github.com/neovim/neovim@master
+git+https://github.com/neovim/neovim@nightly
+# patches/symlink-crrection.patch

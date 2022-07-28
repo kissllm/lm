@@ -1,20 +1,141 @@
 #!/bin/sh -e
 
-# Due to some changes in the package manager/pigz, we have to...
+# echo "DESTDIR original: "$DESTDIR
 unset DESTDIR
+unset PREFIX
+# DESTDIR="$1"
+echo "DESTDIR updated: $DESTDIR"
+echo "PREFIX updated:  $DESTDIR"
+# Due to some changes in the package manager/pigz, we have to...
+# unset DESTDIR
 mkdir -p bin
-ln -s /usr/bin/pigz "$PWD/bin/gunzip"
+ln -s /usr/bin/pigz  "$PWD/bin/gunzip"
+ln -s /usr/bin/gmake "$PWD/bin/make"
 export PATH="$PWD/bin:$PATH"
+
+# repo update rejected!
+TEMP="$PWD"
+SRC_PATH="$XDG_CACHE_HOME/kiss/sources/neovim/neovim"
+cd "$SRC_PATH"
+com=${2##*[@#]}
+com=${com#${2%[#@]*}}
+
+# repo update rejected!
+# git fetch --prune --unshallow --tags
+git rev-parse --short HEAD
+git describe --always
+git fetch --depth=1 origin "$com"
+git reset --hard FETCH_HEAD
+
+git submodule init
+git submodule sync
+git submodule update --init --remote --recursive --force
+
+cd "$TEMP"
+echo "working dir: "$TEMP
+
+
+# \cp -rf "${SRC_PATH}/cmake.deps" "${SRC_PATH}/third-party"
+#
+# [ -d "${SRC_PATH}/cmake.deps" ] && {
+#     \cp -rf "${SRC_PATH}/cmake.deps" "$PWD/.deps"
+# }
+# [ ! -d "$PWD/.deps/usr/bin" ] && mkdir -p "$PWD/.deps/usr/bin"
+
+target=$(find . -type f -name "BuildLuajit.cmake")
+echo "patch target: "$target
+# Got "./third-party/cmake/BuildLuajit.cmake", not "cmake.deps/cmake/BuildLuajit.cmake", which is source respected
 
 # Remove mandatory gettext dependency.
 sed -i 's/^/#/' src/nvim/po/CMakeLists.txt
 
-make \
-    CMAKE_BUILD_TYPE=Release \
-    CMAKE_INSTALL_PREFIX=/usr \
-    -Wno-dev
 
-make DESTDIR="$1" install
+# Following patches come from 'make DESTDIR="$1" install'
+# # sed -i 's/${CMAKE_COMMAND} -E create_symlink/ln -sf/' /home/kiss/sources/neovim/neovim/cmake.deps/cmake/BuildLuajit.cmake
+# sed -i 's:luajit-2.1.0-beta3 ${DEPS_BIN_DIR}:luajit-2.1.0-beta3 '${1}'${DEPS_BIN_DIR}:g' third-party/cmake/BuildLuajit.cmake
+# # sed -i 's:${HOSTDEPS_INSTALL_DIR}:'${1}'${HOSTDEPS_INSTALL_DIR}:g' third-party/cmake/BuildLuarocks.cmake
+# sed -i 's:--with-lua=${HOSTDEPS_INSTALL_DIR}:--with-lua='${1}'${HOSTDEPS_INSTALL_DIR}:g' third-party/cmake/BuildLuarocks.cmake
+# sed -i 's:--with-lua-include=${HOSTDEPS_INSTALL_DIR}:--with-lua-include='${1}'${HOSTDEPS_INSTALL_DIR}:g' third-party/cmake/BuildLuarocks.cmake
+# sed -i 's:--prefix=${HOSTDEPS_INSTALL_DIR}:--prefix='${1}'${HOSTDEPS_INSTALL_DIR}:g' third-party/cmake/BuildLuarocks.cmake
 
+# sed -i 's:=luajit:='${1}'${HOSTDEPS_INSTALL_DIR}/bin/luajit:g' third-party/cmake/BuildLuarocks.cmake
+# patch_file=$(find . -type f -name "symlink-crrection.patch")
+# echo "patch_file: "$patch_file
+# # sed -i 's/cmake.deps/third-party/g' $patch_file
+# # # sed -i 's:${LUAJIT_EXECUTABLE} ${DEPS_BIN_DIR}:${LUAJIT_EXECUTABLE} '${1}'${DEPS_BIN_DIR}:g' $patch_file
+# # patch -p1 < $patch_file
+# sed -i 's:luajit-2.1.0-beta3 ${DEPS_BIN_DIR}:luajit-2.1.0-beta3 '${1}'${DEPS_BIN_DIR}:g' $patch_file
+# # sed -i 's/cmake.deps/third-party/g' luajit-download.patch
+# # patch -p1 < luajit-download.patch
+# sed -i 's:${HOSTDEPS_INSTALL_DIR}:'${1}'${HOSTDEPS_INSTALL_DIR}:g' ./third-party/cmake/BuildLuarocks.cmake
+# sed -i 's:=luajit:='${1}'${HOSTDEPS_INSTALL_DIR}/bin/luajit:g' ./third-party/cmake/BuildLuarocks.cmake
+
+unset LUA_PATH
+unset LUA_CPATH
+
+# # Error: Rock luajit 2.1.0-beta3-1 is already provided by VM or via 'rocks_provided' in the config file.
+# luajit=$(luarocks list|grep "luajit")
+# [ ${luajit} != "luajit" ] && {
+#     luarocks install --dev luajit
+# }
+
+# kiss b luajit
+
+mpack=$(luarocks list|grep "mpack")
+[ ${mpack} != "mpack" ] && {
+    luarocks install --dev mpack
+}
+lpeg=$(luarocks list|grep "lpeg")
+[ ${lpeg} != "lpeg" ] && {
+    luarocks install --dev lpeg
+}
+ltreesitter=$(luarocks list|grep "ltreesitter")
+[ ${ltreesitter} != "ltreesitter" ] && {
+    luarocks install --dev ltreesitter
+}
+
+eval '$(/usr/bin/luarocks path --append --bin)'
+export PATH=$(echo $PATH | sed "s/'//g")
+export LUA_PATH=$(echo $LUA_PATH | sed "s/'//g")
+export LUA_CPATH=$(echo $LUA_CPATH | sed "s/'//g")
+
+export LIBLUV_INCLUDE_DIR="/usr/include"
+export LIBLUV_LIBRARY="/usr/lib"
+
+# CMake Warning:
+#   Manually-specified variables were not used by the project:
+#
+#     NVIM_BUILD_STATIC
+#     USE_BUNDLED
+#     USE_BUNDLED_LIBLUV
+#     USE_BUNDLED_LUAJIT
+
+BUILD_PATH="build"
+cmake -G Ninja \
+    -S "$SRC_PATH" \
+    -B "${BUILD_PATH}" \
+    -UUSE_BUNDLED \
+    -UUSE_BUNDLED_LUAJIT \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_INSTALL_PREFIX=/usr
+
+    # -DNVIM_BUILD_STATIC=ON \
+    # -DUSE_BUNDLED_LIBLUV=ON \
+    # -DUSE_BUNDLED_LUAJIT=ON \
+
+# cmake --build "${BUILD_PATH}" --target all --parallel \
+ninja -C "${BUILD_PATH}"
+
+# make \
+#     CMAKE_BUILD_TYPE=Release \
+#     CMAKE_INSTALL_PREFIX=/usr \
+#     NVIM_BUILD_STATIC=ON \
+#     USE_BUNDLED=OFF \
+#     USE_BUNDLED_LUAJIT=OFF \
+#     -Wno-dev
+
+
+# make install
+ninja -C "${BUILD_PATH}" install
 # CMAKE_INSTALL_LIBDIR is not respected
-mv -f "$1/usr/lib64" "$1/usr/lib"
+# mv -f "$1/usr/lib64" "$1/usr/lib"

@@ -1,5 +1,10 @@
 #!/bin/sh -e
 
+mkdir -p bin
+ln -s /usr/bin/pigz  "$PWD/bin/gunzip"
+ln -s /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
 for patch in patch/*.patch; do
     patch -p1 < "$patch"
 done

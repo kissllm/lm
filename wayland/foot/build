@@ -1,16 +1,27 @@
 #!/bin/sh -e
 
-export PKG_CONFIG_SYSROOT_DIR=
+# export PKG_CONFIG_SYSROOT_DIR=
 
-kiss-meson-config > meson.config
+# kiss-meson-config > meson.config
+# https://codeberg.org/dnkl/foot/src/branch/master/INSTALL.md
+
+# https://codeberg.org/dnkl/foot/wiki#user-content-things-break-after-i-ssh-into-a-remote-machine
+# curl -fLO https://codeberg.org/dnkl/foot/raw/branch/master/foot.info 
+sed 's/@default_terminfo@/foot/g' $XDG_CACHE_HOME/kiss/sources/foot/foot.info | tic -x -e foot,foot-direct -
+# Will output to 
+# /usr/share/terminfo/f/foot
+# /usr/share/terminfo/f/foot-direct
 
 meson \
     --prefix=/usr \
-    --cross-file="meson.config" \
     --buildtype=release \
     --force-fallback-for=fcft,tllist \
+    -Dterminfo=enabled \
+    -Ddefault-terminfo=foot \
     -Dime=false \
     . output
+
+    # --cross-file="meson.config" \
 
 ninja -C output
 ninja -C output install

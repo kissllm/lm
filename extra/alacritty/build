@@ -1,0 +1,10 @@
+# cargo build --release
+# Force support for only Wayland
+cargo build --release --no-default-features --features=wayland
+
+# # Force support for only X11
+# cargo build --release --no-default-features --features=x11
+doas cp target/release/alacritty /usr/bin/
+doas cp extra/logo/alacritty-term.svg /usr/share/pixmaps/Alacritty.svg
+infocmp alacritty
+doas tic -xe alacritty,alacritty-direct extra/alacritty.info

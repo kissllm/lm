@@ -1,0 +1,52 @@
+#!/bin/sh -e
+
+mkdir -p bin
+ln -s /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
+DEPS_SOURCE_DIR="$XDG_CACHE_HOME/kiss/sources/luv/luv/deps"
+
+if [ -d "${DEPS_SOURCE_DIR}/luajit" ] && [ -d "${DEPS_SOURCE_DIR}/LuaJIT" ]; then
+    # rm -rf "${DEPS_SOURCE_DIR}/luajit"
+    # mv -f "${DEPS_SOURCE_DIR}/LuaJIT" "${DEPS_SOURCE_DIR}/luajit"
+    cp -rf "${DEPS_SOURCE_DIR}/LuaJIT/" "${DEPS_SOURCE_DIR}/luajit/"
+    echo ">>>>luajit overrited"
+elif [ -d "${DEPS_SOURCE_DIR}/LuaJIT" ]; then
+    mv -f "${DEPS_SOURCE_DIR}/LuaJIT" "${DEPS_SOURCE_DIR}/luajit"
+    echo ">>>>luajit renamed"
+fi
+
+# If encountered this errors, run build again
+
+# git submodule update --init deps/libuv
+# git submodule update --init deps/luajit
+# git submodule update --init deps/lua-compat-5.3
+# error: could not lock config file .git/config: File exists
+# error: could not lock config file .git/config: File exists
+# fatal: Failed to register url for submodule path 'deps/libuv'
+# make: *** [Makefile:46: deps/libuv/include] Error 128
+# make: *** Waiting for unfinished jobs....
+# error: could not lock config file .git/config: File exists
+# fatal: Failed to register url for submodule path 'deps/lua-compat-5.3'
+# make: *** [Makefile:52: deps/lua-compat-5.3/c-api] Error 128
+# Terminated
+
+# For "vm_x64.dasc" not found
+# Notice that git can't modify directories outside current directory
+TEMP="$PWD"
+cd "$XDG_CACHE_HOME/kiss/sources/luv/luv"
+git submodule init
+git submodule sync
+git submodule update --init --remote --recursive --force
+# git submodule update --init --remote --recursive --force "deps/lua"
+# git submodule update --init --remote --recursive --force "deps/libuv"
+# git submodule update --init --remote --recursive --force "deps/luajit"
+# git submodule update --init --remote --recursive --force "deps/lua-compat-5.3"
+cd "$TEMP"
+
+# Won't help without submodule updating
+# echo "\$PWD = "$PWD
+# \cp -rf "${DEPS_SOURCE_DIR}" "$PWD/"
+
+BUILD_MODULE=OFF BUILD_SHARED_LIBS=ON make
+make install PREFIX="/usr" DESTDIR="$1"

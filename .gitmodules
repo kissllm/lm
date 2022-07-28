@@ -46,3 +46,15 @@
 [submodule "modules/wyvertux"]
 	path = modules/wyvertux
 	url = https://github.com/wyvertux/wyverkiss.git
+[submodule "modules/jedahan"]
+	path = modules/jedahan
+	url = https://github.com/jedahan/kiss-repo.git
+[submodule "modules/cemkeylan"]
+	path = modules/cemkeylan
+	url = https://github.com/cemkeylan/kiss-repository.git
+[submodule "modules/fonts"]
+	path = modules/fonts
+	url = https://github.com/Himmalerin/kiss-fonts.git
+[submodule "modules/static"]
+	path = modules/static
+	url = https://github.com/hovercats/kiss-somethingsomethingstatic.git
