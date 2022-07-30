@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+meson objects . --prefix=/usr
+ninja -C objects
+doas ninja -C objects install
+

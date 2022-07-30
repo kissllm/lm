@@ -1,9 +1,14 @@
 #!/bin/sh -e
 
+export LDFLAGS="$LDFLAGS --static"
+
 ./configure \
     --prefix=/usr \
     --build=$KISS_XBUILD_TRIPLE \
-    --host=$KISS_XHOST_TRIPLE
+    --host=$KISS_XHOST_TRIPLE \
+    --disable-shared \
+    --without-pic \
+    --disable-bzlib
 
 make
 make install

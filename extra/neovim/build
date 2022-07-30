@@ -9,8 +9,8 @@ echo "PREFIX updated:  $DESTDIR"
 # Due to some changes in the package manager/pigz, we have to...
 # unset DESTDIR
 mkdir -p bin
-ln -s /usr/bin/pigz  "$PWD/bin/gunzip"
-ln -s /usr/bin/gmake "$PWD/bin/make"
+ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
+ln -sf /usr/bin/gmake "$PWD/bin/make"
 export PATH="$PWD/bin:$PATH"
 
 # repo update rejected!
@@ -76,11 +76,10 @@ unset LUA_CPATH
 # # Error: Rock luajit 2.1.0-beta3-1 is already provided by VM or via 'rocks_provided' in the config file.
 # luajit=$(luarocks list|grep "luajit")
 # [ ${luajit} != "luajit" ] && {
-#     luarocks install --dev luajit
+#     luarocks --lua-version 5.1 install --dev luajit
 # }
 
-# kiss b luajit
-
+# Install packages with current lua version
 mpack=$(luarocks list|grep "mpack")
 [ ${mpack} != "mpack" ] && {
     luarocks install --dev mpack
@@ -94,7 +93,7 @@ ltreesitter=$(luarocks list|grep "ltreesitter")
     luarocks install --dev ltreesitter
 }
 
-eval '$(/usr/bin/luarocks path --append --bin)'
+eval '$(/usr/bin/luarocks --lua-version 5.1 path --append --bin)'
 export PATH=$(echo $PATH | sed "s/'//g")
 export LUA_PATH=$(echo $LUA_PATH | sed "s/'//g")
 export LUA_CPATH=$(echo $LUA_CPATH | sed "s/'//g")
@@ -111,11 +110,21 @@ export LIBLUV_LIBRARY="/usr/lib"
 #     USE_BUNDLED_LUAJIT
 
 BUILD_PATH="build"
+
+# Also OK on my system
+# cmake -G Ninja \
+#     -S "$SRC_PATH" \
+#     -B "${BUILD_PATH}" \
+#     -UUSE_BUNDLED \
+#     -UUSE_BUNDLED_LUAJIT \
+#     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+#     -DCMAKE_INSTALL_PREFIX=/usr
+
 cmake -G Ninja \
     -S "$SRC_PATH" \
     -B "${BUILD_PATH}" \
-    -UUSE_BUNDLED \
-    -UUSE_BUNDLED_LUAJIT \
+    -DUSE_BUNDLED=ON \
+    -DUSE_BUNDLED_LUAJIT=ON \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_INSTALL_PREFIX=/usr
 

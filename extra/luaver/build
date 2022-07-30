@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+
+echo "\$PWD = $PWD"
+# /root/.cache/kiss/proc/10339/build/luaver
+TEMP="$PWD"
+
+SRC_PATH="$XDG_CACHE_HOME/kiss/sources/luaver/luaver"
+
+cd "$SRC_PATH"
+# com=${2##*[@#]}
+# com=${com#${2%[#@]*}}
+
+# # repo update rejected!
+# # git fetch --prune --unshallow --tags
+# git rev-parse --short HEAD
+# git describe --always
+# git fetch --depth=1 origin "$com"
+# git reset --hard FETCH_HEAD
+
+git fetch origin && git reset --hard origin/master
+# git submodule init
+# git submodule sync
+# git submodule update --init --remote --recursive --force
+
+cd "$TEMP"
+
+install=$(find . -type f -name "install.sh")
+echo "\$install = $install"
+$install
+cp -f luaenv /usr/bin/

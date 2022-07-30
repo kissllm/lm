@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+! command -v $HOME/.luaver/luaver > /dev/null 2>&1 && {
+    install=$(find . -type f -name "install.sh")
+    echo "\$install = $install"
+    if command -v "$install" > /dev/null 2>&1; then
+        $install
+    else
+        $XDG_CACHE_HOME/kiss/sources/luaver/luaver/install.sh
+    fi
+}
+echo "\$PWD = $PWD"
+# /root/.cache/kiss/proc/10909/extract/luaver
+cat << EOF
+Trying to work on normal users, I use
+    HOME=/home/user-name kiss b luaver
+    HOME=/home/user-name kiss i luaver
+Based on the fact that I linked /root/.cache/kiss and
+/home/user-name/.cache/kiss to the same location
+EOF

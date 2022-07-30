@@ -5,14 +5,43 @@ ln -s /usr/bin/gmake "$PWD/bin/make"
 export PATH="$PWD/bin:$PATH"
 
 make
-mkdir -p "$1/usr/lib/"
-# install -Dm644 libtermkey.so "$1/usr/lib/libtermkey.so"
-lib=$(find . -type f -name "libtermkey.so")
-[ -n "$lib" ] && cp $lib $1/usr/lib/libtermkey.so
+# mkdir -p "$1/usr/lib/"
 
-patch -p1 < static-no-libtool.patch
+# libtermkey.so is just a symbol link and "find" won't find it
+# lib=$(find . -type f -name "libtermkey.so")
+# [ -n "$lib" ] && {
+#     printf "\n%s\n\n" "Libraries found:"
+#     ls -al $lib
+#     # install -Dm644 libtermkey.so "$1/usr/lib/libtermkey.so"
+#     # cp $lib $1/usr/lib/libtermkey.so
+#     cp -f $lib /usr/lib/libtermkey.so
+# }
 
-make libtermkey.a
-install -Dm644 libtermkey.a  "$1/usr/lib/libtermkey.a"
+lib_dir=$(find . -type d -name "*lib*")
+echo "lib_dir = $lib_dir"
+ls -al $lib_dir
 
-make PREFIX=/usr DESTDIR="$1" install
+# install -Dm644 .libs/libtermkey.so "/usr/lib/libtermkey.so"
+# rm -f /usr/lib/libtermkey.so
+# rm -f /usr/lib/libtermkey.so.*
+cp -f .libs/*.so.* "/usr/lib/"
+cp -f .libs/*.so   "/usr/lib/"
+
+# if [ -f ".libs/libtermkey.a" ]; then
+    install -Dm644 .libs/libtermkey.a "/usr/lib/libtermkey.a"
+# else
+#     patch -p1 < static-no-libtool.patch
+#
+#     make libtermkey.a
+#     liba=$(find . -type f -name "libtermkey.a")
+#     if [ -n "$liba" ]; then
+#         printf "\n%s\n\n" "Static libraries found:"
+#         ls -al $liba
+#
+#         # install -Dm644 libtermkey.a  "$1/usr/lib/libtermkey.a"
+#         install -Dm644 $liba  "/usr/lib/libtermkey.a"
+#     fi
+# fi
+
+# make PREFIX=/usr DESTDIR="$1" install
+make PREFIX=/usr install

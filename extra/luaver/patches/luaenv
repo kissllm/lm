@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+
+# How to use:
+# . luaenv 5.1
+
+# mkdir -p bin
+# ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
+# ln -sf /usr/bin/gmake "$PWD/bin/make"
+# export PATH="$PWD/bin:$PATH"
+
+# $HOME/.luaver/luaver $@
+if [ -n "$1" ]; then
+    unset LUA_PATH
+    unset LUA_CPATH
+
+    echo "return \"$1\"" > $HOME/.luarocks/default-lua-version.lua
+    eval '$(/usr/bin/luarocks --lua-version $1 path --append --bin)'
+
+    export PATH=$(echo $PATH | sed "s/'//g")
+    export LUA_PATH=$(echo $LUA_PATH | sed "s/'//g")
+    export LUA_CPATH=$(echo $LUA_CPATH | sed "s/'//g")
+else
+    echo "Input lua version please"
+    exit 1
+fi

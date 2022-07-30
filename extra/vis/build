@@ -1,0 +1,88 @@
+#!/bin/sh -e
+# echo "\$PWD  = $PWD"
+(
+    cd termkey
+    printf "\n%s\n\n" "Building termkey ..."
+    mkdir -p bin
+    ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
+    ln -sf /usr/bin/gmake "$PWD/bin/make"
+    export PATH="$PWD/bin:$PATH"
+
+    export CC=clang
+
+    # make termkey.h libtermkey.la
+    make
+    mkdir -p "$1/usr/lib" \
+             "$1/usr/include"
+
+    cp -f termkey.h "$1/usr/include/"
+    lib_dir=$(find . -type d -name "*lib*")
+    echo "lib_dir = $lib_dir"
+    ls -al $lib_dir
+
+    cp -f .libs/*.a    "$1/usr/lib/"
+    cp -f .libs/*.so.* "$1/usr/lib/"
+    cp -f .libs/*.so   "$1/usr/lib/"
+
+    # patch -p1 < ../static-no-libtool.patch
+    make PREFIX=/usr DESTDIR="$1" install
+)
+
+(
+    # Lpeg doesn't have an option to create static libraries.
+    cd lpeg
+
+    printf "\n%s\n\n" "Building lpeg ..."
+
+    mkdir -p bin
+    ! command -v "$PWD/bin/gunzip" > /dev/null 2>&1 && ln -s /usr/bin/pigz  "$PWD/bin/gunzip"
+    ln -sf /usr/bin/gmake "$PWD/bin/make"
+    export PATH="$PWD/bin:$PATH"
+
+    export CC=clang
+
+    for obj in lpcap lpcode lpprint lptree lpvm; do
+        "${CC:-cc}" $CFLAGS -c -o $obj.o $obj.c
+    done
+    ar rcs $1/usr/lib/liblpeg.a ./*.o
+    PREFIX=/usr DESTDIR="$1" make
+    # make PREFIX=/usr DESTDIR="$1" install
+)
+
+(
+    # mkdir -p bin
+    # ln -s /usr/bin/pigz  "$PWD/bin/gunzip"
+    # ln -s /usr/bin/gmake "$PWD/bin/make"
+    # export PATH="$PWD/bin:$PATH"
+    # cd vis
+
+    printf "\n%s\n\n" "Building vis ..."
+
+    echo "\$PWD  = $PWD"
+
+    unset LUA_PATH
+    unset LUA_CPATH
+    lpeg=$(luarocks list 5.3 |grep "lpeg")
+    [ ${lpeg} != "lpeg" ] && {
+        luarocks --lua-version 5.3 install --dev lpeg
+    }
+    eval '$(/usr/bin/luarocks path --append --bin)'
+    export PATH=$(echo $PATH | sed "s/'//g")
+    export LUA_PATH=$(echo $LUA_PATH | sed "s/'//g")
+    export LUA_CPATH=$(echo $LUA_CPATH | sed "s/'//g")
+
+    export CC=clang
+
+    # export CFLAGS="$CFLAGS -static -I$1/usr/include"
+    export CFLAGS="$CFLAGS -I$1/usr/include"
+    export LDFLAGS="$LDFLAGS -L$1/usr/lib"
+
+    ./configure \
+        --prefix=/usr \
+        --enable-lua \
+        --enable-lpeg-static
+
+    PREFIX=/usr DESTDIR="$1" make
+    # make DESTDIR="$1" install
+    make PREFIX=/usr install
+)

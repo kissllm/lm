@@ -1,0 +1,27 @@
+#!/bin/sh -e
+
+mkdir -p bin
+ln -s /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
+echo "Luarocks version: \$2 = $2"
+
+# https://github.com/luarocks/luarocks/wiki/Installation-instructions-for-Unix
+./configure --prefix="/usr" \
+    --lua-version=$2 \
+    --lua-suffix=$2 \
+    --versioned-rocks-dir \
+    --force-config \
+    --with-lua-version=$2 \
+    --with-lua=/usr \
+    --with-lua-include=/usr/include \
+    --with-lua-interpreter=lua
+
+# make DESTDIR="$1" PREFIX=/usr bootstrap
+make PREFIX=/usr bootstrap
+# make bootstrap
+
+# make DESTDIR="$1" PREFIX=/usr install
+doas make PREFIX=/usr install
+# make PREFIX=/usr install
+

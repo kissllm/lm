@@ -1,0 +1,47 @@
+#!/bin/sh -e
+
+mkdir -p bin
+ln -s /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
+mkdir temp
+TMPDIR="$PWD/temp"
+
+(
+cd db/build_unix
+
+../dist/configure \
+    --prefix=/usr \
+    --disable-shared
+
+make
+make DESTDIR="$TMPDIR" install
+
+)
+
+(
+cd nvi
+
+for patch in ../nvi*.patch; do
+    printf 'Applying %s\n' "$patch"
+    patch -Np1 < "$patch"
+done
+
+export CFLAGS="$CFLAGS -I$TMPDIR/usr/include"
+export LDFLAGS="$LDFLAGS -L$TMPDIR/usr/lib -static"
+export OPTFLAG="$CFLAGS"
+export CC="${CC:-cc} --static"
+
+cd dist
+
+./configure \
+    --prefix=/usr \
+    --enable-widechar \
+    --disable-shared \
+    vi_cv_path_preserve=/var/tmp \
+    vi_cv_sprintf_count=yes
+
+sed -i -e '/define.*_PATH_MSGCAT/ s/".*"/"\/usr\/share\/vi\/catalog\/"/' pathnames.h
+make
+install -Dm755 vi "$1/usr/bin/vi"
+)
