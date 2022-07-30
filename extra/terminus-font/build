@@ -1,0 +1,20 @@
+#!/bin/sh -e
+
+mkdir -p bin
+ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
+ln -sf /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
+./configure \
+    --prefix=/usr
+
+# don't build X11 fonts
+sed '/BDF2PCF/d;/ter-x/d' Makefile > _
+mv _ Makefile
+
+# make
+# make DESTDIR="$1" install
+make DESTDIR="$1" install-psf install-otb
+
+# remove unused X11 font directory
+rm -fr "$1/usr/share/fonts/"
