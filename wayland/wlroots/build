@@ -1,17 +1,41 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
+
+# sed -i "s/all_backends = ['drm', 'libinput', 'x11']/all_backends = ['drm', 'libinput']/g" backend/meson.build
+sed -i "s/subdir('examples')/# subdir('examples')/g" meson.build
 
 export CFLAGS="-Wno-unused-but-set-variable"
 export PKG_CONFIG_SYSROOT_DIR=
 
 kiss-meson-config > meson.config
 
-meson \
-    --prefix=/usr \
-    --cross-file="meson.config" \
-    -Ddefault_library=both \
-    -Dexamples=false \
-    -Dxcb-errors=disabled \
-    . build
+# if [ -d "objects" ]; then
+#     meson \
+#         --reconfigure \
+#         --prefix=/usr \
+#         --cross-file="meson.config" \
+#         -Ddefault_library=both \
+#         -Dexamples=false \
+#         -Dxcb-errors=disabled \
+#         -Dxwayland=disabled \
+#         -Drenderers=gles2 \
+#         -Dbackends=drm,libinput \
+#         . objects
+# 
+# else
+    meson \
+        --prefix=/usr \
+        -Ddefault_library=both \
+        -Dexamples=false \
+        -Dxcb-errors=disabled \
+        -Dxwayland=disabled \
+        -Drenderers=gles2 \
+        -Dbackends=drm,libinput \
+        . objects
+# fi
 
-ninja -C build
-ninja -C build install
+        # --cross-file="meson.config" \
+        # -Dx11-backend=disabled \
+        # -Dbackends=drm,libinput \
+
+ninja -C objects
+ninja -C objects install

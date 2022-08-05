@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 make CC="${CC:-cc} $CFLAGS -fPIC $LDFLAGS" -f Makefile-libbz2_so
 make CC="${CC:-cc} $CFLAGS -fPIC $LDFLAGS" bzip2recover libbz2.a

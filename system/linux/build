@@ -1,31 +1,67 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
+
+export LLVM=1
+export LLVM_IAS=1
+export CC=clang
+export HOSTCC=clang
+
+mkdir -p bin
+ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
+ln -sf /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
 
 # patch -p1 < no-perl.patch
-# patch -p1 < make-yacc-usage-POSIX-compliant.diff
+patch -p1 < make-yacc-usage-POSIX-compliant.diff
+
+# Determine arch
+case $KISS_XHOST_ARCH in
+    aarch64)     arch=arm64;;
+    aarch64_be)  arch=arm64;;
+    armv7)       arch=arm;;
+    x86_64)      arch=x86_64;;
+    powerpc64le) arch=powerpc;;
+    powerpc64)   arch=powerpc;;
+    powerpcle)   arch=powerpc;;
+    powerpc)     arch=powerpc;;
+    riscv64)     arch=riscv;;
+    riscv32)     arch=riscv;;
+    i686)        arch=i386;;
+   *) echo "Unsupported platform: $KISS_XHOST_ARCH"; exit;;
+esac
+
+# Always use the host compiler here
+make LLVM=1 LLVM_IAS=1 ARCH=$arch CROSS_COMPILE=$KISS_XHOST_ARCH HOSTCC="clang" headers
+
+# The headers require rsync for installation, this command
+# simply does the equivalent using find, mkdir and cp.
+find usr/include -name \*.h -type f | while read -r file; do
+    mkdir -p "$1/${file%/*}"
+    cp -f "$file" "$1/$file"
+done
 
 cp config .config
 cp .config oldconfig
 make olddefconfig
 
-LLVM=1
-LLVM_IAS=1
-CC=clang
-HOSTCC=clang
 # VERSION="$(make kernelversion)"
 # Store the build version in a file and a variable.
 make kernelrelease > version
 read ver < version
 
 make LLVM=1 LLVM_IAS=1 -j13
+# make LLVM=1 LLVM_IAS=1 ARCH=$arch CROSS_COMPILE=$KISS_XHOST_ARCH HOSTCC="clang" -j13
 make CC=clang HOSTCC=clang -no-intergrated-as LLVM=1 LLVM_IAS=1 modules
+# make ARCH=$arch CROSS_COMPILE=$KISS_XHOST_ARCH CC=clang HOSTCC=clang -no-intergrated-as LLVM=1 LLVM_IAS=1 modules
 
 doas make LLVM=1 LLVM_IAS=1 modules_install
-doas make LLVM=1 LLVM_IAS=1 install
+# doas make ARCH=$arch CROSS_COMPILE=$KISS_XHOST_ARCH CC=clang HOSTCC=clang LLVM=1 LLVM_IAS=1 -no-intergrated-as modules_install
+doas make ARCH=$arch CROSS_COMPILE=$KISS_XHOST_ARCH CC=clang HOSTCC=clang LLVM=1 LLVM_IAS=1 install
 
 [ ! -d "/boot/efi/EFI/efistub" ] && doas mkdir -p "/boot/efi/EFI/efistub"
 doas cp -f /boot/vmlinuz /boot/efi/EFI/efistub/vmlinuz.efi
 # doas sh /mnt/b "kiss on nvme1" "/dev/nvme1n1" "p3" "p2"
 
+doas cp .config /boot/config-${ver}
 doas mv /boot/vmlinuz /boot/vmlinuz-${ver}
 doas mv /boot/System.map /boot/System.map-${ver}
-doas cp .config /boot/config-${ver}
+doas grub-mkconfig -o /boot/grub/grub.cfg

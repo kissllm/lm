@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 # Clang assembler can't do this yet
 if [ $KISS_XHOST_ARCH = "armv7" ]; then

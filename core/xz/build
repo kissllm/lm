@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 # Remove cflags which cause issues
 #export CFLAGS="$CFLAGS -O0 -fno-lto "

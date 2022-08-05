@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+python scripts/update_deps.py
+
+# cmake -B output -DCMAKE_INSTALL_PREFIX=/usr
+cmake -B output -Wno-dev \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DBUILD_WSI_WAYLAND_SUPPORT=ON \
+    -DBUILD_WSI_XCB_SUPPORT=ON \
+    -DBUILD_WSI_XLIB_SUPPORT=ON
+
+cmake --build output --target all --parallel
+
+cmake --build output --target install --parallel

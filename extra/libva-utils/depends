@@ -1,5 +1,1 @@
-libva
-mesa    make
-pkgconf make
-wayland
-wayland-protocols make
+../../modules/repo/extra/libva-utils/depends

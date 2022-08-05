@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+cmake -B output -DCMAKE_INSTALL_PREFIX=/usr
+
+cmake --build output --target all --parallel
+
+cmake --build output --target install --parallel

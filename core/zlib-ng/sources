@@ -1,0 +1,5 @@
+# https://github.com/zlib-ng/zlib-ng/archive/refs/tags/VERSION.tar.gz
+# git+https://github.com/zlib-ng/zlib-ng@stable
+git+https://github.com/zlib-ng/zlib-ng
+files/makefile
+patches/cross.patch

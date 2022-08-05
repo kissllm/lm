@@ -1,0 +1,14 @@
+#!/bin/sh -e
+
+mkdir -p bin
+ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
+ln -sf /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
+make
+
+install -Dm 644 src/iniparser.h   "$1/usr/include/iniparser.h"
+install -Dm 644 src/dictionary.h  "$1/usr/include/dictionary.h"
+install -Dm 755 libiniparser.so.1 "$1/usr/lib/libiniparser.so.1"
+ln -s libiniparser.so.1 "$1/usr/lib/libiniparser.so"
+

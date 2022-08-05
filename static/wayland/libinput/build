@@ -1,0 +1,66 @@
+#!/usr/bin/env sh
+
+mkdir -p bin
+ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
+ln -sf /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
+export DESTDIR="$1"
+export CFLAGS="$CFLAGS -fPIC -I$1/usr/include"
+export CFLAGS="$CFLAGS -I$1/usr/include/libevdev-1.0"
+export PKG_CONFIG_PATH="$1/usr/lib/pkgconfig"
+export LDFLAGS="-L$1/usr/lib --static"
+
+patch -p1 < evdev-wrap.patch
+sed -i "s/void list_insert(struct list *list, struct list *elm);/inline void list_insert(struct list *list, struct list *elm);/g" ./src/util-list.h
+
+for pkg in mtdev evdev; do (
+    cd "$pkg"
+
+    ./configure \
+        --prefix=/usr \
+        --disable-shared \
+        --disable-gcov
+
+
+    make
+    make install
+) done
+
+# Build fails with clang due to -Werror (forced on) and
+# -Wunused-command-line-argument which is triggered by.
+# the below CFLAGS.
+export CFLAGS="-Wno-unused-command-line-argument $CFLAGS"
+export LDFLAGS="-static $LDFLAGS"
+
+
+sed 's/shared_library/library/' meson.build > _
+mv -f _ meson.build
+sed "s/dependency('libudev')/dependency('libudev', static: true)/g" meson.build > _
+mv -f _ meson.build
+
+meson \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --mandir=/usr/share/man \
+    --libexecdir=/usr/lib \
+    -Ddefault_library=static \
+    -Ddebug-gui=false \
+    -Ddocumentation=false \
+    -Dtests=false \
+    -Dlibwacom=false \
+    . output
+
+ninja -C output
+shared=$(find . -type f -name "*.so*" ! -name "*.symbols")
+for I in $shared
+do
+echo "shared: $I"
+install -Dm 644 $I "/usr/lib/"
+done
+# shared: ./output/libinput.so.10.13.0
+shared_so=$(basename $shared)
+echo "shared_so: $shared_so"
+eval "ln -sf /usr/lib/$shared_so /usr/lib/libinput.so"
+eval "ln -sf /usr/lib/$shared_so /usr/lib/libinput.so.10"
+ninja -C output install

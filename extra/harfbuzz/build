@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+meson . output --wipe
+
+meson . output \
+--prefix=/usr \
+-Dtests=disabled
+
+# cmake -S /working/os/harfbuzz \
+# -DBUILD_SHARED_LIBS=ON \
+# -DCMAKE_INSTALL_PREFIX:PATH=/usr
+
+ninja -C output
+doas ninja -C output install

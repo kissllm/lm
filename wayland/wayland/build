@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 if [ "$KISS_ROOT" ]; then
     if [ ! -d /var/db/kiss/installed/wayland ]; then

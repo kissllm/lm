@@ -1,21 +1,40 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 patch -p1 < no-evdev.patch
 
-export CFLAGS="$CFLAGS"
+sed -i "s/libinput = dependency('libinput', /libinput = dependency('libinput', static: true, /g" meson.build
+
+# sed -i "s/void list_insert(list_t *list, int index, void *item);/inline void list_insert(list_t *list, int index, void *item);/g" include/list.h
+sed -i "s/void list_insert(list_t *list, int index, void *item);/inline void sway_list_insert(list_t *list, int index, void *item);/g" include/list.h
+sed -i "s/void list_insert(list_t *list, int index, void *item) {/void sway_list_insert(list_t *list, int index, void *item) {/g" common/list.c
+
+
+# sed -i "s/sway_inc = include_directories('include')/sway_inc = include_directories('$1/include')/g" meson.build
+# sed -i "s/include_directories: [sway_inc],/include_directories: sway_inc,/g" ./sway/meson.build
+sed -i 's/#include "list.h"/#include "../include/list.h"/g' ./sway/config.c
+sed -i "s/list_insert(/sway_list_insert(/g" ./sway/config.c
+sed -i "s/list_insert(/sway_list_insert(/g" ./sway/tree/workspace.c
+sed -i "s/list_insert(/sway_list_insert(/g" ./sway/tree/container.c
+list_operation=$(find . -type f -name "list.h")
+echo "list_operation: $list_operation"
+export CFLAGS="$CFLAGS -static -I$1/include"
+export LDFLAGS="$LDFLAGS -static"
 export PKG_CONFIG_SYSROOT_DIR=
 
 kiss-meson-config > meson.config
 
 meson \
     --prefix=/usr \
-    --cross-file="meson.config" \
+    --cross-file=meson.config \
+    -Ddefault_library=static \
     -Dxwayland=disabled \
     -Ddefault-wallpaper=false \
     -Dzsh-completions=false \
     -Dbash-completions=false \
     -Dfish-completions=false \
     . build
+
+    # -Ddefault_library=static \
 
 ninja -C build
 ninja -C build install

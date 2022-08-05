@@ -1,0 +1,6 @@
+# https://swupdate.openvpn.org/community/releases/openvpn-VERSION.tar.xz
+git+https://github.com/OpenVPN/openvpn
+files/openvpn.initd
+files/openvpn.confd
+files/openvpn.up
+files/openvpn.down

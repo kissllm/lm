@@ -1,0 +1,11 @@
+diff --git a/zlib.pc.in b/zlib.pc.in
+index a0678fb..f208209 100644
+--- a/zlib.pc.in
++++ b/zlib.pc.in
+@@ -10,5 +10,5 @@ Description: zlib-ng compression library
+ Version: @VERSION@
+ 
+ Requires:
+-Libs: -L${libdir} -L${sharedlibdir} -lz@SUFFIX@
++Libs: -lz@SUFFIX@
+ Cflags: -I${includedir}

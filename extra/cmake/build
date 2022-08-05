@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 # Don't link to libexecinfo if it is present
 patch -p1 < cmake-no-execinfo.patch

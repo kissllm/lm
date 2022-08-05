@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+
+export CFLAGS="$CFLAGS -fPIC"
+
+patch -p1 < cross.patch
+
+# ./configure \
+#     --prefix=/usr \
+#     --archs="-arch $KISS_XHOST_ARCH"
+
+BUILD_PATH="objects"
+
+cmake -S . -B "${BUILD_PATH}" -DCMAKE_INSTALL_PREFIX=/usr \
+-UZLIB_COMPAT
+
+# make CC=clang CXX=clang++
+cmake --build "${BUILD_PATH}" --target all --parallel
+
+# make DESTDIR="$1" PREFIX=/usr CC=clang CXX=clang++ install
+doas cmake  --build "${BUILD_PATH}" --target install --parallel
+
+# Install the license
+install -Dm755 LICENSE.md "$1/usr/share/LICENSES/zlib.license"

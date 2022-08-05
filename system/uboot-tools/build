@@ -1,5 +1,10 @@
 #!/bin/sh -e
 
+mkdir -p bin
+ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
+ln -sf /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
 make CC="$CC" HOSTCC=clang tools-only_defconfig
 make CC="$CC" HOSTCC=clang tools-all
 

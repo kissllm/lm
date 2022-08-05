@@ -1,9 +1,14 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 # ccache is causing the issue to expect clang instead of gcc.
 # Just disable it.
 export CC="${CC:-/usr/bin/cc}"
 export CXX="${CXX:-/usr/bin/c++}"
+
+mkdir -p bin
+ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
+ln -sf /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
 
 # If this is a cross build, need to build on the native platform first
 if [ "$KISS_XBUILD_TRIPLE" != "$KISS_XHOST_TRIPLE" ]; then
