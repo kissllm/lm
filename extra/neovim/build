@@ -8,7 +8,7 @@ echo "DESTDIR updated: $DESTDIR"
 echo "PREFIX updated:  $DESTDIR"
 # Due to some changes in the package manager/pigz, we have to...
 # unset DESTDIR
-mkdir -p bin
+mkdir -p "$PWD/bin"
 ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
 ln -sf /usr/bin/gmake "$PWD/bin/make"
 export PATH="$PWD/bin:$PATH"

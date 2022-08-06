@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+
+mkdir -p "$PWD/bin"
+ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
+ln -sf /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
+# patch -p1 < ./fix-constexpr-usage.patch
+
+cd src/
+make \
+    DESTDIR="$1" \
+    PREFIX=/usr \
+    libexecdir="$1/usr/lib" \
+    version="v$2" \
+    gzip_man=no \
+    all install
