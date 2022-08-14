@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+
+for p in *.patch; do
+    patch -p1 < "$p"
+done
+
+out=$PWD/out
+mkdir -p out
+
+for p in html-parser html-tagset; do (
+    cd "$p"
+
+    perl Makefile.PL INSTALLDIRS=vendor
+
+    make
+    make DESTDIR="$out" install
+) done
+
+cd "$out"/usr/lib/perl*/vendor_perl/*/x86_64-linux-thread-multi
+export PERLLIB="$PWD"
+cd -
+
+make \
+    LIBDIR=lib \
+    INCLUDEDIR=include \
+    PREFIX=/usr \
+    TARGET=gtk3 \
+    V=1
+
+make \
+    LIBDIR=lib \
+    INCLUDEDIR=include \
+    PREFIX=/usr \
+    TARGET=gtk3 \
+    install

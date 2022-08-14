@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 # Determine the name of the compiler-rt library
 case $KISS_XHOST_ARCH in

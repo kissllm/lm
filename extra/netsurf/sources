@@ -1,0 +1,8 @@
+# http://download.netsurf-browser.org/netsurf/releases/source-full/netsurf-all-VERSION.tar.gz
+git+https://git.netsurf-browser.org/netsurf.git
+git+https://git.netsurf-browser.org/libcss.git#accad499aed29acb7bc8fb00bea3d9f2b7f43bd1 libcss-new/
+git+https://git.sr.ht/~sircmpwn/visurf#3518302d74005fe228c7e0db86015e6ccfc00e85 visurf/
+https://cpan.metacpan.org/authors/id/G/GA/GAAS/HTML-Parser-3.72.tar.gz html-parser
+https://cpan.metacpan.org/authors/id/P/PE/PETDANCE/HTML-Tagset-3.20.tar.gz html-tagset
+patches/busybox.patch
+patches/libressl.patch
