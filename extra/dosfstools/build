@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 # Disable documentation (READMEs and such).
 sed 's/^\(dist_doc_DATA\)/\1_null/' Makefile.in > _

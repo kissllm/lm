@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 mkdir -p   "$1/usr/share/fonts/TTF"
 cp ./*.ttf "$1/usr/share/fonts/TTF"

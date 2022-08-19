@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 sed -i 's/`$PKG_CONFIG --variable=wayland_scanner wayland-scanner`/wayland-scanner/g' configure
 

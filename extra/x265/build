@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 noasm="-DENABLE_ASSEMBLY=OFF"
 # Enabling asm on aarch64 causes build failures

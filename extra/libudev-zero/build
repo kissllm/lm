@@ -1,4 +1,4 @@
-#!/bin/sh -ef
+#!/usr/bin/env shf
 
 make PREFIX=/usr
 make PREFIX=/usr install

@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 export CFLAGS="$CFLAGS -Dsigcontext_struct=sigcontext -Werror,-Wno-unused-function"
 

@@ -7,6 +7,11 @@ case $KISS_XHOST_ARCH in
    *)     ABI=$KISS_XHOST_ARCH;;
 esac
 
+export CC=clang
+export CXX=clang++
+
+export KISS_XHOST_ABI="musl"
+
 # Name of final library
 libname="ld-$KISS_XHOST_ABI-$ABI.so.1"
 
@@ -15,6 +20,8 @@ libname="ld-$KISS_XHOST_ABI-$ABI.so.1"
 
 # Building with LTO causes segfaults
 export CFLAGS="$CFLAGS -fno-lto"
+CFLAGS=$(printf   %s "$CFLAGS"   | sed 's/-flto=thin//')
+CXXFLAGS=$(printf %s "$CXXFLAGS" | sed 's/-flto=thin//')
 
 ./configure \
     --prefix=/usr \
@@ -23,17 +30,29 @@ export CFLAGS="$CFLAGS -fno-lto"
     --host=$KISS_XHOST_TRIPLE
 
 make CROSS_COMPILE=""
-make DESTDIR="$1" install
+libc=$(find . -type f -name "libc.so")
+echo "libc = $libc"
+if [ -n "${libc}" ]; then
+    make DESTDIR="$1" install
+    # Create ldd link
+    mkdir -p $1/usr/bin
+    ln -sf /usr/lib/ld-musl-$ABI.so.1 "$1/usr/bin/ldd"
 
-# Create ldd link
-mkdir -p $1/usr/bin
-ln -s  /usr/lib/ld-musl-$ABI.so.1 "$1/usr/bin/ldd"
+    # Fix incorrect symlink to libc.so.
+    ln -sf libc.so "$1/usr/lib/ld-musl-x86_64.so.1"
 
-# Install BSD compatibility headers.
-install -Dm 755 cdefs.h "$1/usr/include/sys/cdefs.h"
-install -Dm 755 queue.h "$1/usr/include/sys/queue.h"
-install -Dm 755 tree.h  "$1/usr/include/sys/tree.h"
+    # Install BSD compatibility headers.
+    install -Dm 755 cdefs.h "$1/usr/include/sys/cdefs.h"
+    install -Dm 755 queue.h "$1/usr/include/sys/queue.h"
+    install -Dm 755 tree.h  "$1/usr/include/sys/tree.h"
 
-# Install getconf.
-${CC:-cc} getconf.c -o "$1/usr/bin/getconf"
-${CC:-cc} getent.c  -o "$1/usr/bin/getent"
+    # Install getconf.
+    ${CC:-cc} getconf.c -o "$1/usr/bin/getconf"
+    ${CC:-cc} getent.c  -o "$1/usr/bin/getent"
+
+    # Install the license
+    install -Dm755 COPYRIGHT "$1/usr/share/LICENSES/musl.license"
+else
+    echo "Failed to generate libc.so"
+    exit 1
+fi

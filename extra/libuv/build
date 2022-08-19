@@ -1,1 +1,10 @@
-../../modules/boost/community/libuv/build
+#!/usr/bin/env sh
+
+export DESTDIR="$1"
+
+cmake -B build \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib
+
+cmake --build   build
+cmake --install build

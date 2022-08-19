@@ -1,4 +1,4 @@
-#!/bin/sh -ef
+#!/usr/bin/env shf
 #
 # Intentional, globbing disabled.
 # shellcheck disable=2086

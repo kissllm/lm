@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 patch -p1 < no-fribidi.patch
 patch -p1 < fix-firefox.patch

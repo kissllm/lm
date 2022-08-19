@@ -1,4 +1,4 @@
-#!/bin/sh -ef
+#!/usr/bin/env shf
 
 mkdir -p \
     "$1/usr/bin" \

@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
 
 # Set the CARGO_HOME variable to the current directory to prevent cargo from
 # touching '$HOME/.cargo'. This keeps the build contained to the package
