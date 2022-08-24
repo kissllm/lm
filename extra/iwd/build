@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+./configure --prefix=/usr \
+	    --sysconfdir=/etc \
+            --localstatedir=/var \
+            --libexecdir=/usr/lib/iwd \
+            --disable-systemd-service
+
+make
+make DESTDIR=$1 install

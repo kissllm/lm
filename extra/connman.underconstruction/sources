@@ -1,0 +1,8 @@
+https://www.kernel.org/pub/linux/network/connman/connman-VERSION.tar.xz
+patches/libresolv.patch
+patches/dbus-rules.patch
+patches/add-ethernet-prop-for-vpn-to-dbus.patch
+files/openvpn.conf
+files/connman.initd
+files/connman.confd
+files/connman.post-upgrade

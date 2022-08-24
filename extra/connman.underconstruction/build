@@ -1,0 +1,191 @@
+# Maintainer: Clayton Craft <clayton@craftyguy.net>
+# Contributor: Valery Kartel <valery.kartel@gmail.com>
+# Contributor: Jakub Jirutka <jakub@jirutka.cz>
+pkgname=connman
+pkgver=1.41
+pkgrel=1
+pkgdesc="Daemon for managing internet connections"
+url="https://git.kernel.org/pub/scm/network/connman/connman.git"
+arch="all"
+license="GPL-2.0-only"
+depends="dbus"
+makedepends="
+    autoconf
+    automake
+    dbus-dev
+    glib-dev
+    iptables-dev
+    libmnl-dev
+    libnftnl-dev
+    libtool
+    openvpn
+    ppp-dev
+    readline-dev
+    vpnc
+    wpa_supplicant
+    xl2tpd
+    "
+install="$pkgname.post-upgrade"
+subpackages="
+    $pkgname-dbg
+    $pkgname-iptables
+    $pkgname-nftables
+    $pkgname-l2tp
+    $pkgname-openvpn
+    $pkgname-vpnc
+    $pkgname-wireguard
+    $pkgname-dev
+    $pkgname-doc
+    $pkgname-openrc
+    "
+source="https://www.kernel.org/pub/linux/network/connman/connman-$pkgver.tar.xz
+    libresolv.patch
+    dbus-rules.patch
+    add-ethernet-prop-for-vpn-to-dbus.patch
+    openvpn.conf
+    $pkgname.initd
+    $pkgname.confd
+    "
+
+builddir="$PWD"
+pkgdir="${1}"
+srcdir="$HOME/.cache/kiss/proc/build/$pkgname"
+
+patch -p1 < libresolv.patch
+patch -p1 < dbus-rules.patch
+patch -p1 < add-ethernet-prop-for-vpn-to-dbus.patch
+
+# secfixes:
+#   1.41-r0:
+#     - CVE-2022-23096
+#     - CVE-2022-23097
+#     - CVE-2022-23098
+#   1.39-r0:
+#     - CVE-2021-26675
+#     - CVE-2021-26676
+amove() {
+    mv "$pkgdir/${1}" "$subpkgdir"/usr/
+}
+prepare() {
+    # default_prepare
+    autoreconf -vif
+
+    cp -r "$builddir" "$builddir~nftables"
+}
+prepare
+_build() {
+    ./configure \
+        --build=$CBUILD \
+        --host=$CHOST \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --mandir=/usr/share/man \
+        --infodir=/usr/share/info \
+        --localstatedir=/var \
+        --disable-wispr \
+        --enable-iwd \
+        "$@"
+
+        # --enable-pie \
+        # --enable-openvpn \
+        # --enable-wireguard \
+        # --enable-nmcompat \
+        # --enable-l2tp \
+        # --enable-vpnc \
+
+    make
+}
+_build
+build() {
+    # cd "$builddir~nftables"
+    # _build --with-firewall=nftables
+
+    cd "$builddir"
+    _build --with-firewall=iptables  # this is the default value
+}
+# build
+check() {
+    make check
+}
+check
+package() {
+    # Provided by connman-iptables or connman-nftables (mutually exclusive).
+    # NOTE: It must be defined here, not on top-level!
+    depends="$depends cmd:connmand=$pkgver-r$pkgrel"
+
+    make install DESTDIR="$pkgdir"
+    install -Dm644 src/main.conf "$pkgdir"/etc/$pkgname/main.conf
+
+    # install -Dm644 "$srcdir"/openvpn.conf -t "$pkgdir"/etc/$pkgname/vpn-plugin/
+
+    # mv "$pkgdir"/usr/sbin/connmand "$pkgdir"/usr/sbin/connmand.iptables
+    # install -D -m 755 "$builddir~nftables"/src/connmand "$pkgdir"/usr/sbin/connmand.nftables
+
+    install -Dm644 "$srcdir"/$pkgname.confd "$pkgdir"/etc/conf.d/$pkgname
+    install -Dm755 "$srcdir"/$pkgname.initd "$pkgdir"/etc/init.d/$pkgname
+}
+package
+iptables() {
+    pkgdesc="ConnMan daemon built with iptables support"
+    depends="!$pkgname-nftables"
+    provider_priority=20  # highest
+    replaces="$pkgname $pkgname-nftables"
+    amove usr/sbin/connmand.iptables
+    ln -s connmand.iptables "$subpkgdir"/usr/sbin/connmand
+}
+# iptables
+nftables() {
+    pkgdesc="ConnMan daemon built with nftables support"
+    depends="!$pkgname-iptables"
+    provider_priority=10  # lowest
+    replaces="$pkgname $pkgname-iptables"
+
+    amove usr/sbin/connmand.nftables
+    ln -s connmand.nftables "$subpkgdir"/usr/sbin/connmand
+}
+# nftables
+l2tp() {
+    pkgdesc="L2TP VPN plugin for ConnMan"
+    depends="$pkgname=$pkgver-r$pkgrel xl2tpd"
+
+    amove usr/lib/connman/plugins-vpn/l2tp.so
+    amove usr/lib/connman/scripts/libppp-plugin.so
+}
+# l2tp
+openvpn() {
+    pkgdesc="OpenVPN plugin for ConnMan"
+    depends="$pkgname=$pkgver-r$pkgrel openvpn"
+    replaces="$pkgname"  # for backward compatibility
+
+    amove etc/connman/vpn-plugin/openvpn.conf
+    amove usr/lib/connman/plugins-vpn/openvpn.so
+    amove usr/lib/connman/scripts/openvpn-script
+
+    echo 'tun' | install -Dm644 /dev/stdin \
+        "$subpkgdir"/usr/lib/modules-load.d/$subpkgname.conf
+}
+# openvpn
+vpnc() {
+    pkgdesc="IPsec (Cisco/Juniper) VPN plugin for ConnMan"
+    depends="$pkgname=$pkgver-r$pkgrel vpnc"
+
+    amove usr/lib/connman/plugins-vpn/vpnc.so
+}
+# vpnc
+wireguard() {
+    pkgdesc="WireGuard VPN plugin for ConnMan"
+    depends="$pkgname=$pkgver-r$pkgrel"
+    replaces="$pkgname"  # for backward compatibility
+
+    amove usr/lib/connman/plugins-vpn/wireguard.so
+}
+# wireguard
+sha512sums="
+b7880d908635ab9350c12e207213d20b11c1a50afcb93ae92e1fc57d4345bf792afe1a5534650e18b8cd05a3766ce9993083b2d659e49f87b867e6f2c1a83b2d  connman-1.41.tar.xz
+122b48fc9e25354e25ba3a3e0864bdd84da84457fed94aeea726bcb189b2f05f2cc361ae15f44af5c49bcee572e91e4c0488ef3b0bc79d20f6efe15853fb6b3a  libresolv.patch
+0223dba51be67c131c297d0e865fe1276e4800be5eee25c4f142df8e651318bf5dae98c1d559bb70c002cdfc3ce3c24d12128ddca5656192f962d91af6906caa  dbus-rules.patch
+fa2cd99400ebff23d4397c3ac61f771cbf7b3ce3dfe93d71ed311f66a09d16d0ff87d7f6737da606cac29933231f89cfa9fe6872fe8cac12acfc133b53cbc05e  add-ethernet-prop-for-vpn-to-dbus.patch
+7f90bfdbe27a468c401bde04ccedc7d15afba11ca460ee6155233c3ef99285033303cbf7afac3849cbcd6e95a90eae5bdc772e416aef57e5ada7c4eed38f4de9  openvpn.conf
+4bedfb21a941f6fc1f854a565dcdb1b8675888c23a112ad60645c56e7c602029089a067d0317cc156a3edf624ebbc8d0696bfb61a4b09c9becd04ee3b1d65a29  connman.initd
+73f505a777df04039ca51bc3959aa89969a0bbc21ea971fb98e04e9b5851553de35955453ed859f5a6273724bbcce38f13012950c6cb4e0a2bc80bc531ccff1e  connman.confd
+"
