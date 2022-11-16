@@ -10,8 +10,4 @@ export CXXFLAGS="$CXXFLAGS -isystem /usr/include/libr"
     --prefix=/usr
 
 make
-
-cd doc
-po4a -k 0 --rm-backups --variable "srcdir=../doc/" po4a/po4a.cfg
-
-make DESTDIR=$1 PREFIX=/usr install
+make install

@@ -1,0 +1,45 @@
+# Contributor: Olliver Schinagl <oliver@schinagl.nl>
+# Maintainer: Olliver Schinagl <oliver@schinagl.nl>
+pkgname=shfmt
+pkgver=3.5.1
+pkgrel=0
+pkgdesc="A shell parser, formatter, and interpreter (sh/bash/mksh)"
+url="https://mvdan.cc/sh"
+arch="all"
+license="BSD-3-Clause"
+makedepends="go scdoc"
+subpackages="$pkgname-doc"
+source="$pkgname-$pkgver.tar.gz::https://github.com/mvdan/sh/archive/v$pkgver.tar.gz"
+builddir="$srcdir/sh-$pkgver"
+pkgdir="$1"
+
+go env -w GO111MODULE=off
+
+prepare() {
+    # default_prepare
+
+    # Fix compatibility with released go 1.18
+    go mod edit -replace github.com/rogpeppe/go-internal=github.com/rogpeppe/go-internal@v1.8.1
+    go mod tidy
+}
+prepare
+build() {
+    go build \
+        -ldflags "-w -X main.version=$pkgver-$pkgrel" \
+        -v \
+        ./cmd/shfmt
+    scdoc < cmd/shfmt/shfmt.1.scd > shfmt.1
+}
+build
+check() {
+    go test ./...
+}
+check
+package() {
+    install -Dm755 shfmt "$pkgdir"/usr/bin/shfmt
+    install -Dm644 shfmt.1 "$pkgdir"/usr/share/man/man1/shfmt.1
+}
+package
+sha512sums="
+fd1084921254b70376b3ac47b97e2108308252fa6bd23aff1e59aaefb45a7e01c1738a46ae6f4eb255ecade77fb9659fbc8184d2473e8e4f70e520757bad506d  shfmt-3.5.1.tar.gz
+"

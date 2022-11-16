@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+rm -f /usr/lib/libfakeroot.la
+rm -f /usr/lib/libfakeroot-0.so
+rm -f /usr/lib/libfakeroot.so
+rm -f /usr/lib/libfakeroot.a
+rm -f /usr/bin/fakeroot
+rm -f /usr/bin/faked

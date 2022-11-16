@@ -12,7 +12,7 @@ meson \
     -Denable-docs=false \
     -Denable-wayland=true \
     -Denable-x11=false \
-    -Denable-xkbregistry=false \
+    -Denable-xkbregistry=true \
     -Dxkb-config-extra-path="/usr/share/X11/xkb" \
     . output
 

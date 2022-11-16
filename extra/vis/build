@@ -3,10 +3,11 @@
 (
     cd termkey
     printf "\n%s\n\n" "Building termkey ..."
-    mkdir -p bin
-    ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
-    ln -sf /usr/bin/gmake "$PWD/bin/make"
-    export PATH="$PWD/bin:$PATH"
+
+    mkdir -p "$PWD/../bin"
+    ! command -v "$PWD/../bin/gunzip" > /dev/null 2>&1 && ln -sf /usr/bin/pigz  "$PWD/../bin/gunzip"
+    ! command -v "$PWD/../bin/make" > /dev/null 2>&1 && ln -sf /usr/bin/gmake "$PWD/../bin/make"
+    export PATH="$PWD/../bin:$PATH"
 
     export CC=clang
 
@@ -34,10 +35,10 @@
 
     printf "\n%s\n\n" "Building lpeg ..."
 
-    mkdir -p bin
-    ! command -v "$PWD/bin/gunzip" > /dev/null 2>&1 && ln -s /usr/bin/pigz  "$PWD/bin/gunzip"
-    ln -sf /usr/bin/gmake "$PWD/bin/make"
-    export PATH="$PWD/bin:$PATH"
+    mkdir -p "$PWD/../bin"
+    ! command -v "$PWD/../bin/gunzip" > /dev/null 2>&1 && ln -s /usr/bin/pigz  "$PWD/../bin/gunzip"
+    ! command -v "$PWD/../bin/make" > /dev/null 2>&1 && ln -sf /usr/bin/gmake "$PWD/../bin/make"
+    export PATH="$PWD/../bin:$PATH"
 
     export CC=clang
 
@@ -50,11 +51,7 @@
 )
 
 (
-    # mkdir -p bin
-    # ln -s /usr/bin/pigz  "$PWD/bin/gunzip"
-    # ln -s /usr/bin/gmake "$PWD/bin/make"
-    # export PATH="$PWD/bin:$PATH"
-    # cd vis
+    cd vis
 
     printf "\n%s\n\n" "Building vis ..."
 
@@ -63,7 +60,7 @@
     unset LUA_PATH
     unset LUA_CPATH
     lpeg=$(luarocks list 5.3 |grep "lpeg")
-    [ ${lpeg} != "lpeg" ] && {
+    [ "${lpeg}" != "lpeg" ] && {
         luarocks --lua-version 5.3 install --dev lpeg
     }
     eval '$(/usr/bin/luarocks path --append --bin)'

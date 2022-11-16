@@ -4,11 +4,14 @@ export LLVM=1
 export LLVM_IAS=1
 export CC=clang
 export HOSTCC=clang
+# export CFLAGS="$CFLAGS -mllvm -asan-stack=0 -fsanitize=kernel-address"
+# export CFLAGS="$CFLAGS -Wframe-larger-than=8192"
 
-mkdir -p bin
-ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
-ln -sf /usr/bin/gmake "$PWD/bin/make"
-export PATH="$PWD/bin:$PATH"
+build_root="${HOME}/.cache/kiss/proc/linux"
+[ ! -d "${build_root}/bin" ] && mkdir -p "${build_root}/bin"
+[ "$(readlink "${build_root}/bin/gunzip")" != "/usr/bin/pigz" ]  && \ln -sf "/usr/bin/pigz"  "${build_root}/bin/gunzip"
+[ "$(readlink "${build_root}/bin/make")"   != "/usr/bin/gmake" ] && \ln -sf "/usr/bin/gmake" "${build_root}/bin/make"
+export PATH="${build_root}/bin:$PATH"
 
 # patch -p1 < no-perl.patch
 patch -p1 < make-yacc-usage-POSIX-compliant.diff
@@ -31,12 +34,16 @@ esac
 
 # Always use the host compiler here
 make LLVM=1 LLVM_IAS=1 ARCH=$arch CROSS_COMPILE=$KISS_XHOST_ARCH HOSTCC="clang" headers
+# https://www.kernel.org/doc/Documentation/kbuild/headers_install.txt
+make headers_install ARCH=$arch CROSS_COMPILE=$KISS_XHOST_ARCH INSTALL_HDR_PATH=/usr
+# \chown -R $USER:$USER .
 
 # The headers require rsync for installation, this command
 # simply does the equivalent using find, mkdir and cp.
+pkg_dir="$1"
 find usr/include -name \*.h -type f | while read -r file; do
-    mkdir -p "$1/${file%/*}"
-    cp -f "$file" "$1/$file"
+    mkdir -p "$pkg_dir/${file%/*}"
+    cp -f "$file" "$pkg_dir/$file"
 done
 
 cp config .config

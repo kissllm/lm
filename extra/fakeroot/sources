@@ -1,7 +1,1 @@
-https://deb.debian.org/debian/pool/main/f/fakeroot/fakeroot_VERSION.orig.tar.gz
-patches/fakeroot-no64.patch
-patches/fakeroot-skip-ipc-sanity-check.patch
-patches/fakeroot-stdint.patch
-patches/fix-shell-in-fakeroot.patch
-patches/xstatjunk.patch
-
+git+https://github.com/kissllm/fakeroot@master

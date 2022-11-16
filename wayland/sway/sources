@@ -1,3 +1,4 @@
-https://github.com/swaywm/sway/releases/download/VERSION/sway-VERSION.tar.gz
-# git+https://github.com/swaywm/sway
+# https://github.com/swaywm/sway/releases/download/VERSION/sway-VERSION.tar.gz
+git+https://github.com/swaywm/sway
 patches/no-evdev.patch
+patches/pcre2.patch

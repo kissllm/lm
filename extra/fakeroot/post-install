@@ -1,0 +1,59 @@
+#!/usr/bin/env sh
+printf "%-20s = %s\n" "\$PWD" "$PWD"
+cd $HOME/.cache/kiss/proc/build/fakeroot
+# Making install in doc
+cd doc
+# Making install in de
+cd de
+../../install-sh -c -d '/usr/share/man/de/man1'
+/usr/bin/install -c -m 644 faked.1 fakeroot.1 '/usr/share/man/de/man1'
+# Making install in es
+cd ../es
+../../install-sh -c -d '/usr/share/man/es/man1'
+/usr/bin/install -c -m 644 faked.1 fakeroot.1 '/usr/share/man/es/man1'
+# Making install in fr
+cd ../fr
+../../install-sh -c -d '/usr/share/man/fr/man1'
+/usr/bin/install -c -m 644 fakeroot.1 faked.1 '/usr/share/man/fr/man1'
+# Making install in nl
+cd ../nl
+../../install-sh -c -d '/usr/share/man/nl/man1'
+/usr/bin/install -c -m 644 fakeroot.1 faked.1 '/usr/share/man/nl/man1'
+# Making install in pt
+cd ../pt
+../../install-sh -c -d '/usr/share/man/pt/man1'
+/usr/bin/install -c -m 644 fakeroot.1 faked.1 '/usr/share/man/pt/man1'
+# Making install in sv
+cd ../sv
+../../install-sh -c -d '/usr/share/man/sv/man1'
+/usr/bin/install -c -m 644 faked.1 fakeroot.1 '/usr/share/man/sv/man1'
+cd ..
+../install-sh -c -d '/usr/share/man/man1'
+/usr/bin/install -c -m 644 faked.1 fakeroot.1 '/usr/share/man/man1'
+cd ..
+# Making install in scripts
+cd ./scripts
+../install-sh -c -d '/usr/bin'
+/usr/bin/install -c fakeroot '/usr/bin'
+# Making install in test
+cd ../test
+cd ..
+CONFIG_FILES= CONFIG_HEADERS= /bin/sh ./config.status
+./install-sh -c -d '/usr/lib'
+# la=$(find . -type f -name "libfakeroot.la")
+# printf "%-20s = %s\n" "la" "$la"
+# lai=$(find . -type f -name "libfakeroot.lai")
+# printf "%-20s = %s\n" "lai" "$lai"
+# diff_la=$(diff $la $lai)
+# printf "%-20s = %s\n" "diff_la" "$diff_la"
+# /bin/sh ./libtool --mode=install /usr/bin/install -c libfakeroot.la '/usr/lib'
+/usr/bin/install -c .libs/libfakeroot-0.so /usr/lib/libfakeroot-0.so
+(cd /usr/lib && { ln -s -f libfakeroot-0.so libfakeroot.so || { rm -f libfakeroot.so && ln -s libfakeroot-0.so libfakeroot.so; }; })
+/usr/bin/install -c .libs/libfakeroot.lai /usr/lib/libfakeroot.la
+/usr/bin/install -c .libs/libfakeroot.a /usr/lib/libfakeroot.a
+chmod 644 /usr/lib/libfakeroot.a
+ranlib /usr/lib/libfakeroot.a
+PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/sbin" ldconfig -n /usr/lib
+./install-sh -c -d '/usr/bin'
+/bin/sh ./libtool --mode=install /usr/bin/install -c faked '/usr/bin'
+

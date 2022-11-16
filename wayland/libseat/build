@@ -9,8 +9,12 @@ kiss-meson-config > meson.config
 meson \
     --prefix=/usr \
     --cross-file="meson.config" \
+    -Dseatd:libseat-builtin=enabled \
+    -Dwlroots:backends=drm,libinput \
     -Ddefault_library=both \
     . build
+
+    # -Dseatd:builtin=enabled \
 
 ninja -C build
 ninja -C build install
