@@ -1,10 +1,6 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
 
 unset DESTDIR
-mkdir -p bin
-ln -s /usr/bin/pigz  "$PWD/bin/gunzip"
-ln -s /usr/bin/gmake "$PWD/bin/make"
-export PATH="$PWD/bin:$PATH"
 
 make PREFIX="/usr"
 make DESTDIR="$1" PREFIX="/usr" install
