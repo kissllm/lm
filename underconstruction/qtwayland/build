@@ -1,0 +1,43 @@
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
+pkgname=qt6-qtwayland
+pkgver=6.3.1
+pkgrel=0
+pkgdesc="Provides APIs for Wayland"
+url="https://qt.io/"
+arch="all"
+license="LGPL-2.1-only AND LGPL-3.0-only AND GPL-3.0-only AND Qt-GPL-exception-1.0"
+depends_dev="
+	qt6-qtbase-dev
+	qt6-qtdeclarative-dev
+	vulkan-headers
+	"
+makedepends="$depends_dev
+	cmake
+	perl
+	samurai
+	"
+subpackages="$pkgname-dev"
+options="!check" # No tests
+builddir="$srcdir/qtwayland-everywhere-src-${pkgver/_/-}"
+
+case $pkgver in
+	*_alpha*|*_beta*|*_rc*) _rel=development_releases;;
+	*) _rel=official_releases;;
+esac
+
+source="https://download.qt.io/$_rel/qt/${pkgver%.*}/${pkgver/_/-}/submodules/qtwayland-everywhere-src-${pkgver/_/-}.tar.xz"
+
+build() {
+	cmake -B build -G Ninja \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-DCMAKE_INSTALL_PREFIX=/usr
+	cmake --build build
+}
+
+package() {
+	DESTDIR="$pkgdir" cmake --install build
+}
+
+sha512sums="
+571654a6abcd865717d4624c65d78e1b911829bba84f609521f349bf896b9475a8ce7759ba6b69e4bc4eef10c31e404c71610816dbee20d1202401efefa2323d  qtwayland-everywhere-src-6.3.1.tar.xz
+"

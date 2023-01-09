@@ -1,0 +1,4 @@
+#!/bin/sh -e
+cmake -B $HOME/.cache/kiss/proc/ydotool/build -S $HOME/.cache/kiss/sources/ydotool/ydotool -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build $HOME/.cache/kiss/proc/ydotool/build --target all --parallel
+cmake --install $HOME/.cache/kiss/proc/ydotool/build

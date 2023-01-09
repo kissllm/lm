@@ -1,0 +1,24 @@
+--- ./build/config/compiler/BUILD.gn
++++ ./build/config/compiler/BUILD.gn
+@@ -904,8 +904,8 @@
+       }
+     } else if (current_cpu == "arm") {
+       if (is_clang && !is_android && !is_nacl) {
+-        cflags += [ "--target=arm-linux-gnueabihf" ]
+-        ldflags += [ "--target=arm-linux-gnueabihf" ]
++        cflags += [ "--target=armv7-linux-musleabihf" ]
++        ldflags += [ "--target=armv7-linux-musleabihf" ]
+       }
+       if (!is_nacl) {
+         cflags += [
+@@ -918,8 +918,8 @@
+       }
+     } else if (current_cpu == "arm64") {
+       if (is_clang && !is_android && !is_nacl && !is_fuchsia) {
+-        cflags += [ "--target=aarch64-linux-gnu" ]
+-        ldflags += [ "--target=aarch64-linux-gnu" ]
++        cflags += [ "--target=aarch64-linux-musl" ]
++        ldflags += [ "--target=aarch64-linux-musl" ]
+       }
+       if (is_android) {
+         # Outline atomics crash on Exynos 9810. http://crbug.com/1272795

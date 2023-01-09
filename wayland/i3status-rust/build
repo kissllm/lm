@@ -1,0 +1,50 @@
+#!/bin/sh -e
+# Contributor: Galen Abell <galen@galenabell.com>
+# Contributor: Maxim Karasev <begs@disroot.org>
+# Maintainer: Galen Abell <galen@galenabell.com>
+pkgname=i3status-rust
+pkgver=0.22.0
+pkgrel=0
+pkgdesc="i3status replacement in Rust"
+url="https://github.com/greshake/i3status-rust"
+arch="all !s390x !riscv64" # limited by cargo
+license="GPL-3.0-only"
+makedepends="
+    cargo
+    curl-dev
+    dbus-dev
+    lm-sensors-dev
+    openssl-dev
+    pulseaudio-dev
+    "
+options="net !check" # no tests
+provides="i3status-rs=$pkgver-r$pkgrel"
+subpackages="$pkgname-doc"
+source="https://github.com/greshake/i3status-rust/archive/refs/tags/v$pkgver/i3status-rust-v$pkgver.tar.gz"
+
+export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
+export CARGO_PROFILE_RELEASE_LTO=true
+export CARGO_PROFILE_RELEASE_OPT_LEVEL=s
+export CARGO_PROFILE_RELEASE_PANIC=abort
+
+prepare() {
+    # default_prepare
+    cargo fetch --locked
+}
+prepare
+build() {
+    cargo build --release --frozen
+}
+build
+package() {
+    install -Dm755 target/release/i3status-rs "$pkgdir"/usr/bin/i3status-rs
+
+    install -Dm644 man/i3status-rs.1 "$pkgdir"/usr/share/man/man1/i3status-rs.1
+
+    install -Dm644 -t "$pkgdir"/usr/share/i3status-rust/themes files/themes/*
+    install -Dm644 -t "$pkgdir"/usr/share/i3status-rust/icons files/icons/*
+}
+package
+sha512sums="
+1b534775e3e86aa6b9ae1168a8be96af121aa1061372d706c12d770f8f5367b8193f323adadff0b3eb15e9087b5e05dcf2c3b267f113da013e9f4722ff427ae1  i3status-rust-v0.22.0.tar.gz
+"

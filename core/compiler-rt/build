@@ -1,16 +1,31 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
 
-mv Modules/* cmake/Modules/
+[ ! -z "${OSTYPE+x}" ] ||
+OSTYPE="$(ldd --version 2>&1 | grep musl | awk '{print $1}')"
+! expr "$OSTYPE" : "musl" 1>/dev/null ||
+CXXFLAGS="-DLIBCXX_HAS_MUSL_LIBC=1 -D_LIBCPP_HAS_MUSL_LIBC=1 $CXXFLAGS"
 
-cmake -B build \
+CXXFLAGS="-isystem /usr/include/tirpc $CXXFLAGS"
+
+[ ! -d "Modules" ] || mv Modules/* cmake/Modules/
+
+cmake -B objects \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_BUILD_TYPE=Release \
     -DCOMPILER_RT_BUILD_XRAY=OFF \
-    -DCMAKE_CXX_FLAGS="-lexecinfo $CMAKE_CXX_FLAGS" \
-    -DCOMPILER_RT_BUILD_SANITIZERS=ON
+    -DCMAKE_CXX_FLAGS="-lexecinfo -isystem /usr/include/tirpc $CMAKE_CXX_FLAGS" \
+    -DCOMPILER_RT_BUILD_SANITIZERS=ON \
+    -D_LIBCPP_HAS_MUSL_LIBC=ON \
+    -DLIBCXX_HAS_MUSL_LIBC=ON \
+    -D_LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE=ON
 
-cmake --build   build
-cmake --install build
+cmake --build   objects
+cmake --install objects
+
+echo "\$1 = $1"
+# $1 = /root/.cache/kiss/proc/compiler-rt/pkg
+echo "\$2 = $2"
+# $2 = 14.0.3
 
 cd "$1"
 mkdir -p usr/lib/clang/$2/lib

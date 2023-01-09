@@ -1,0 +1,17 @@
+https://ftp.mozilla.org/pub/firefox/releases/VERSION/source/firefox-VERSION.source.tar.xz
+patches/stab.h
+patches/fix-fortify-system-wrappers.patch
+patches/mallinfo.patch
+patches/disable-moz-stackwalk.patch
+patches/fix-rust-target.patch
+patches/fix-webrtc-glibcisms.patch
+patches/disable-neon-in-aom.patch
+patches/sandbox-fork.patch
+patches/sandbox-sched_setscheduler.patch
+patches/sandbox-largefile.patch
+patches/avoid-redefinition.patch
+patches/python-deps.patch
+patches/install-dir.patch
+patches/firefox-developer-edition.desktop
+patches/distribution.ini
+patches/vendor-prefs.js

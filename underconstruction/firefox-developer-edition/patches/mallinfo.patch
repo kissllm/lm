@@ -1,0 +1,20 @@
+diff --git a/xpcom/base/nsMemoryReporterManager.cpp b/xpcom/base/nsMemoryReporterManager.cpp
+index 865e1b5430..9a00dafecb 100644
+--- a/xpcom/base/nsMemoryReporterManager.cpp
++++ b/xpcom/base/nsMemoryReporterManager.cpp
+@@ -127,6 +127,7 @@
+   return GetProcSelfSmapsPrivate(aN, aPid);
+ }
+
++#ifdef __GLIBC__
+ #  ifdef HAVE_MALLINFO
+ #    define HAVE_SYSTEM_HEAP_REPORTER 1
+ [[nodiscard]] static nsresult SystemHeapSize(int64_t* aSizeOut) {
+@@ -146,6 +147,7 @@
+   return NS_OK;
+ }
+ #  endif
++#endif
+
+ #elif defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || \
+     defined(__OpenBSD__) || defined(__FreeBSD_kernel__)

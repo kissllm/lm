@@ -1,0 +1,8 @@
+https://github.com/openjdk/jdk17u/archive/jdk-VERSION-ga.tar.gz
+https://github.com/google/googletest/archive/release-1.8.1.tar.gz gtest
+patches/Alpine_Bug_10126.java
+patches/FixNullPtrCast.patch
+patches/HelloWorld.java
+patches/TestCryptoLevel.java
+patches/TestECDSA.java
+patches/ppc64le.patch

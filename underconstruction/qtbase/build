@@ -1,0 +1,166 @@
+#!/bin/sh -e
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
+pkgname=qt-qtbase
+pkgver=6.3.1
+pkgrel=1
+pkgdesc="A cross-platform application and UI framework"
+url="https://qt.io/"
+arch="all"
+license="LGPL-2.1-only AND LGPL-3.0-only AND GPL-3.0-only AND Qt-GPL-exception-1.0"
+_sub="
+    $pkgname-mysql
+    $pkgname-odbc
+    $pkgname-postgresql
+    $pkgname-sqlite
+    $pkgname-x11
+    "
+depends_dev="$_sub
+    cups-dev
+    dbus-dev
+    double-conversion-dev
+    eudev-dev
+    fontconfig-dev
+    freetype-dev
+    glib-dev
+    gtk+3.0-dev
+    harfbuzz-dev
+    icu-dev
+    libb2-dev
+    libinput-dev
+    libjpeg-turbo-dev
+    libpng-dev
+    libpq-dev
+    libproxy-dev
+    libxkbcommon-dev
+    mariadb-dev
+    mesa-dev
+    openssl1.1-compat-dev
+    pcre2-dev
+    sqlite-dev
+    tslib-dev
+    unixodbc-dev
+    vulkan-headers
+    vulkan-loader-dev
+    wayland-dev
+    xcb-util-dev
+    xcb-util-image-dev
+    xcb-util-keysyms-dev
+    xcb-util-renderutil-dev
+    xcb-util-wm-dev
+    zlib-dev
+    "
+makedepends="$depends_dev
+    cmake
+    perl
+    samurai
+    xmlstarlet
+    "
+subpackages="$pkgname-dbg $pkgname-dev $pkgname-doc $_sub"
+builddir="$srcdir/qtbase-everywhere-src-${pkgver/_/-}"
+
+case $pkgver in
+    *_alpha*|*_beta*|*_rc*) _rel=development_releases;;
+    *) _rel=official_releases;;
+esac
+
+source="https://download.qt.io/$_rel/qt/${pkgver%.*}/${pkgver/_/-}/submodules/qtbase-everywhere-src-${pkgver/_/-}.tar.xz"
+
+case "$CTARGET_ARCH" in
+    arm*|aarch64)
+        _opengl="-DQT_FEATURE_opengles2=ON"
+        depends_dev="$depends_dev mesa-gles"
+        ;;
+esac
+
+[ "$CARCH" = "riscv64" ] && options="$options textrels"
+
+build() {
+    cmake -B build -G Ninja \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DINSTALL_BINDIR=lib/qt/bin \
+        -DINSTALL_PUBLICBINDIR=usr/bin \
+        -DINSTALL_DOCDIR=share/doc/qt \
+        -DINSTALL_ARCHDATADIR=lib/qt \
+        -DINSTALL_DATADIR=share/qt \
+        -DINSTALL_INCLUDEDIR=include/qt \
+        -DINSTALL_MKSPECSDIR=lib/qt/mkspecs \
+        -DINSTALL_EXAMPLESDIR=share/doc/qt/examples \
+        -DQT_FEATURE_journald=OFF \
+        -DQT_FEATURE_openssl_linked=ON \
+        -DQT_FEATURE_system_sqlite=ON \
+        -DQT_FEATURE_vulkan=ON \
+        $_opengl
+    cmake --build build --parallel
+}
+build
+check() {
+    cd build
+    CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+}
+check
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+
+    # add symlinks for qt dev tools
+    cd "$pkgdir"
+    mkdir -p usr/bin
+    while read _line; do
+        ln -sv $_line
+    done < "$builddir"/build/user_facing_tool_links.txt
+}
+package
+dev() {
+    default_dev
+
+    amove usr/bin
+    amove usr/lib/qt/bin
+}
+dev
+sqlite() {
+    pkgdesc="SQLite driver for Qt6's SQL classes"
+    cd "$pkgdir"
+    amove usr/lib/qt/plugins/sqldrivers/libqsqlite*
+}
+sqlite
+odbc() {
+    pkgdesc="ODBC driver for Qt6's SQL classes"
+    cd "$pkgdir"
+    amove usr/lib/qt/plugins/sqldrivers/libqsqlodbc*
+}
+odbc
+postgresql() {
+    pkgdesc="PostgreSQL driver for Qt6's SQL classes"
+    cd "$pkgdir"
+    amove usr/lib/qt/plugins/sqldrivers/libqsqlpsql*
+}
+postgresql
+mysql() {
+    pkgdesc="MySQL driver for Qt6's SQL classes"
+    cd "$pkgdir"
+    amove usr/lib/qt/plugins/sqldrivers/libqsqlmysql*
+}
+mysql
+x11() {
+    pkgdesc="Qt6 GUI-related libraries"
+    depends="hicolor-icon-theme xdg-utils"
+    cd "$pkgdir"
+    amove \
+        usr/lib/libQt6EglFSDeviceIntegration.so.* \
+        usr/lib/libQt6EglFsKms*Support.so.* \
+        usr/lib/libQt6Gui.so.* \
+        usr/lib/libQt6OpenGL*.so.* \
+        usr/lib/libQt6XcbQpa.so.* \
+        usr/lib/libQt6PrintSupport.so.* \
+        usr/lib/libQt6Widgets.so.* \
+        usr/lib/qt/plugins/egldeviceintegrations \
+        usr/lib/qt/plugins/generic \
+        usr/lib/qt/plugins/image* \
+        usr/lib/qt/plugins/platform* \
+        usr/lib/qt/plugins/printsupport* \
+        usr/lib/qt/plugins/xcbglintegrations/libqxcb*
+}
+
+sha512sums="
+5c4304dc1f5fa80201b61c9c8dbf4c3449506a243ea1f87e336dc3641a37b9d40c2aa4a93190cc69ddde0f349c74e327c35de5f46de888ddfd49616903e8a7b5  qtbase-everywhere-src-6.3.1.tar.xz
+"

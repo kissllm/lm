@@ -1,0 +1,5 @@
+#!/bin/sh -e
+meson setup --prefix=/usr -D cpu=x86_64 objects .
+ninja -C objects
+ninja -C objects install
+

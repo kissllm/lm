@@ -604,3 +604,30 @@ index 1400233b7..0a7b38737 100644
  option(LLVM_ENABLE_SPHINX "Use Sphinx to generate the runtimes documentation." OFF)
  
  # Use libtool instead of ar if you are both on an Apple host, and targeting Apple.
+diff --git a/llvm/cmake/modules/LLVMInstallSymlink.cmake b/llvm/cmake/modules/LLVMInstallSymlink.cmake
+index 1400233b7..0a7b38737 100644
+--- a/llvm/cmake/modules/LLVMInstallSymlink.cmake
++++ b/llvm/cmake/modules/LLVMInstallSymlink.cmake
+@@ -2,6 +2,9 @@
+ # DESTDIR environment variable may be unset at configuration time.
+ # See PR8397.
+
++# Set to an arbitrary directory to silence GNUInstallDirs warnings
++# regarding being unable to determine libdir.
++set(CMAKE_INSTALL_LIBDIR "lib")
+ include(GNUInstallDirs)
+
+ function(install_symlink name target outdir)
+# diff --git a/libcxxabi/CMakeLists.txt b/libcxxabi/CMakeLists.txt
+# index 1400233b7..0a7b38737 100644
+# --- a/libcxxabi/CMakeLists.txt
+# +++ b/libcxxabi/CMakeLists.txt
+# @@ -522,7 +522,7 @@
+#  endif()
+# 
+#  string(REPLACE ";" " " LIBCXXABI_CXX_FLAGS "${LIBCXXABI_CXX_FLAGS}")
+# -set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LIBCXXABI_CXX_FLAGS}")
+# +set(CMAKE_CXX_FLAGS "${LIBCXXABI_CXX_FLAGS}")
+#  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBCXXABI_C_FLAGS}")
+# 
+#  # On AIX, avoid picking up VMX extensions(i.e. vec_malloc) which would change

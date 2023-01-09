@@ -1,0 +1,43 @@
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
+pkgname=qt6-qtquick3d
+pkgver=6.3.1
+pkgrel=0
+pkgdesc="Qt module and API for defining 3D content in Qt Quick"
+url="https://qt.io/"
+arch="all"
+license="LGPL-2.1-only AND LGPL-3.0-only AND GPL-3.0-only AND Qt-GPL-exception-1.0"
+depends_dev="
+	qt6-qtdeclarative-dev
+	qt6-qtshadertools-dev
+	vulkan-headers
+	"
+makedepends="$depends_dev
+	cmake
+	perl
+	samurai
+	"
+subpackages="$pkgname-dev"
+options="!check" # No tests
+builddir="$srcdir/qtquick3d-everywhere-src-${pkgver/_/-}"
+
+case $pkgver in
+	*_alpha*|*_beta*|*_rc*) _rel=development_releases;;
+	*) _rel=official_releases;;
+esac
+
+source="https://download.qt.io/$_rel/qt/${pkgver%.*}/${pkgver/_/-}/submodules/qtquick3d-everywhere-src-${pkgver/_/-}.tar.xz"
+
+build() {
+	cmake -B build -G Ninja \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-DCMAKE_INSTALL_PREFIX=/usr
+	cmake --build build
+}
+
+package() {
+	DESTDIR="$pkgdir" cmake --install build
+}
+
+sha512sums="
+342a1c558a4eece6e9442e45cc400af58c96fb59614902e0299291ea2c5b1c406d76cd8ec8cf1d8ac0d8b5fc4f2f4637063d1747dcdc54f191a81310df93534e  qtquick3d-everywhere-src-6.3.1.tar.xz
+"

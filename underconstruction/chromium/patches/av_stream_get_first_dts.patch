@@ -1,0 +1,12 @@
+# diff media/filters/ffmpeg_demuxer.h.orig media/filters/ffmpeg_demuxer.h
+--- ./media/filters/ffmpeg_demuxer.h.orig
++++ ./media/filters/ffmpeg_demuxer.h
+@@ -47,6 +47,7 @@
+ #include "media/ffmpeg/ffmpeg_deleters.h"
+ #include "media/filters/blocking_url_protocol.h"
+ #include "media/media_buildflags.h"
++#include "third_party/ffmpeg/libavformat/avformat.h"
+
+ // FFmpeg forward declarations.
+ struct AVFormatContext;
+

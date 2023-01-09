@@ -1,0 +1,40 @@
+#!/bin/sh -e
+# Contributor: TBK <alpine@jjtc.eu>
+# Maintainer: TBK <alpine@jjtc.eu>
+pkgname=gn
+pkgver=0_git20220608
+pkgrel=0
+pkgdesc="Meta-build system that generates build files for Ninja"
+arch="all !riscv64" # FTBFS: "please add support for your architecture"
+url="https://gn.googlesource.com/gn"
+license="BSD-3-Clause"
+depends="samurai"
+makedepends="python3"
+# archive needs to include .git for the build script to be able to determine the version
+source="https://dev.alpinelinux.org/archive/gn/gn-$pkgver.tar.gz"
+builddir="$PWD"
+echo "\$srcdir = "$srcdir""
+echo "\$pkgdir = "$pkgdir""
+echo "\$builddir = "$builddir""
+build() {
+    export CXXFLAGS="$CXXFLAGS -O2 -Wno-unknown-warning-option -stdlib=libc++"
+    export LDFLAGS="$LDFLAGS -O2 -Wno-unknown-warning-option -lc++"
+    local user="$(whoami)"
+    echo "\$user = "$user""
+    # chown -R $user:$user "$KISS_TMPDIR/proc/gn/build"
+    chown -R $user:$user "$PWD"
+    python3 ./build/gen.py
+    ninja -C out
+}
+build
+check() {
+    ./out/gn_unittests
+}
+check
+package() {
+    install -Dm755 out/gn "$pkgdir"/usr/bin/gn
+}
+package
+sha512sums="
+404de06eae42bcbc8ce8e5dabc205048150f90aed9f732c9a7ff267e22f33d09d71b69af00df651f70d9623098931e2e635f1e761aeb1e118e35ff3b106b30c7  gn-0_git20220608.tar.gz
+"

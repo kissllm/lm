@@ -1,0 +1,7 @@
+#!/bin/sh -e
+
+# make
+# make DESTDIR="$1" install
+cmake -DCMAKE_INSTALL_PREFIX=/usr -B $HOME/.cache/kiss/proc/re2/build/objects -S $HOME/.cache/kiss/proc/re2/build
+cmake --build $HOME/.cache/kiss/proc/re2/build/objects --target all --parallel
+cmake --install $HOME/.cache/kiss/proc/re2/build/objects

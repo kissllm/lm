@@ -1,0 +1,10 @@
+--- ./third_party/openscreen/src/tools/cddl/parse.cc.orig
++++ ./third_party/openscreen/src/tools/cddl/parse.cc
+@@ -27,6 +27,7 @@
+ // grammar.abnf.  Similarly, methods like ParseMemberKey1 attempt to parse the
+ // first choice in the memberkey rule.
+ struct Parser {
++  Parser(const char *p): data(p) {}
+   Parser(const Parser&) = delete;
+   Parser& operator=(const Parser&) = delete;
+ 

@@ -1,0 +1,44 @@
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
+pkgname=qt6-qt5compat
+pkgver=6.3.1
+pkgrel=0
+pkgdesc="Module that contains unsupported Qt 5 APIs"
+url="https://qt.io/"
+arch="all"
+license="LGPL-2.1-only AND LGPL-3.0-only AND GPL-3.0-only AND Qt-GPL-exception-1.0"
+# icu-data-full: see https://gitlab.alpinelinux.org/alpine/aports/-/issues/13814
+# qt6-qt5compat provides the same icu mib apis
+depends="icu-data-full"
+depends_dev="
+	qt6-qtbase-dev
+	"
+makedepends="$depends_dev
+	cmake
+	perl
+	samurai
+	"
+subpackages="$pkgname-dev"
+options="!check" # No tests
+builddir="$srcdir/qt5compat-everywhere-src-${pkgver/_/-}"
+
+case $pkgver in
+	*_alpha*|*_beta*|*_rc*) _rel=development_releases;;
+	*) _rel=official_releases;;
+esac
+
+source="https://download.qt.io/$_rel/qt/${pkgver%.*}/${pkgver/_/-}/submodules/qt5compat-everywhere-src-${pkgver/_/-}.tar.xz"
+
+build() {
+	cmake -B build -G Ninja \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-DCMAKE_INSTALL_PREFIX=/usr
+	cmake --build build
+}
+
+package() {
+	DESTDIR="$pkgdir" cmake --install build
+}
+
+sha512sums="
+66196a8d29a2789179904638fcd9ec162d5715e7dc28618b3ef78d07682a05578b6c2e7023144c628b94321a9c1332d39826c13adb1e5db5121406c530c9c35c  qt5compat-everywhere-src-6.3.1.tar.xz
+"

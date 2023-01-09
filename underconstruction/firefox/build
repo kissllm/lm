@@ -1,0 +1,720 @@
+#!/bin/sh -e
+# Contributor: Natanael Copa <ncopa@alpinelinux.org>
+# Contributor: Sören Tempel <soeren+alpine@soeren-tempel.net>
+# Maintainer: Rasmus Thomsen <oss@cogitri.dev>
+pkgname=firefox
+pkgver=102.0.1
+_releasedate=2022-07-06
+pkgrel=1
+pkgdesc="Firefox web browser"
+url="https://www.firefox.com/"
+# s390x and riscv64 blocked by rust and cargo
+# armhf: https://bugzilla.mozilla.org/show_bug.cgi?id=1680495
+# ppc64le: ld.lld: error: undefined hidden symbol: something about video
+arch="x86_64 armv7 aarch64 x86"
+license="GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND MPL-2.0"
+depends="ffmpeg-libs"
+makedepends="
+    alsa-lib-dev
+    automake
+    bsd-compat-headers
+    cargo
+    cbindgen>=0.18.0
+    clang-dev
+    compiler-rt
+    dbus-glib-dev
+    gettext
+    gtk+3.0-dev
+    hunspell-dev
+    icu-dev>=69.1
+    libevent-dev
+    libffi-dev
+    libidl-dev
+    libjpeg-turbo-dev
+    libnotify-dev
+    libogg-dev
+    libtheora-dev
+    libtool
+    libvorbis-dev
+    libvpx-dev
+    libwebp-dev
+    libxcomposite-dev
+    libxt-dev
+    lld
+    llvm-dev
+    m4
+    mesa-dev
+    mesa-dri-gallium
+    nasm
+    nodejs
+    nspr-dev
+    nss-dev>=3.44.1
+    nss-static
+    pciutils
+    pipewire-dev
+    pulseaudio-dev
+    py3-zstandard
+    python3
+    sed
+    wasi-sdk
+    wireless-tools-dev
+    xvfb-run
+    yasm
+    zip
+    "
+source="https://ftp.mozilla.org/pub/firefox/releases/$pkgver/source/firefox-$pkgver.source.tar.xz
+    allow-custom-rust-vendor.patch
+    avoid-redefinition.patch
+    cbindgen-0.24.patch
+    disable-moz-stackwalk.patch
+    disable-neon-in-aom.patch
+    fix-fortify-system-wrappers.patch
+    fix-rust-target.patch
+    fix-webrtc-glibcisms.patch
+    no-ccache-stats.patch
+    sandbox-fork.patch
+    sandbox-largefile.patch
+    sandbox-sched_setscheduler.patch
+    zstandard.patch
+
+    stab.h
+
+    firefox.desktop
+    firefox-safe.desktop
+    distribution.ini
+    vendor-prefs.js
+    "
+options="!check" # no tests
+
+_mozappdir=/usr/lib/firefox
+
+# help our shared-object scanner to find the libs
+ldpath="$_mozappdir"
+sonameprefix="$pkgname:"
+
+# secfixes:
+#   102.0-r0:
+#     - CVE-2022-2200
+#     - CVE-2022-34468
+#     - CVE-2022-34469
+#     - CVE-2022-34470
+#     - CVE-2022-34471
+#     - CVE-2022-34472
+#     - CVE-2022-34473
+#     - CVE-2022-34474
+#     - CVE-2022-34475
+#     - CVE-2022-34476
+#     - CVE-2022-34477
+#     - CVE-2022-34478
+#     - CVE-2022-34479
+#     - CVE-2022-34480
+#     - CVE-2022-34481
+#     - CVE-2022-34482
+#     - CVE-2022-34483
+#     - CVE-2022-34484
+#     - CVE-2022-34485
+#   101.0-r0:
+#     - CVE-2022-1919
+#     - CVE-2022-31736
+#     - CVE-2022-31737
+#     - CVE-2022-31738
+#     - CVE-2022-31739
+#     - CVE-2022-31740
+#     - CVE-2022-31741
+#     - CVE-2022-31742
+#     - CVE-2022-31743
+#     - CVE-2022-31744
+#     - CVE-2022-31745
+#     - CVE-2022-31747
+#     - CVE-2022-31748
+#   100.0.2-r0:
+#     - CVE-2022-1529
+#     - CVE-2022-1802
+#   100.0-r0:
+#     - CVE-2022-29909
+#     - CVE-2022-29910
+#     - CVE-2022-29911
+#     - CVE-2022-29912
+#     - CVE-2022-29914
+#     - CVE-2022-29915
+#     - CVE-2022-29916
+#     - CVE-2022-29917
+#     - CVE-2022-29918
+#   99.0-r0:
+#     - CVE-2022-1097
+#     - CVE-2022-24713
+#     - CVE-2022-28281
+#     - CVE-2022-28282
+#     - CVE-2022-28283
+#     - CVE-2022-28284
+#     - CVE-2022-28285
+#     - CVE-2022-28286
+#     - CVE-2022-28287
+#     - CVE-2022-28288
+#     - CVE-2022-28289
+#   98.0-r0:
+#     - CVE-2022-0843
+#     - CVE-2022-26381
+#     - CVE-2022-26382
+#     - CVE-2022-26383
+#     - CVE-2022-26384
+#     - CVE-2022-26385
+#     - CVE-2022-26387
+#   97.0.2-r0:
+#     - CVE-2022-26485
+#     - CVE-2022-26486
+#   97.0-r0:
+#     - CVE-2021-4140
+#     - CVE-2022-0511
+#     - CVE-2022-22736
+#     - CVE-2022-22737
+#     - CVE-2022-22738
+#     - CVE-2022-22739
+#     - CVE-2022-22740
+#     - CVE-2022-22741
+#     - CVE-2022-22742
+#     - CVE-2022-22743
+#     - CVE-2022-22744
+#     - CVE-2022-22745
+#     - CVE-2022-22746
+#     - CVE-2022-22747
+#     - CVE-2022-22748
+#     - CVE-2022-22749
+#     - CVE-2022-22750
+#     - CVE-2022-22751
+#     - CVE-2022-22752
+#     - CVE-2022-22753
+#     - CVE-2022-22754
+#     - CVE-2022-22755
+#     - CVE-2022-22756
+#     - CVE-2022-22757
+#     - CVE-2022-22758
+#     - CVE-2022-22759
+#     - CVE-2022-22760
+#     - CVE-2022-22761
+#     - CVE-2022-22762
+#     - CVE-2022-22764
+#   95.0-r0:
+#     - CVE-2021-43536
+#     - CVE-2021-43537
+#     - CVE-2021-43538
+#     - CVE-2021-43539
+#     - CVE-2021-43540
+#     - CVE-2021-43541
+#     - CVE-2021-43542
+#     - CVE-2021-43543
+#     - CVE-2021-43544
+#     - CVE-2021-43545
+#     - CVE-2021-43546
+#   94.0-r0:
+#     - CVE-2021-38503
+#     - CVE-2021-38504
+#     - CVE-2021-38505
+#     - CVE-2021-38506
+#     - CVE-2021-38507
+#     - CVE-2021-38508
+#     - CVE-2021-38509
+#     - CVE-2021-38510
+#   93.0-r0:
+#     - CVE-2021-32810
+#     - CVE-2021-38496
+#     - CVE-2021-38497
+#     - CVE-2021-38498
+#     - CVE-2021-38499
+#     - CVE-2021-38500
+#     - CVE-2021-38501
+#   92.0.1-r0:
+#     - CVE-2021-29980
+#     - CVE-2021-29981
+#     - CVE-2021-29982
+#     - CVE-2021-29983
+#     - CVE-2021-29984
+#     - CVE-2021-29985
+#     - CVE-2021-29986
+#     - CVE-2021-29987
+#     - CVE-2021-29988
+#     - CVE-2021-29989
+#     - CVE-2021-29990
+#     - CVE-2021-29991
+#     - CVE-2021-29993
+#     - CVE-2021-38491
+#     - CVE-2021-38492
+#     - CVE-2021-38493
+#     - CVE-2021-38494
+#   90.0-r0:
+#     - CVE-2021-29970
+#     - CVE-2021-29972
+#     - CVE-2021-29974
+#     - CVE-2021-29975
+#     - CVE-2021-29976
+#     - CVE-2021-29977
+#     - CVE-2021-30547
+#   89.0-r0:
+#     - CVE-2021-29959
+#     - CVE-2021-29960
+#     - CVE-2021-29961
+#     - CVE-2021-29962
+#     - CVE-2021-29963
+#     - CVE-2021-29965
+#     - CVE-2021-29966
+#     - CVE-2021-29967
+#   88.0.1-r0:
+#     - CVE-2021-29952
+#   88.0-r0:
+#     - CVE-2021-23994
+#     - CVE-2021-23995
+#     - CVE-2021-23996
+#     - CVE-2021-23997
+#     - CVE-2021-23998
+#     - CVE-2021-23999
+#     - CVE-2021-24000
+#     - CVE-2021-24001
+#     - CVE-2021-24002
+#     - CVE-2021-29944
+#     - CVE-2021-29945
+#     - CVE-2021-29946
+#     - CVE-2021-29947
+#   87.0-r0:
+#     - CVE-2021-23968
+#     - CVE-2021-23969
+#     - CVE-2021-23970
+#     - CVE-2021-23971
+#     - CVE-2021-23972
+#     - CVE-2021-23973
+#     - CVE-2021-23974
+#     - CVE-2021-23975
+#     - CVE-2021-23976
+#     - CVE-2021-23977
+#     - CVE-2021-23978
+#     - CVE-2021-23979
+#     - CVE-2021-23981
+#     - CVE-2021-23982
+#     - CVE-2021-23983
+#     - CVE-2021-23984
+#     - CVE-2021-23985
+#     - CVE-2021-23986
+#     - CVE-2021-23987
+#     - CVE-2021-23988
+#   85.0-r0:
+#     - CVE-2021-23954
+#     - CVE-2021-23955
+#     - CVE-2021-23956
+#     - CVE-2021-23957
+#     - CVE-2021-23958
+#     - CVE-2021-23959
+#     - CVE-2021-23960
+#     - CVE-2021-23961
+#     - CVE-2021-23962
+#     - CVE-2021-23963
+#     - CVE-2021-23964
+#     - CVE-2021-23965
+#   84.0.2-r0:
+#     - CVE-2020-16044
+#   84.0.1-r0:
+#     - CVE-2020-16042
+#     - CVE-2020-26971
+#     - CVE-2020-26972
+#     - CVE-2020-26973
+#     - CVE-2020-26974
+#     - CVE-2020-26975
+#     - CVE-2020-26976
+#     - CVE-2020-26977
+#     - CVE-2020-26978
+#     - CVE-2020-26979
+#     - CVE-2020-35111
+#     - CVE-2020-35112
+#     - CVE-2020-35113
+#     - CVE-2020-35114
+#   83.0-r0:
+#     - CVE-2020-15999
+#     - CVE-2020-16012
+#     - CVE-2020-26952
+#     - CVE-2020-26953
+#     - CVE-2020-26954
+#     - CVE-2020-26955
+#     - CVE-2020-26956
+#     - CVE-2020-26957
+#     - CVE-2020-26958
+#     - CVE-2020-26959
+#     - CVE-2020-26960
+#     - CVE-2020-26961
+#     - CVE-2020-26962
+#     - CVE-2020-26963
+#     - CVE-2020-26964
+#     - CVE-2020-26965
+#     - CVE-2020-26966
+#     - CVE-2020-26967
+#     - CVE-2020-26968
+#     - CVE-2020-26969
+#   82.0.3-r0:
+#     - CVE-2020-26950
+#   82.0-r0:
+#     - CVE-2020-15254
+#     - CVE-2020-15680
+#     - CVE-2020-15681
+#     - CVE-2020-15682
+#     - CVE-2020-15683
+#     - CVE-2020-15684
+#     - CVE-2020-15969
+#   81.0-r0:
+#     - CVE-2020-15673
+#     - CVE-2020-15674
+#     - CVE-2020-15675
+#     - CVE-2020-15676
+#     - CVE-2020-15677
+#     - CVE-2020-15678
+#   80.0-r0:
+#     - CVE-2020-6829
+#     - CVE-2020-12400
+#     - CVE-2020-12401
+#     - CVE-2020-15663
+#     - CVE-2020-15664
+#     - CVE-2020-15665
+#     - CVE-2020-15666
+#     - CVE-2020-15667
+#     - CVE-2020-15668
+#     - CVE-2020-15670
+#   79.0-r0:
+#     - CVE-2020-6463
+#     - CVE-2020-6514
+#     - CVE-2020-15652
+#     - CVE-2020-15653
+#     - CVE-2020-15654
+#     - CVE-2020-15655
+#     - CVE-2020-15656
+#     - CVE-2020-15657
+#     - CVE-2020-15658
+#     - CVE-2020-15659
+#   78.0-r0:
+#     - CVE-2020-12415
+#     - CVE-2020-12416
+#     - CVE-2020-12417
+#     - CVE-2020-12418
+#     - CVE-2020-12419
+#     - CVE-2020-12420
+#     - CVE-2020-12402
+#     - CVE-2020-12421
+#     - CVE-2020-12422
+#     - CVE-2020-12423
+#     - CVE-2020-12424
+#     - CVE-2020-12425
+#     - CVE-2020-12426
+#   77.0-r0:
+#     - CVE-2020-12399
+#     - CVE-2020-12405
+#     - CVE-2020-12406
+#     - CVE-2020-12407
+#     - CVE-2020-12408
+#     - CVE-2020-12409
+#     - CVE-2020-12411
+#   76.0-r0:
+#     - CVE-2020-6831
+#     - CVE-2020-12387
+#     - CVE-2020-12388
+#     - CVE-2020-12389
+#     - CVE-2020-12390
+#     - CVE-2020-12391
+#     - CVE-2020-12392
+#     - CVE-2020-12393
+#     - CVE-2020-12394
+#     - CVE-2020-12395
+#     - CVE-2020-12396
+#   75.0-r0:
+#     - CVE-2020-6821
+#     - CVE-2020-6822
+#     - CVE-2020-6823
+#     - CVE-2020-6824
+#     - CVE-2020-6825
+#     - CVE-2020-6826
+#   74.0.1-r0:
+#     - CVE-2020-6819
+#     - CVE-2020-6820
+#   74.0-r0:
+#     - CVE-2020-6805
+#     - CVE-2020-6806
+#     - CVE-2020-6807
+#     - CVE-2020-6808
+#     - CVE-2020-6809
+#     - CVE-2020-6810
+#     - CVE-2020-6811
+#     - CVE-2019-20503
+#     - CVE-2020-6812
+#     - CVE-2020-6813
+#     - CVE-2020-6814
+#     - CVE-2020-6815
+#   71.0.1-r0:
+#     - CVE-2019-17016
+#     - CVE-2019-17017
+#     - CVE-2019-17020
+#     - CVE-2019-17022
+#     - CVE-2019-17023
+#     - CVE-2019-17024
+#     - CVE-2019-17025
+#     - CVE-2019-17026
+#   70.0-r0:
+#     - CVE-2018-6156
+#     - CVE-2019-15903
+#     - CVE-2019-11757
+#     - CVE-2019-11759
+#     - CVE-2019-11760
+#     - CVE-2019-11761
+#     - CVE-2019-11762
+#     - CVE-2019-11763
+#     - CVE-2019-11764
+#     - CVE-2019-11765
+#     - CVE-2019-17000
+#     - CVE-2019-17001
+#     - CVE-2019-17002
+#   68.0.2-r0:
+#     - CVE-2019-11733
+
+# we need this because cargo verifies checksums of all files in vendor
+# crates when it builds and gives us no way to override or update the
+# file sanely... so just clear out the file list
+_clear_vendor_checksums() {
+    sed -i 's/\("files":{\)[^}]*/\1/' third_party/rust/$1/.cargo-checksum.json
+}
+srcdir=.
+export SHELL=/bin/sh
+export BUILD_OFFICIAL=1
+export MOZILLA_OFFICIAL=1
+export USE_SHORT_LIBNAME=1
+export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE=system
+export MOZ_APP_REMOTINGNAME=firefox
+export MOZBUILD_STATE_PATH="$srcdir"/mozbuild
+# disable desktop notifications
+export MOZ_NOSPAM=1
+# Find our triplet JSON
+export RUST_TARGET="$CTARGET"
+
+prepare() {
+    # default_prepare
+    cp "$srcdir"/stab.h toolkit/crashreporter/google-breakpad/src/
+
+    _clear_vendor_checksums target-lexicon-0.9.0
+
+    case "$CARCH" in
+    aarch64|arm*|x86*)
+        # disable-elf-hack: exists only on aarch64, arm*, x86, x86_64
+        local arch_config="ac_add_options --disable-elf-hack"
+        ;;
+    esac
+
+    # webrtc does not build on these
+    case "$CARCH" in
+    armv7|ppc64le)
+        local webrtc_config="ac_add_options --disable-webrtc"
+        ;;
+    esac
+
+    # FF doesn't have SIMD available on armhf/v7
+    case "$CARCH" in
+    arm*)
+        local rust_simd="ac_add_options --disable-rust-simd"
+        ;;
+    *)
+        local rust_simd="ac_add_options --enable-rust-simd"
+        ;;
+    esac
+
+    # disable debug on 32-bit (takes too much link memory)
+    case "$CARCH" in
+    arm*|x86)
+        local low_mem_flags="
+        ac_add_options --disable-debug-symbols
+        ac_add_options --disable-debug
+        "
+        # hardcoded in the file
+        sed -i 's|debug_info = "2"|debug_info = "0"|' \
+            ./build/moz.configure/toolchain.configure
+        ;;
+    esac
+
+    # sandbox only supported here
+    case "$CARCH" in
+    x86*|armv7|aarch64)
+        local sandbox="ac_add_options --enable-sandbox"
+        ;;
+    *)
+        local sandbox="ac_add_options --disable-sandbox"
+        ;;
+    esac
+
+    cat > base-mozconfig <<-EOF
+    # disable unwanted things
+    ac_add_options --disable-bootstrap
+    ac_add_options --disable-cargo-incremental
+    ac_add_options --disable-crashreporter
+    ac_add_options --disable-install-strip
+    ac_add_options --disable-jemalloc
+    ac_add_options --disable-strip
+    ac_add_options --disable-tests
+    ac_add_options --disable-updater
+
+    # features
+    ac_add_options --enable-alsa
+    ac_add_options --enable-dbus
+    ac_add_options --enable-default-toolkit=cairo-gtk3-wayland
+    ac_add_options --enable-ffmpeg
+    ac_add_options --enable-hardening
+    ac_add_options --enable-linker=lld
+    ac_add_options --enable-necko-wifi
+    ac_add_options --enable-official-branding
+    ac_add_options --enable-optimize="$CFLAGS -O2"
+    ac_add_options --enable-pulseaudio
+    ac_add_options --enable-release
+    ac_add_options --enable-update-channel=release
+
+    # system libs
+    ac_add_options --enable-system-pixman
+    ac_add_options --with-system-ffi
+    ac_add_options --with-system-icu
+    ac_add_options --with-system-jpeg
+    ac_add_options --with-system-libevent
+    ac_add_options --with-system-libvpx
+    ac_add_options --with-system-nspr
+    ac_add_options --with-system-nss
+    ac_add_options --with-system-png
+    ac_add_options --with-system-webp
+    ac_add_options --with-system-zlib
+
+    # misc
+    ac_add_options --prefix=/usr
+    ac_add_options --with-distribution-id=org.alpinelinux
+    ac_add_options --with-libclang-path=/usr/lib
+    ac_add_options --with-unsigned-addon-scopes=app,system
+    ac_add_options --with-wasi-sysroot=/usr/share/wasi-sysroot
+
+    # objdir
+    mk_add_options MOZ_OBJDIR="$builddir/obj"
+
+    $arch_config
+    $low_mem_flags
+    $rust_simd
+    $sandbox
+    $webrtc_config
+    EOF
+}
+prepare
+build() {
+    # Build with Clang, takes less RAM
+    export CC="clang"
+    export CXX="clang++"
+
+    # set rpath so linker finds the libs
+    export LDFLAGS="$LDFLAGS -Wl,-rpath,$_mozappdir"
+
+    # LLVM OOM dodge
+    export LDFLAGS="$LDFLAGS -Wl,--thinlto-jobs=4"
+
+    # for lto
+    ulimit -n 4096
+
+    case "$CARCH" in
+    x86_64|aarch64)
+        msg "building instrumented firefox"
+        cat > .mozconfig base-mozconfig - <<-EOF
+        ac_add_options --enable-profile-generate=cross
+        EOF
+        ./mach build
+        ./mach package
+
+        msg "profiling firefox"
+
+        LLVM_PROFDATA=llvm-profdata \
+        JARLOG_FILE="$PWD"/jarlog \
+        GDK_BACKEND=x11 \
+        LD_LIBRARY_PATH="$PWD"/obj/dist/firefox \
+        xvfb-run -a -s "-screen 0 1920x1080x24 -nolisten local" \
+        ./mach python build/pgo/profileserver.py
+
+        test -s merged.profdata
+        test -s jarlog
+
+        ./mach clobber
+
+        msg "building optimised firefox"
+        cat > .mozconfig base-mozconfig - <<-EOF
+        ac_add_options --enable-lto=cross
+        ac_add_options --enable-profile-use=cross
+        ac_add_options --with-pgo-profile-path="$PWD"/merged.profdata
+        ac_add_options --with-pgo-jarlog="$PWD"/jarlog
+        EOF
+        ./mach build
+        ;;
+    armv7|x86)
+        # no pgo here as it uses too much memory
+        msg "building regular firefox"
+        cat > .mozconfig base-mozconfig - <<-EOF
+        ac_add_options --disable-profiling
+        ac_add_options --enable-lto=cross
+        EOF
+        ./mach build
+        ;;
+    esac
+}
+build
+package() {
+    DESTDIR="$pkgdir" ./mach install
+
+    local _png
+    for _png in ./browser/branding/official/default*.png; do
+        local i=${_png%.png}
+        i=${i##*/default}
+        install -Dm644 "$_png" "$pkgdir"/usr/share/icons/hicolor/"$i"x"$i"/apps/firefox.png
+    done
+
+    install -Dm644 browser/branding/official/content/about-logo.png \
+        "$pkgdir"/usr/share/icons/hicolor/192x192/apps/$pkgname.png
+    install -Dm644 browser/branding/official/content/about-logo@2x.png \
+        "$pkgdir"/usr/share/icons/hicolor/384x384/apps/$pkgname.png
+    install -Dm644 browser/branding/official/content/about-logo.svg \
+        "$pkgdir"/usr/share/icons/hicolor/scalable/apps/$pkgname.svg
+
+    install -Dm644 "$srcdir"/firefox.desktop "$pkgdir"/usr/share/applications/org.mozilla.firefox.desktop
+    install -Dm644 "$srcdir"/firefox-safe.desktop "$pkgdir"/usr/share/applications/org.mozilla.firefox-safe.desktop
+
+    install -Dm644 "$srcdir"/distribution.ini \
+        "$pkgdir"/$_mozappdir/distribution/distribution.ini
+
+    # install our vendor prefs
+    install -Dm644 "$srcdir"/vendor-prefs.js \
+        "$pkgdir"/$_mozappdir/browser/defaults/preferences/vendor.js
+
+    # Generate appdata file
+    mkdir "$pkgdir"/usr/share/metainfo/
+    export VERSION="$pkgver"
+    export DATE="$_releasedate"
+    envsubst < "$builddir"/taskcluster/docker/firefox-flatpak/org.mozilla.firefox.appdata.xml.in > "$pkgdir"/usr/share/metainfo/org.mozilla.firefox.appdata.xml
+
+    # Replace duplicate binary with wrapper
+    # https://bugzilla.mozilla.org/show_bug.cgi?id=658850
+    install -Dm755 /dev/stdin "$pkgdir"/usr/bin/firefox <<- EOF
+    #!/bin/sh
+    exec /usr/lib/$pkgname/firefox "\$@"
+    EOF
+    rm "$pkgdir"/$_mozappdir/firefox-bin
+    ln -sfv /usr/bin/firefox "$pkgdir"/$_mozappdir/firefox-bin
+}
+package
+sha512sums="
+a930d359fb81e473b963a93f6db5110871e9fd57f6d0f352513047d363d930dd4811e8dd786c2f6f3541c3871eb1c0169b718652d9ee076fd13a20f52af30417  firefox-102.0.1.source.tar.xz
+4e584621145cf8add069c6dac18e805b3274a1ee402d84e924df2341f7d3c5be261a93ef51283bacbd606f47fbdc628c4323ecc31efc5b403b8d224b18dc278f  allow-custom-rust-vendor.patch
+b1cb2db3122634f66d2bae7066e76f2dcd455c464e021db4de3b0a08314df95cb667846081682db549dd2af8a00831cabe44a2420c66cdfb5e3b5fa7e6bd21d3  avoid-redefinition.patch
+3526402ccae1f0428f2e45bae8d0b2cb909ac2698bc3508b692b827839ccb21203ce414206039776f6ce946fc53e636290b7870e9886284d5e9d1e8ad050aac9  cbindgen-0.24.patch
+454ea3263cabce099accbdc47aaf83be26a19f8b5a4568c01a7ef0384601cf8315efd86cd917f9c8bf419c2c845db89a905f3ff9a8eb0c8e41042e93aa96a85c  disable-moz-stackwalk.patch
+55eab1a02e19a19a1ee0e36b11097ab48a44200e07e543d91469967206854f39709c7c0bc31855559528e64642d610868140e9533f1c0e3bebc953353c142fa8  disable-neon-in-aom.patch
+2f4f15974d52de4bb273b62a332d13620945d284bbc6fe6bd0a1f58ff7388443bc1d3bf9c82cc31a8527aad92b0cd3a1bc41d0af5e1800e0dcbd7033e58ffd71  fix-fortify-system-wrappers.patch
+cd68b89e29e5f6379fbd5679db27b9a5ef70ea65e51c0d0a8137e1f1fd210e35a8cfb047798e9549bc7275606d7ec5c8d8af1335d29da4699db7acd8bc7ff556  fix-rust-target.patch
+305c874fdea3096e9c4c6aa6520ac64bb1c347c4b59db8360096646593fe684c3b5377874d91cecd33d56d1410b4714fbdea2b514923723ecbeff79d51265d9b  fix-webrtc-glibcisms.patch
+124b3fbfa672d3034840d864652d7ced91aa97d9741be2d349f378f92fef1e699b21bb40853d75301bfd2f938a0eb66bd63c816a7f49f508bc8ea5a8f22f12b5  no-ccache-stats.patch
+2518f2fc75b5db30058e0735f47d60fdf1e7adfaeee4b33fb2afb1bd9a616ce943fd88f4404d0802d4083703f4acf1d5ad42377218d025bc768807fbaf7e1609  sandbox-fork.patch
+b7d0a6126bdf6c0569f80aabf5b37ed2c7a35712eb8a0404a2d85381552f5555d4f97d213ea26cec6a45dc2785f22439376ed5f8e78b4fd664ef0223307b333e  sandbox-largefile.patch
+94433c5ffdbe579c456d95c5f053f61fcbab2f652fa90bc69dcc27d9a1507a8e5c677adeadae9a7a75cc9a55184c1040737f4dfd10b279c088ef016561e6f135  sandbox-sched_setscheduler.patch
+7d272ff0a5aab6e6cbef206e54d33e011d785cdf437adfefc30534feccdedaa831400aa9a75eae9f6edc7e54f135c0bf9ac021fad923151fec6e5e90da3f7e97  zstandard.patch
+0b3f1e4b9fdc868e4738b5c81fd6c6128ce8885b260affcb9a65ff9d164d7232626ce1291aaea70132b3e3124f5e13fef4d39326b8e7173e362a823722a85127  stab.h
+4560083a0642ba2764539e56cdd45a8d5c1a7a5855f8b09b7f5f7a3c107520a2b6aac84df62a24394f18003c0429ad3f177342c1667e40820870d7d950975bc1  firefox.desktop
+838901879006aaa26155cedf9f0244f543fe7ea9a78e03e499183da5611ee68b00e40f9790b47c0cb515291fc540b7bd21b469bb5a7383b4c510f17e44f898d4  firefox-safe.desktop
+9869ef092609af4caed6aa27f3de6ac49b91ef993ccbfd8a2080465def442d3b02745fbe3c71d362f07c3075d46f388a023c0ad8ebb5f6ffd37e601d997b74f7  distribution.ini
+fc45bc3ffb9404e5338ea26a9f04807b40f6f516324972cddd48bedb91b8bd7c6b8d4e03a0209020f5e67b703bc4ff89389985791b9bd544a0fc3951e2dc338e  vendor-prefs.js
+"

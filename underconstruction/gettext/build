@@ -1,0 +1,11 @@
+#!/bin/sh -e
+#doesn't build if gettext is not available on host system
+
+./configure --prefix=/usr \
+    --disable-static
+export PATH=$HOME/.cache/kiss/proc/gettext/build/gettext-tools/src:$PATH
+export USES=localbase
+export CFLAGS="-isystem $HOME/.cache/kiss/proc/gettext/build/gettext-tools/src $CFLAGS"
+export CXXFLAGS="-isystem $HOME/.cache/kiss/proc/gettext/build/gettext-tools/src $CXXFLAGS"
+make -j$(($(nproc) +1))
+make install
