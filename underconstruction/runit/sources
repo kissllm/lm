@@ -1,0 +1,5 @@
+http://smarden.org/runit/runit-VERSION.tar.gz
+patches/run-service-dir.patch
+patches/svlogd-udp.patch
+files/README
+files/runit.initd

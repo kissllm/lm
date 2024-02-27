@@ -1,1 +1,4 @@
-../../modules/noir/extra/atk/depends
+glib
+libffi
+meson   make
+pkgconf make

@@ -1,0 +1,5 @@
+#!/bin/sh -e
+# read -r _ || exit 1
+# cargo build --release --no-default-features --features=wayland
+cargo build --release  --all-features --features=wayland
+cargo install --no-track --root "$1"/usr --path .  --all-features --features=wayland

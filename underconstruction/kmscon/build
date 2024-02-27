@@ -1,0 +1,49 @@
+#!/bin/sh
+# Contributor: Patrycja Rosa <alpine@ptrcnull.me>
+# Maintainer: Patrycja Rosa <alpine@ptrcnull.me>
+pkgname=kmscon
+pkgver=9.0.0
+pkgrel=0
+pkgdesc="Simple terminal emulator based on linux kernel mode setting"
+url="https://github.com/Aetf/kmscon"
+# ppc64le: FTBFS: compiled for a big endian system and target is little endian
+arch="all !ppc64le"
+license="MIT AND LGPL-2.1-or-later AND ( OFL-1.1 AND GPL-2.0-or-later WITH Font-exception-2.0 ) AND MIT AND BSD-2-Clause AND custom"
+makedepends="
+    eudev-dev
+    libdrm-dev
+    libtsm-dev
+    libxkbcommon-dev
+    mesa-dev
+    meson
+    pango-dev
+    pixman-dev
+    "
+checkdepends="mesa-dri-gallium xvfb-run"
+subpackages="$pkgname-doc"
+source="https://github.com/Aetf/kmscon/releases/download/v$pkgver/kmscon-$pkgver.tar.xz"
+# requires opening raw tty
+options="!spdx !check"
+pkgdir="$1"
+build() {
+    abuild-meson \
+        -Db_lto=true \
+        -Dtests="false" \
+        . output
+        # -Dtests="$(want_check && echo true || echo false)" \
+
+    meson compile -C output
+}
+build
+check() {
+    xvfb-run -a meson test --no-rebuild --print-errorlogs -C output
+}
+check
+package() {
+    DESTDIR="$pkgdir" meson install --no-rebuild -C output
+    rm -rf "$pkgdir"/usr/lib/systemd/
+}
+package
+sha512sums="
+2d4bca093c40307e155c9cfa349eef433d7ab6d08f8e134a61fa9c5ccb9ad594575725371075aaf917c2a9dfb3cb3cd148296dce25065a02b3a211650cde9c3c  kmscon-9.0.0.tar.xz
+"

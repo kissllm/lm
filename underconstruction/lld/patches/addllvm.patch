@@ -1,0 +1,9 @@
+git --diff a/cmake/modules/AddLLD.cmake b/cmake/modules/AddLLD.cmake
+--- a/cmake/modules/AddLLD.cmake
++++ b/cmake/modules/AddLLD.cmake
+@@ -1,4 +1,5 @@
+ include(GNUInstallDirs)
++include(AddLLVM)
+ include(LLVMDistributionSupport)
+
+ macro(add_lld_library name)

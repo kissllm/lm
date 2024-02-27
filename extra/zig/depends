@@ -1,1 +1,4 @@
-../../modules/lang/languages/zig/depends
+clang
+cmake make
+lld
+llvm

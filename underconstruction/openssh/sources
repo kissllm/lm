@@ -1,0 +1,9 @@
+https://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-9.3p2.tar.gz
+patches/fix-verify-dns-segfault.patch
+patches/avoid-redefined-warnings-when-building-with-utmps.patch
+patches/gss-serv.c.patch
+patches/fix-utmp.patch
+patches/sftp-interactive.patch
+patches/disable-forwarding-by-default.patch
+patches/default-internal-sftp.patch
+patches/include-config-dir.patch

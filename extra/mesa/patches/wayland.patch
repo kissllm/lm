@@ -1,11 +1,352 @@
---- a/meson.build.orig
-+++ a/meson.build
-@@ -1816,7 +1816,7 @@
- 
+diff a/meson.build b/meson.build
+--- a/meson.build
++++ b/meson.build
+@@ -2107,7 +2107,7 @@
+
  if with_platform_wayland
    dep_wl_scanner = dependency('wayland-scanner', native: true)
--  prog_wl_scanner = find_program(dep_wl_scanner.get_pkgconfig_variable('wayland_scanner'))
+-  prog_wl_scanner = find_program(dep_wl_scanner.get_variable(pkgconfig : 'wayland_scanner'))
 +  prog_wl_scanner = find_program('wayland-scanner', native: true)
    if dep_wl_scanner.version().version_compare('>= 1.15')
      wl_scanner_arg = 'private-code'
    else
+# @@ -2341,9 +2341,9 @@
+#  endif
+# 
+# 
+# +subdir('src')
+#  subdir('include')
+#  subdir('bin')
+# -subdir('src')
+# 
+#  if meson.version().version_compare('>= 0.58')
+#    meson.add_devenv(devenv)
+# diff a/src/meson.build b/src/meson.build
+# --- a/src/meson.build
+# +++ b/src/meson.build
+# @@ -43,7 +43,7 @@
+#      'mesa/program/symbol_table.c',
+#      'mesa/program/dummy_errors.c',
+#    ),
+# -  include_directories : [inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+# +  include_directories : [inc_src, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+#    dependencies : dep_valgrind,
+#    gnu_symbol_visibility : 'hidden',
+#    build_by_default : false,
+
+# diff a/src/meson.build b/src/meson.build
+# --- a/src/meson.build
+# +++ b/src/meson.build
+# @@ -43,7 +43,7 @@
+#      'mesa/program/symbol_table.c',
+#      'mesa/program/dummy_errors.c',
+#    ),
+# -  include_directories : [inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+# +  include_directories : [inc_src, inc_include, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+#    dependencies : dep_valgrind,
+#    gnu_symbol_visibility : 'hidden',
+#    build_by_default : false,
+
+diff a/src/meson.build b/src/meson.build
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -21,6 +21,7 @@
+ inc_mesa = include_directories('mesa')
+ inc_mapi = include_directories('mapi')
+ inc_src = include_directories('.')
++inc_vulkan_runtime = include_directories('vulkan/runtime')
+ inc_gallium = include_directories('gallium/include')
+ inc_gallium_aux = include_directories('gallium/auxiliary')
+ inc_amd_common = include_directories('amd/common')
+
+diff a/include/meson.build b/include/meson.build
+--- a/include/meson.build
++++ b/include/meson.build
+@@ -18,7 +18,7 @@
+ # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ # SOFTWARE.
+
+-inc_include = [include_directories('.')]
++inc_include = [include_directories('../src'), include_directories('.')]
+ inc_d3d9 = include_directories('D3D9')
+ inc_haikugl = include_directories('HaikuGL')
+
+diff a/src/c11/threads.h b/src/c11/threads.h
+--- a/src/c11/threads.h
++++ b/src/c11/threads.h
+@@ -50,15 +50,15 @@
+ #if defined(HAVE_THRD_CREATE)
+ #include <threads.h>
+
+-#if defined(ANDROID)
++// #if defined(ANDROID)
+ /* Currently, only Android are verified that it's thrd_t are typedef of pthread_t
+  * So we can define _MTX_INITIALIZER_NP to PTHREAD_MUTEX_INITIALIZER
+  * FIXME: temporary non-standard hack to ease transition
+  */
+ #  define _MTX_INITIALIZER_NP PTHREAD_MUTEX_INITIALIZER
+-#else
+-#error Can not define _MTX_INITIALIZER_NP properly for this platform
+-#endif
++// #else
++// #error Can not define _MTX_INITIALIZER_NP properly for this platform
++// #endif
+ #else
+
+ /*---------------------------- macros ---------------------------*/
+
+
+diff a/src/gallium/drivers/iris/iris_utrace.c b/src/gallium/drivers/iris/iris_utrace.c
+--- a/src/gallium/drivers/iris/iris_utrace.c
++++ b/src/gallium/drivers/iris/iris_utrace.c
+@@ -104,17 +104,17 @@
+    struct iris_screen *screen = (struct iris_screen *)ice->ctx.screen;
+
+    struct stat st;
+-   uint32_t minor;
++   uint32_t _minor;
+
+    if (fstat(screen->fd, &st) == 0)
+-      minor = minor(st.st_rdev);
++      _minor = minor(st.st_rdev);
+    else
+-      minor = 0;
++      _minor = 0;
+
+    /* We could be dealing with /dev/dri/card0 or /dev/dri/renderD128 so to get
+     * a GPU ID we % 128 the minor number.
+     */
+-   intel_ds_device_init(&ice->ds, &screen->devinfo, screen->fd, minor % 128,
++   intel_ds_device_init(&ice->ds, &screen->devinfo, screen->fd, _minor % 128,
+                         INTEL_DS_API_OPENGL);
+    u_trace_pipe_context_init(&ice->ds.trace_context, &ice->ctx,
+                              iris_utrace_record_ts,
+
+diff a/src/vulkan/meson.build b/src/vulkan/meson.build
+--- a/src/vulkan/meson.build
++++ b/src/vulkan/meson.build
+@@ -21,6 +21,7 @@
+ vk_api_xml = files('registry/vk.xml')
+ vulkan_icd_symbols = files('vulkan-icd-symbols.txt')
+
++inc_vulkan = [include_directories('runtime'), include_directories('.')]
+ inc_vulkan_util = include_directories('util')
+
+ vulkan_wsi_deps = []
+
+diff a/src/vulkan/wsi/meson.build b/src/vulkan/wsi/meson.build
+--- a/src/vulkan/wsi/meson.build
++++ b/src/vulkan/wsi/meson.build
+@@ -58,7 +58,7 @@
+ libvulkan_wsi = static_library(
+   'vulkan_wsi',
+   [files_vulkan_wsi, wsi_entrypoints],
+-  include_directories : [inc_include, inc_src, inc_gallium],
++  include_directories : [inc_vulkan, inc_vulkan_util, inc_include, inc_src, inc_gallium],
+   dependencies : [
+     vulkan_wsi_deps, dep_libdrm, dep_libudev, idep_vulkan_util_headers,
+     idep_vulkan_runtime_headers, idep_xmlconfig,
+
+diff a/src/intel/vulkan/meson.build b/src/intel/vulkan/meson.build
+--- a/src/intel/vulkan/meson.build
++++ b/src/intel/vulkan/meson.build
+@@ -18,6 +18,8 @@
+ # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ # SOFTWARE.
+
++inc_util = [include_directories('../..')]
++inc_vulkan = [include_directories('../../vulkan/runtime'), include_directories('../../vulkan')]
+ inc_anv = include_directories('.')
+
+ anv_flags = [
+@@ -59,7 +61,7 @@
+
+ idep_anv_headers = declare_dependency(
+   sources : [anv_entrypoints[0]],
+-  include_directories : inc_anv,
++  include_directories : [inc_vulkan, inc_anv],
+ )
+
+ if with_intel_vk_rt
+@@ -128,7 +130,7 @@
+     'anv_per_hw_ver@0@'.format(_gfx_ver),
+     [anv_per_hw_ver_files, g[1], anv_entrypoints[0]],
+     include_directories : [
+-      inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_compiler, inc_intel,
++      inc_vulkan, inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_compiler, inc_intel,
+     ],
+     c_args : anv_flags + ['-DGFX_VERx10=@0@'.format(_gfx_ver)],
+     gnu_symbol_visibility : 'hidden',
+@@ -181,6 +183,7 @@
+   idep_vulkan_util_headers,
+   idep_vulkan_runtime_headers,
+   idep_vulkan_wsi_headers,
++  idep_mesautil,
+ ]
+
+ if with_platform_x11
+@@ -210,7 +213,7 @@
+     gen_xml_pack, float64_spv_h,
+   ],
+   include_directories : [
+-    inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_intel, inc_compiler,
++    inc_vulkan, inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_intel, inc_compiler,
+     inc_util,
+   ],
+   c_args : anv_flags,
+@@ -223,7 +226,7 @@
+   'vulkan_intel',
+   [files('anv_gem.c'), anv_entrypoints[0]],
+   include_directories : [
+-    inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_intel, inc_compiler,
++    inc_vulkan, inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_intel, inc_compiler,
+   ],
+   link_whole : [libanv_common, libanv_per_hw_ver_libs] + optional_libgrl,
+   link_with : [
+@@ -259,7 +262,7 @@
+     'vulkan_intel_test',
+     [files('anv_gem_stubs.c'), anv_entrypoints[0]],
+     include_directories : [
+-      inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_intel, inc_compiler,
++      inc_vulkan, inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_intel, inc_compiler,
+     ],
+     link_whole : libanv_common,
+     link_with : [
+@@ -291,7 +294,7 @@
+           idep_vulkan_runtime, idep_intel_driver_ds,
+         ],
+         include_directories : [
+-          inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_intel, inc_compiler,
++          inc_vulkan, inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_intel, inc_compiler,
+         ],
+       ),
+       suite : ['intel'],
+
+diff a/src/util/meson.build b/src/util/meson.build
+--- a/src/util/meson.build
++++ b/src/util/meson.build
+@@ -279,7 +279,7 @@
+   link_with: [libmesa_format, libmesa_util_sse41],
+   c_args : [c_msvc_compat_args],
+   gnu_symbol_visibility : 'hidden',
+-  build_by_default : false
++  build_by_default : true
+ )
+
+ idep_mesautil = declare_dependency(
+
+# diff a/src/util/meson.build b/src/util/meson.build
+# --- a/src/util/meson.build
+# +++ b/src/util/meson.build
+# @@ -21,7 +21,7 @@
+#  # inc_util only depends inc_include, this folder and nothing else under src
+#  # so we use include_directories('..') instead of inc_src to tell the fact
+#  # util is self contained.
+# -inc_util = [inc_include, include_directories('..')]
+# +inc_util = [inc_src, include_directories('..'), inc_include]
+# 
+#  subdir('format')
+# 
+# @@ -267,14 +267,14 @@
+#    'mesa_util_sse41',
+#    files('streaming-load-memcpy.c'),
+#    c_args : [c_msvc_compat_args, sse41_args],
+# -  include_directories : [inc_include, inc_src, inc_mesa],
+# +  include_directories : [inc_util, inc_mesa],
+#    gnu_symbol_visibility : 'hidden',
+#  )
+# 
+#  _libmesa_util = static_library(
+#    'mesa_util',
+#    [files_mesa_util, files_debug_stack, format_srgb, u_indices_gen_c, u_unfilled_gen_c],
+# -  include_directories : [inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+# +  include_directories : [inc_util, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+#    dependencies : deps_for_libmesa_util,
+#    link_with: [libmesa_format, libmesa_util_sse41],
+#    c_args : [c_msvc_compat_args],
+# @@ -304,7 +304,7 @@
+#  _libxmlconfig = static_library(
+#    'xmlconfig',
+#    files_xmlconfig,
+# -  include_directories : [inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+# +  include_directories : [inc_util, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+#    dependencies : [idep_mesautil, dep_m, xmlconfig_deps],
+#    c_args : [
+#      c_msvc_compat_args,
+# @@ -335,7 +335,7 @@
+#      test('xmlconfig',
+#        executable('xmlconfig_test',
+#          files('tests/xmlconfig.cpp'),
+# -        include_directories : [inc_include, inc_src],
+# +        include_directories : [inc_util],
+#          dependencies : [idep_mesautil, idep_xmlconfig, idep_gtest],
+#          override_options : ['cpp_std=c++2a'],
+#          cpp_args: ['-Wno-write-strings', c_xmlconfig_arg]
+# @@ -393,7 +393,7 @@
+#      executable(
+#        'util_tests',
+#        files_util_tests,
+# -      include_directories : [inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+# +      include_directories : [inc_util, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+#        dependencies : [idep_mesautil, idep_gtest],
+#      ),
+#      suite : ['util'],
+# @@ -404,7 +404,7 @@
+#    process_test_exe = executable(
+#      'process_test',
+#      files('tests/process_test.c'),
+# -    include_directories : [inc_include, inc_src, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+# +    include_directories : [inc_util, inc_mapi, inc_mesa, inc_gallium, inc_gallium_aux],
+#      dependencies : idep_mesautil,
+#      c_args : [c_msvc_compat_args],
+#    )
+
+diff a/src/c11/impl/threads_posix.c b/src/c11/impl/threads_posix.c
+--- a/src/c11/impl/threads_posix.c
++++ b/src/c11/impl/threads_posix.c
+@@ -36,6 +36,10 @@
+
+ #include "c11/threads.h"
+
++#ifdef thrd_equal
++#undef thrd_equal
++#endif
++
+ /*
+ Configuration macro:
+
+
+diff a/src/c11/impl/meson.build b/src/c11/impl/meson.build
+--- a/src/c11/impl/meson.build
++++ b/src/c11/impl/meson.build
+@@ -34,7 +34,7 @@
+ _libmesa_util_c11 = static_library(
+   'mesa_util_c11',
+   [files_mesa_util_c11],
+-  include_directories : [inc_include, inc_src],
++  include_directories : [inc_src],
+   c_args : [c_msvc_compat_args],
+   gnu_symbol_visibility : 'hidden',
+   build_by_default : false
+@@ -42,6 +42,6 @@
+
+ idep_mesautilc11 = declare_dependency(
+   link_with : _libmesa_util_c11,
+-  include_directories : [inc_include, inc_src],
++  include_directories : [inc_src],
+   dependencies : [dep_clock, dep_thread, dep_atomic, dep_m, dep_valgrind],
+ )
+
+diff a/src/gallium/frontends/lavapipe/meson.build b/src/gallium/frontends/lavapipe/meson.build
+--- a/src/gallium/frontends/lavapipe/meson.build
++++ b/src/gallium/frontends/lavapipe/meson.build
+@@ -44,7 +44,7 @@
+   [liblvp_files, lvp_entrypoints, sha1_h],
+   c_args : [ c_msvc_compat_args, lvp_flags ],
+   gnu_symbol_visibility : 'hidden',
+-  include_directories : [ inc_include, inc_src, inc_util, inc_gallium, inc_compiler, inc_gallium_aux ],
++  include_directories : [inc_vulkan_runtime, inc_include, inc_src, inc_util, inc_gallium, inc_compiler, inc_gallium_aux ],
+   dependencies : [ dep_llvm, idep_nir, idep_mesautil, idep_vulkan_util, idep_vulkan_wsi,
+                    idep_vulkan_runtime, lvp_deps ]
+ )
+

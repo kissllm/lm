@@ -1,0 +1,46 @@
+#!/bin/sh -e
+# Contributor: Jakub Jirutka <jakub@jirutka.cz>
+# Maintainer: Jakub Jirutka <jakub@jirutka.cz>
+pkgname=swayr
+pkgver=0.19.0
+pkgrel=0
+pkgdesc="A window switcher (and more) for Sway"
+url="https://sr.ht/~tsdh/swayr/"
+arch="aarch64 armhf armv7 ppc64le x86 x86_64"  # limited by rust/cargo
+license="GPL-3.0-or-later"
+makedepends="cargo"
+source="$pkgname-$pkgver.tar.gz::https://git.sr.ht/~tsdh/swayr/archive/swayr-$pkgver.tar.gz"
+builddir="$srcdir/$pkgname-swayr-$pkgver"
+
+# secfixes:
+#   0.16.1-r0:
+#     - CVE-2022-24713
+
+export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
+export CARGO_PROFILE_RELEASE_LTO="true"
+export CARGO_PROFILE_RELEASE_OPT_LEVEL="z"
+export CARGO_PROFILE_RELEASE_PANIC="abort"
+
+pkgdir="$1"
+
+prepare() {
+    # default_prepare
+    cargo fetch --locked
+}
+prepare
+build() {
+    cargo build -p swayr --release --frozen
+}
+build
+check() {
+    cargo test -p swayr --frozen
+}
+check
+package() {
+    install -D -m755 target/release/swayr -t "$pkgdir"/usr/bin/
+    install -D -m755 target/release/swayrd -t "$pkgdir"/usr/bin/
+}
+package
+sha512sums="
+2e5d9b5b15d489e3687d14c1b530d8afa70dc4d5605359f2bc6d80e07f35c564f5b728d5177833536491fc71cbf7ab3e1081940a13761dfe9e129310e43c68a5  swayr-0.19.0.tar.gz
+"

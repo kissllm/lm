@@ -1,0 +1,53 @@
+#!/bin/sh -e
+# Maintainer: Natanael Copa <ncopa@alpinelinux.org>
+pkgname=midori
+pkgver=9.0
+pkgrel=6
+pkgdesc="lightweight web browser based on Gtk WebKit"
+url="https://astian.org/en/midori-browser/"
+# s390x and riscv64 blocked by librsvg
+arch="all !s390x !riscv64"
+license="LGPL-2.1-or-later"
+makedepends="cmake librsvg-dev python3 vala gtk+3.0-dev gcr-dev
+    libarchive-dev json-glib-dev webkit2gtk-dev libpeas-dev ninja
+    intltool
+    "
+subpackages="$pkgname-lang $pkgname-doc"
+options="!check" # unable to check
+source="https://github.com/midori-browser/core/releases/download/v$pkgver/midori-v$pkgver.tar.gz
+    disable-valac-fatal-warnings.patch
+    "
+
+set +f
+for item in *.patch; do
+    echo "Appling patch from $item"
+    patch -p1 < $item
+    [ "$?" -eq 0 ] || exit 1
+done
+set -f
+
+builddir="$srcdir/$pkgname-v$pkgver"
+builddir="$PWD"
+sed -i 's/vala_require("0.30.0")/vala_require("git")/g' CMakeLists.txt
+build() {
+    if [ "$CBUILD" != "$CHOST" ]; then
+        CMAKE_CROSSOPTS="-DCMAKE_SYSTEM_NAME=Linux -DCMAKE_HOST_SYSTEM_NAME=Linux"
+    fi
+    cmake -B objects \
+        -GNinja \
+        -DCMAKE_BUILD_TYPE=None \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_C_FLAGS="$CFLAGS -fPIC -w" \
+        -DVALA_CFLAGS="$CFLAGS -fPIC -w" \
+        $CMAKE_CROSSOPTS
+    cmake --build objects
+}
+build
+pkgdir="$1"
+package() {
+    DESTDIR="$pkgdir" cmake --install objects
+}
+package
+sha512sums="0cc28643593f53c47b453838152dcbe35a9a287bff38bda830844eb8f321a4f48c99b21e16a9b07bebdd0abc936d88fd759c3222a36325aa667a28ae00148be3  midori-v9.0.tar.gz
+a85ba606a0edcdc438b65d8526ec80b21c7e328db4812ac9cfa5a75883d612b9e212d0dc30a9a9ced85d382df6df96a74043790aa4bb722f74cf5e198849cdf3  disable-valac-fatal-warnings.patch"

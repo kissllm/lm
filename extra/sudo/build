@@ -1,9 +1,7 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
 
 ./configure \
     --prefix=/usr \
-    --build=$KISS_XBUILD_TRIPLE \
-    --host=$KISS_XHOST_TRIPLE \
     --sbindir=/usr/bin \
     --libexecdir=/usr/lib \
     --disable-pam-session \
@@ -19,6 +17,7 @@
 
 make
 make \
+    DESTDIR="$1" \
     install_uid="$(id -u)" \
     install_gid="$(id -g)" \
     install

@@ -1,0 +1,130 @@
+From fc02b3e1f6bba31a32ed86904218d9333e4a72b4 Mon Sep 17 00:00:00 2001
+From: ian <42294085+ianbeyst@users.noreply.github.com>
+Date: Sun, 12 Apr 2020 13:40:41 +0200
+Subject: [PATCH] Implement basic restacking support
+
+The compositor now allows to restack surfaces into arbitrary locations in the
+z-order.
+As a first application, these functions are used to implement functions to
+raise a window to the top or drop them to the bottom of the z-order, which
+are used to fix the behaviour of floating windows. Windows now restack to
+the top of the z-order whenever they become floating or when they are moved,
+which is the same behaviour as dwm. When a window becomes tiled it gets
+dropped to the bottom of the z-order, thus ensuring that floating windows are
+always above tiled windows.
+---
+ libswc/compositor.c | 25 +++++++++++++++++++++++++
+ libswc/compositor.h |  5 +++++
+ libswc/window.c     | 21 +++++++++++++++++++++
+ libswc/window.h     |  2 ++
+ 4 files changed, 53 insertions(+)
+
+diff --git a/libswc/compositor.c b/libswc/compositor.c
+index 23f0155..4fa0e60 100644
+--- a/libswc/compositor.c
++++ b/libswc/compositor.c
+@@ -836,3 +836,28 @@ compositor_finalize(void)
+ 	pixman_region32_fini(&compositor.opaque);
+ 	wl_global_destroy(compositor.global);
+ }
++
++void compositor_view_restack_above(struct compositor_view *view, struct wl_list *link)
++{
++    wl_list_remove(&view->link);
++    wl_list_insert(link, &view->link);
++    damage_view(view);
++    update(&view->base);
++}
++
++void compositor_view_restack_below(struct compositor_view* view, struct wl_list *link)
++{
++    compositor_view_restack_above(view, link->next);
++}
++
++void
++compositor_view_restack_at_head(struct compositor_view* view)
++{
++    compositor_view_restack_above(view, &compositor.views);
++}
++
++void
++compositor_view_restack_at_tail(struct compositor_view* view)
++{
++    compositor_view_restack_above(view, compositor.views.prev);
++}
+diff --git a/libswc/compositor.h b/libswc/compositor.h
+index 5fdd9aa..11c4786 100644
+--- a/libswc/compositor.h
++++ b/libswc/compositor.h
+@@ -81,4 +81,9 @@ void compositor_view_hide(struct compositor_view *view);
+ void compositor_view_set_border_color(struct compositor_view *view, uint32_t color);
+ void compositor_view_set_border_width(struct compositor_view *view, uint32_t width);
+ 
++void compositor_view_restack_above(struct compositor_view *view, struct wl_list *link);
++void compositor_view_restack_below(struct compositor_view *view, struct wl_list *link);
++void compositor_view_restack_at_head(struct compositor_view *view);
++void compositor_view_restack_at_tail(struct compositor_view *view);
++
+ #endif
+diff --git a/libswc/window.c b/libswc/window.c
+index 7f7255e..ac84080 100644
+--- a/libswc/window.c
++++ b/libswc/window.c
+@@ -174,6 +174,8 @@ swc_window_set_stacked(struct swc_window *base)
+ 	if (window->impl->set_mode)
+ 		window->impl->set_mode(window, WINDOW_MODE_STACKED);
+ 	window->mode = WINDOW_MODE_STACKED;
++
++    window_raise(window);
+ }
+ 
+ EXPORT void
+@@ -186,6 +188,8 @@ swc_window_set_tiled(struct swc_window *base)
+ 	if (window->impl->set_mode)
+ 		window->impl->set_mode(window, WINDOW_MODE_TILED);
+ 	window->mode = WINDOW_MODE_TILED;
++
++    window_drop(window);
+ }
+ 
+ EXPORT void
+@@ -479,6 +483,8 @@ window_begin_move(struct window *window, struct button *button)
+ 	begin_interaction(&window->move.interaction, button);
+ 	window->move.offset.x = geometry->x - px;
+ 	window->move.offset.y = geometry->y - py;
++
++    window_raise(window);
+ }
+ 
+ void
+@@ -505,3 +511,18 @@ window_begin_resize(struct window *window, uint32_t edges, struct button *button
+ 	window->resize.offset.y = geometry->y - py + ((edges & SWC_WINDOW_EDGE_BOTTOM) ? geometry->height : 0);
+ 	window->resize.edges = edges;
+ }
++
++void
++window_raise(struct window *window)
++{
++    /* TODO: recursively raise other windows in the same tree */
++    compositor_view_restack_at_head(window->view);
++}
++
++void
++window_drop(struct window *window)
++{
++    /* TODO: recursively drop other windows in the same tree */
++    compositor_view_restack_at_tail(window->view);
++}
++
+diff --git a/libswc/window.h b/libswc/window.h
+index 08c9d36..40bd26d 100644
+--- a/libswc/window.h
++++ b/libswc/window.h
+@@ -97,5 +97,7 @@ void window_set_app_id(struct window *window, const char *app_id);
+ void window_set_parent(struct window *window, struct window *parent);
+ void window_begin_move(struct window *window, struct button *button);
+ void window_begin_resize(struct window *window, uint32_t edges, struct button *button);
++void window_raise(struct window *window);
++void window_drop(struct window *window);
+ 
+ #endif

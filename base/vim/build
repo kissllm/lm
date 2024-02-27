@@ -1,0 +1,34 @@
+#!/usr/bin/env sh
+
+mkdir -p bin
+ln -s /usr/bin/gmake "$PWD/bin/make"
+export PATH="$PWD/bin:$PATH"
+
+vim_cv_toupper_broken=yes \
+vim_cv_terminfo=yes \
+vim_cv_tty_group=world vim_cv_getcwd_broken=no \
+vim_cv_stat_ignores_slash=yes \
+vim_cv_memmove_handles_overlap=yes \
+vim_cv_tgetent=zero \
+ac_cv_small_wchar_t=no \
+./configure \
+    --prefix=/usr \
+    --build=$KISS_XBUILD_TRIPLE \
+    --host=$KISS_XHOST_TRIPLE \
+    --enable-cscope \
+    --enable-multibyte \
+    --with-ex-name=vim-ex \
+    --with-view-name=vim-view \
+    --disable-perlinterp \
+    --disable-pythoninterp \
+    --disable-rubyinterp \
+    --disable-netbeans \
+    --disable-gpm \
+    --disable-xim \
+    --disable-gui \
+    --disable-nls \
+    --without-x \
+    --with-tlib=ncursesw
+
+make
+make install

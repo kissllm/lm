@@ -1,1 +1,3 @@
-../../modules/sauzer/extra/waybar/depends
+jsoncpp
+libxkbcommon
+wayland

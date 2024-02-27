@@ -1,0 +1,46 @@
+#!/bin/sh -e
+
+for p in *.patch; do
+    patch -p1 < "$p"
+done
+
+./configure \
+    --prefix=/usr \
+    --localstatedir=/var \
+    --sysconfdir=/etc \
+    --libexecdir=/usr/lib/qemu \
+    --disable-werror \
+    --disable-tcg-interpreter \
+    --enable-pie \
+    --audio-drv-list=alsa \
+    --enable-alsa \
+    --enable-bzip2 \
+    --enable-curl \
+    --enable-curses \
+    --disable-docs \
+    --disable-fuse \
+    --disable-gcrypt \
+    --disable-gnutls \
+    --disable-gtk \
+    --enable-kvm \
+    --enable-libudev \
+    --enable-libusb \
+    --disable-linux-aio \
+    --enable-linux-io-uring \
+    --disable-nettle \
+    --enable-opengl \
+    --enable-png \
+    --enable-sdl \
+    --disable-sdl-image \
+    --enable-virglrenderer \
+    --disable-vnc \
+    --disable-vnc-jpeg \
+    --enable-xkbcommon \
+    --enable-zstd \
+    --enable-system \
+    --disable-user \
+    --enable-linux-user \
+    --disable-debug-info
+
+make
+make DESTDIR="$1" PREFIX=/usr install

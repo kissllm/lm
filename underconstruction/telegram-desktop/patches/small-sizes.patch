@@ -1,0 +1,23 @@
+diff --git a/Telegram/SourceFiles/window/window.style b/Telegram/SourceFiles/window/window.style
+index b3cd3ae83..29bf8bc3c 100644
+--- a/Telegram/SourceFiles/window/window.style
++++ b/Telegram/SourceFiles/window/window.style
+@@ -10,7 +10,7 @@
+ using "ui/chat/chat.style";
+ using "boxes/boxes.style"; // UserpicButton
+
+-windowMinWidth: 380px;
++windowMinWidth: 360px;
+ windowMinHeight: 480px;
+ windowDefaultWidth: 800px;
+ windowDefaultHeight: 600px;
+@@ -19,7 +19,7 @@
+
+ columnMinimalWidthLeft: 260px;
+ columnMaximalWidthLeft: 540px;
+-columnMinimalWidthMain: 380px;
++columnMinimalWidthMain: 360px;
+ columnMinimalWidthThird: 292px;
+ columnMaximalWidthThird: 392px;
+
+

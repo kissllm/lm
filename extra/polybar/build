@@ -1,0 +1,87 @@
+#!/bin/sh -e
+# Contributor: Taner Tas <taner76@gmail.com>
+# Maintainer: Taner Tas <taner76@gmail.com>
+pkgname=polybar
+pkgver=3.6.3
+pkgrel=0
+pkgdesc="fast and easy-to-use tool for creating status bars"
+url="https://polybar.github.io/"
+arch="all"
+license="MIT"
+makedepends="
+    alsa-lib-dev
+    cairo-dev
+    cmake
+    curl-dev
+    i3wm-dev
+    jsoncpp-dev
+    libmpdclient-dev
+    libnl3-dev
+    libuv-dev
+    libxcb-dev
+    pulseaudio-dev
+    python3
+    py3-sphinx
+    xcb-proto
+    xcb-util-cursor-dev
+    xcb-util-image-dev
+    xcb-util-renderutil-dev
+    xcb-util-wm-dev
+    xcb-util-xrm-dev
+    "
+subpackages="
+    $pkgname-doc
+    $pkgname-bash-completion
+    $pkgname-zsh-completion
+    "
+install="
+    $pkgname.post-install
+    "
+_xppver="044e69d05db7f89339bda1ccd1efe0263b01c8f6"
+_i3ipcppver="86ddf7102c6903ae0cc543071e2d375403fc0727"
+source="
+    $pkgname-$pkgver.tar.gz::https://github.com/polybar/polybar/archive/$pkgver.tar.gz
+    xpp-$_xppver.tar.gz::https://github.com/polybar/xpp/archive/$_xppver.tar.gz
+    i3ipcpp-$_i3ipcppver.tar.gz::https://github.com/polybar/i3ipcpp/archive/$_i3ipcppver.tar.gz
+    fix-version.patch
+    "
+options="!check" # No test suite
+srcdir="$PWD"
+builddir="$PWD"
+pkgdir="$1"
+# temp allow textrels on riscv64
+case $CARCH in
+    riscv64) options="$options textrels";;
+esac
+
+prepare() {
+    mkdir -p build
+    rm -rf lib/xpp
+    # mv "$srcdir"/xpp-$_xppver lib/xpp
+    mv "$srcdir"/xpp lib/xpp
+    rm -rf lib/i3ipcpp
+    # mv "$srcdir"/i3ipcpp-$_i3ipcppver lib/i3ipcpp
+    mv "$srcdir"/i3ipcpp lib/i3ipcpp
+    # default_prepare
+}
+prepare
+build() {
+    cd "$builddir"/build
+    cmake -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_BUILD_TYPE=None \
+        -DWITH_XRANDR_MONITORS=0 \
+        ..
+    cmake --build .
+}
+build
+package() {
+    cd "$builddir"/build
+    cmake --build . --target install -- DESTDIR="$pkgdir"
+}
+package
+# sha512sums="
+# cdb1851b2b9a7e503dc9d9377f60be12573d171b64e7e053cec943e229b730f1034ff47cfc9ca246cd32089b2ef7595bc198ac91e93cbfbf24f7ad2bebef5d4e  polybar-3.6.3.tar.gz
+# 646e159d47d6dac8f08a27a1cb54e2ef48e42cff952b55b3906c2021c424e015c070a31a7a1e70b62e0edc7a8b42b935a23b9a922eaab138d3f6929bc1fdb8d4  xpp-044e69d05db7f89339bda1ccd1efe0263b01c8f6.tar.gz
+# f4643bea5a78bd9518fecc9d56ece8d679539b99016440a6e4d45305984c02963d80e00c5375cc53ac7418e2f24f57279930428b331e077eaafa8d0717677662  i3ipcpp-86ddf7102c6903ae0cc543071e2d375403fc0727.tar.gz
+# 02186474284b1fc9c3054f7ea92645e20269d067326b035791bc6e50df2fc928fa287723ca249386bec557e36de2e71c9978c2bbf0cb8b2e3b5ecdcdf0e6fcd4  fix-version.patch
+# "

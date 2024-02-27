@@ -1,27 +1,19 @@
 #!/bin/sh -e
 
-# meson . objects --prefix=/usr
-
-# mkdir -p bin
-# ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
-# ln -sf /usr/bin/gmake "$PWD/bin/make"
-# export PATH="$PWD/bin:$PATH"
-
-echo "\$PWD = $PWD"
 meson . objects \
     --prefix=/usr \
     --sysconfdir=/etc \
     -Dwayland-backend=true \
     -Dmacos-backend=false \
-    -Dquartz_backend=false \
     -Dx11-backend=false \
     -Dwin32-backend=false \
     -Ddemos=false \
     -Ddebug=false \
     -Dbuild-examples=false \
-    -Dbuild-tests=false \
-    -Dinstall-tests=false
+    -Dbuild-tests=false
 
+    # -Dquartz_backend=false \
+    # -Dinstall-tests=false \
     # --reconfigure
     # -Dmedia-gstreamer=disabled \
     # -DXCB-shm=disabled \
@@ -32,4 +24,4 @@ meson . objects \
 
 ninja -C objects
 
-doas ninja -C objects install
+ninja -C objects install

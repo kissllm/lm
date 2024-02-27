@@ -1,0 +1,2 @@
+git+https://git.obarun.org/Obarun/66.git
+patches/shutdown_posixsh.patch

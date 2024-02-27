@@ -1,8 +1,8 @@
-NAME="Glasnost Linux"
-PRETTY_NAME="Glasnost Linux"
-ID=glasnost
+NAME="KISS Linux Based on LLVM and Musl libc"
+PRETTY_NAME="KISS Linux LLVM Musl"
+ID=lemon
 BUILD_ID=rolling
-HOME_URL="https://glasnost.org"
-DOCUMENTATION_URL="https://glasnost.org"
-SUPPORT_URL="https://github.com/glasnostlinux"
-BUG_REPORT_URL="https://github.com/glasnostlinux"
+HOME_URL="https://github.com/kissllm"
+DOCUMENTATION_URL="https://github.com/kissllm"
+SUPPORT_URL="https://github.com/kissllm"
+BUG_REPORT_URL="https://github.com/kissllm"

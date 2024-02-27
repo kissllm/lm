@@ -1,1 +1,3 @@
-../../modules/boost/community/harfbuzz-icu/depends
+freetype-harfbuzz
+icu
+meson make

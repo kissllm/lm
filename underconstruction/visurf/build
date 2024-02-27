@@ -1,0 +1,27 @@
+#!/bin/sh -e
+
+export PKG_CONFIG_SYSROOT_DIR=
+export HOST_CC=clang
+export HOST_CXX=clang++
+# Makefile:116: *** Unknown TARGET "netsurf", Must be one of riscos gtk2 gtk3 beos amiga amigaos3 framebuffer windows atari monkey.  Stop.
+export TARGET=gtk3
+export PREFIX=/usr
+export LIBDIR=lib
+export INCLUDEDIR=include
+export BUILD="$KISS_XBUILD_TRIPLE"
+export HOST="$KISS_XHOST_TRIPLE"
+
+patch -p1 < nsgenbind.patch
+patch -p1 < testament.patch
+
+rm -Rf netsurf
+rm -Rf libcss
+mv -f visurf netsurf
+mv -f libcss-new libcss
+
+# Something up with how kiss does the git checkout
+# Not dealing with symlink correctly?
+# touch netsurf/frontends/visurf/res/Messages
+
+make
+make install

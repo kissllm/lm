@@ -1,1 +1,4 @@
-../../modules/community/community/nss/depends
+linux-headers make
+perl          make
+sqlite
+zlib-ng

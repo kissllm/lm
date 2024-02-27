@@ -1,0 +1,10 @@
+# https://www.musl-libc.org/releases/musl-VERSION.tar.gz
+# https://git.musl-libc.org/cgit/musl/
+git+https://git.musl-libc.org/git/musl
+# git+git://git.musl-libc.org/musl
+files/cdefs.h
+files/queue.h
+files/tree.h
+files/getconf.c
+files/getent.c
+# patches/threads.patch

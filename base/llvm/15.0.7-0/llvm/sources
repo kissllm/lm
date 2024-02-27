@@ -1,0 +1,6 @@
+https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/llvm-project-VERSION.src.tar.xz
+patches/0001-Disable-dynamic-lib-tests-for-musl-s-dlclose-is-noop.patch
+patches/fix-memory-mf_exec-on-aarch64.patch
+patches/install-prefix.patch
+patches/llvm-stack-size.patch
+patches/rust-feature-tables.patch

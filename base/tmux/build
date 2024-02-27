@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+
+patch -p0 < reallocarray.patch
+
+autoreconf -f -i -v
+
+./configure \
+    --prefix=/usr \
+    --build=$KISS_XBUILD_TRIPLE \
+    --host=$KISS_XHOST_TRIPLE \
+    --sysconfdir=/etc \
+    --mandir=/usr/share/man \
+    --localstatedir=/var
+
+make
+make install

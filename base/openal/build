@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+mkdir builddir
+cd builddir
+
+cmake -DCMAKE_INSTALL_PREFIX=/usr \
+      -DCMAKE_BUILD_TYPE=None \
+      -DCMAKE_INSTALL_LIBDIR=lib \
+      ..
+
+make
+make install

@@ -1,12 +1,13 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
 
 mkdir -p \
     "$1/usr/bin" \
+    "$1/usr/include/kiss" \
     "$1/usr/share/doc/kiss"
 
-cp -f  kiss contrib/*  "$1/usr/bin"
-cp -f  docs/site/*.txt "$1/usr/share/doc/kiss"
-cp -rf docs/site/wiki  "$1/usr/share/doc/kiss"
+rsync -aqL usr/include/kiss/. "$1/usr/include/kiss/"
+rsync -aqL usr/bin/.          "$1/usr/bin/"
+rsync -aqL docs/.             "$1/usr/share/doc/kiss/"
 
 rm -f \
     "$1/usr/share/doc/kiss/README.txt" \

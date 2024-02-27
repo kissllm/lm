@@ -1,0 +1,41 @@
+#! /bin/sh -e
+
+script=$(readlink -f "$0")
+printf '%s %s\n' '$script' "$script"
+# // war 'post-install' "luajit"
+# /usr/bin/kiss
+# script_path=${script%/*}
+# pkg_name=${script_path##*/}
+pkg_name="$1"
+repo_url="var/db/kiss/installed/$pkg_name"
+repo_ver="$2"
+repo_rel="$3"
+repo_dir="$4"
+
+[ -n "${repo_ver:+x}" ] ||
+IFS=$' ' read -r repo_ver repo_rel repo_dir < "$repo_url/version" 2>/dev/null ||
+printf '%s %s\' "$pkg_name" "failed to read $repo_url/version"
+
+IFS=.+-_ read -r repo_major repo_minor repo_patch repo_ident \
+	< <(printf '%s\n' "$repo_ver") > /dev/null ||
+printf '%s %s\' "printf '%s\\n' \"$repo_ver\"" "failed"
+
+# luajit linked to moonjit
+# And have 3 versions of executables
+# ls: usr/bin/luajit: No such file or directory
+set +f
+# executable_name="$(\ls "usr/bin/luajit-$repo_major.$repo_minor.$repo_patch"*)" || exit 1
+executable_name="$(\ls "usr/bin/luajit-$repo_major.$repo_minor"*)" || exit 1
+set -f
+executable_name="${executable_name##*/}"
+printf '%s %s\n' '$executable_name' "$executable_name"
+real_executable=$(find /usr/bin -type f -name "$executable_name")
+
+printf '%s %s\n' '$real_executable' "$real_executable"
+
+{ command -v $real_executable > /dev/null 2>&1 &&
+[ "$real_executable" = "$(readlink -f $1/usr/bin/luajit)" ]; } || {
+	cd $1/usr/bin
+	ln -sf ${real_executable##*/} luajit
+	# ln -sf $real_executable $1//usr/bin/luajit
+}

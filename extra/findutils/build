@@ -1,11 +1,7 @@
-#!/usr/bin/env sh
-
-export CFLAGS="$CFLAGS -static"
+#!/bin/sh -e
 
 ./configure \
-    --prefix=/usr \
-    --build="$KISS_XBUILD_TRIPLE" \
-    --host="$KISS_XHOST_TRIPLE"
+    --prefix=/usr
 
 make
-make install
+make DESTDIR="$1" install

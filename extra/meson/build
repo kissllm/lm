@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
 
 python setup.py build
 python setup.py install \

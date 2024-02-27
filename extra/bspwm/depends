@@ -1,0 +1,4 @@
+libxcb
+xcb-util make
+xcb-util-keysyms
+xcb-util-wm

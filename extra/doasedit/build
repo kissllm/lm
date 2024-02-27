@@ -1,0 +1,7 @@
+#!/bin/sh -e
+
+[ -d "$1/usr/bin" ] || mkdir -p "$1/usr/bin"
+
+cp -f doasedit $1/usr/bin/
+
+chmod a+x $1/usr/bin/doasedit

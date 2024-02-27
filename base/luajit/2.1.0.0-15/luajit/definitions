@@ -1,0 +1,41 @@
+#! /bin/sh -e
+
+version() {
+	local _local_dir="$1"
+	ver_major="$(grep majver= "$_local_dir/etc/luajit.pc" | awk -F = '{print $2}')"
+	ver_minor="$(grep minver= "$_local_dir/etc/luajit.pc" | awk -F = '{print $2}')"
+	repo_ver="$ver_major.$ver_minor"
+	repo_rel=0
+
+	printf "$RS%s$FS%s" "$repo_ver" "$repo_rel"
+}
+
+target() {
+	local upstream_name="$1"
+	local _local_dir="$2"
+	local url="$3"
+
+	local repo_ver= repo_rel=
+
+	version "$_local_dir"
+
+	local target_value="$upstream_name"
+
+	printf "$RS%s$FS%s$FS%s" "$target_value" "$repo_ver" "$repo_rel"
+}
+
+main() {
+	local action="$1"
+	shift 1
+	"$action" "$@"
+}
+
+main "$@"
+
+
+
+
+
+
+
+

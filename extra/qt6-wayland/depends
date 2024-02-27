@@ -1,0 +1,5 @@
+cmake make
+libxkbcommon
+qt6-base
+qt6-declarative
+wayland

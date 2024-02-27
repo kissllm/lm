@@ -1,0 +1,14 @@
+#!/bin/sh -e
+
+mkdir -pv $1/opt/dotnet
+cp -a * $1/opt/dotnet
+
+install -Dm755 dotnet.sh $1/etc/profile.d/dotnet.sh
+
+#include compatible openssl libs
+xz -d libcrypto.so.1.1.xz
+xz -d libssl.so.1.1.xz
+
+install -dDm755 "$1/usr/lib"
+install libssl.so.1.1 -m755 "$1/usr/lib"
+install libcrypto.so.1.1 -m755 "$1/usr/lib"

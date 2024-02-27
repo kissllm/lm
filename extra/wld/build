@@ -1,11 +1,14 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
+
+# add amd to the list of drm drivers.
+sed 's/intel/& amd/' config.mk > _
+mv -f _ config.mk
 
 mk() {
-    gmake \
+    make \
         PREFIX=/usr \
         ENABLE_DEBUG=0 \
         ENABLE_SHARED=0 \
-        DRM_DRIVERS=amd \
         "$@"
 }
 

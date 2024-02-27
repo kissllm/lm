@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+
+sed -i '/^#include /s|ncursesw/||' gptcurses.cc
+
+#sed -i 's/-Wall//' Makefile
+
+make
+
+install -Dm755 gdisk "$1/usr/bin/gdisk"
+install -Dm755 cgdisk "$1/usr/bin/cgdisk"
+install -Dm755 sgdisk "$1/usr/bin/sgdisk"
+install -Dm755 fixparts "$1/usr/bin/fixparts"

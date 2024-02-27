@@ -1,2 +1,6 @@
-git+https://github.com/kissllm/mesa@main
+# git+https://github.com/kissllm/mesa@main
+# git+https://gitlab.freedesktop.org/mesa/mesa.git
+git+https://github.com/Mesa3D/mesa.git
 # git+https://github.com/sqlalchemy/mako
+patches/musl-fix-includes.patch
+patches/wayland.patch

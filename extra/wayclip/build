@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+make PREFIX=/usr
+make PREFIX=/usr install
+
+cd "$1/usr/bin"
+
+ln -sf waycopy  wl-copy
+ln -sf waypaste wl-paste

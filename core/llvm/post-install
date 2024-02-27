@@ -1,0 +1,58 @@
+#! /bin/sh -e
+
+version_target="$2"
+
+[ ! -d "$KISS_ROOT/usr/lib/clang" ] || {
+	cd "$KISS_ROOT/usr/lib/clang"
+	[ -d "$version_target" ] ||
+	[ -h "$version_target" ] || {
+		[ -d "${version_target%%.*}" ] &&
+		ln -sf "${version_target%%.*}" "$version_target" ||
+		// die 'Target version' "does not exist"
+	}
+
+	{
+		[ ! -d "system" ] || [ -h "system" ]
+	} && {
+		[ -f "system" ] && rm -f "system"
+		[ ! -h "system" ] &&
+		ln -s -f "$version_target" "system" ||
+		[ "$(readlink -fn "system")" = "$(readlink -fn "$version_target")" ] || {
+			rm -f "system"
+			ln -s -f "$version_target" "system"
+		}
+	} || {
+		# [ ! -d ".backup" ] || \rm -rf ".backup"
+		rsync -aqz "system" ".backup/" && sync
+		\rm -rf "system"
+		ln -s -f "$version_target" "system"
+	}
+}
+
+[ ! -d "$KISS_ROOT/usr/lib/llvm" ] || {
+	cd "$KISS_ROOT/usr/lib/llvm"
+	[ -d "$version_target" ] ||
+	[ -h "$version_target" ] || {
+		[ -d "${version_target%%.*}" ] &&
+		ln -sf "${version_target%%.*}" "$version_target" ||
+		// die 'Target version' "does not exist"
+	}
+
+	{
+		[ ! -d "system" ] || [ -h "system" ]
+	} && {
+		[ -f "system" ] && rm -f "system"
+		[ ! -h "system" ] &&
+		ln -s -f "$version_target" "system" ||
+		[ "$(readlink -fn "system")" = "$(readlink -fn "$version_target")" ] || {
+			rm -f "system"
+			ln -s -f "$version_target" "system"
+		}
+	} || {
+		# [ ! -d ".backup" ] || \rm -rf ".backup"
+		rsync -aqz "system" ".backup/" && sync
+		\rm -rf "system"
+		ln -s -f "$version_target" "system"
+	}
+
+}

@@ -1,0 +1,17 @@
+git+https://github.com/llvm/llvm-project@main
+files/c99
+files/distribution.cmake
+files/distribution-stage2.cmake
+patches/hardcoded.patch
+patches/main.patch
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/llvm-project-VERSION.src.tar.xz
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/llvm-VERSION.src.tar.xz llvm
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/clang-VERSION.src.tar.xz clang
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/lld-VERSION.src.tar.xz lld
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/compiler-rt-VERSION.src.tar.xz compiler-rt
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/libcxx-VERSION.src.tar.xz libcxx
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/libcxxabi-VERSION.src.tar.xz libcxxabi
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/libunwind-VERSION.src.tar.xz libunwind
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/openmp-VERSION.src.tar.xz openmp
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/clang-tools-extra-VERSION.src.tar.xz clang-tools-extra
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/cmake-VERSION.src.tar.xz cmake

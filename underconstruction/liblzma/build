@@ -1,0 +1,22 @@
+#!/bin/sh -e
+
+echo "DESTDIR original: $DESTDIR"
+echo "PREFIX  original: $PREFIX"
+unset DESTDIR
+unset PREFIX
+[ "$DESTDIR" == "$1" ] ||
+DESTDIR="$1"
+[ "$PREFIX" == "$KISS_ROOT/$1" ] ||
+PREFIX="$KISS_ROOT/usr"
+echo "DESTDIR updated: $DESTDIR"
+echo "PREFIX  updated: $PREFIX"
+export DESTDIR
+export PREFIX
+
+cmake -G Ninja -B objects \
+    -DCMAKE_INSTALL_PREFIX=/usr
+# cmake --build  objects --target all --parallel
+ninja -C "objects"
+# cmake --build  objects --target install
+# ninja -C "objects" install
+cmake -DCMAKE_INSTALL_PREFIX=$1/usr -P cmake_install.cmake

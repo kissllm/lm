@@ -1,56 +1,40 @@
-#!/usr/bin/env sh
-
-get_arch(){
-    case "$1" in
-	aarch64)     echo "arm64" ;;
-        aarch64_be)  echo "arm64" ;;
-	armv7)       echo "arm" ;;
-	i686)        echo "386" ;;
-	x86_64)      echo "amd64" ;;
-	powerpc64le) echo "ppc64le" ;;
-	powerpc64)   echo "ppc64" ;;
-        powerpcle)   echo "ppcle" ;;
-        powerpc)     echo "ppc" ;;
-        riscv64)     echo "riscv64" ;;
-	*) echo "Unsupported architecture $1"; exit 1;;
-    esac
-}
+#!/bin/sh -e
 
 # Disable stripping of binaries.
 # This breaks Go.
 :> nostrip
 
-# If building on arm, i386 or amd64 we can bootstrap from c using
-# the go 1.4 source. Other arch require a binary bootstrap.
-if [ "$KISS_XBUILD_ARCH" = "x86_64" ] || [ "$KISS_XBUILD_ARCH" = "i686" ] || [ "$KISS_XBUILD_ARCH" = "armv7" ]; then
-    echo "Building go bootstrap from source"
+for p in *.patch; do
+    patch -p1 < "$p"
+done
 
-    export GOROOT=$PWD/go1.4-bootstrap
-    export GOROOT_FINAL=$PWD/lib/go-bootstrap
+export CC="${CC:-cc}"
+export GOARCH=amd64
+export GO_LDFLAGS="-w -s"
+
+[ -f "$KISS_ROOT/var/db/kiss/installed/go/manifest" ] || {
+    export GOROOT="$PWD/go1.4-bootstrap"
+    export GOROOT_FINAL="$PWD/lib/go-bootstrap"
+
     mkdir -p lib/go-bootstrap
-    (
-     cd "$GOROOT/src"
-     CC=clang CFLAGS= LDFLAGS= ./make.bash
-     cd ..
-     cp -a bin pkg src ../lib/go-bootstrap
-    )
-    export GOROOT_BOOTSTRAP=$PWD/lib/go-bootstrap
+
+    cd "$GOROOT/src"
+    ./make.bash
+    cd ..
+    cp -a bin pkg src ../lib/go-bootstrap
+    cd ..
+}
+
+export GOROOT_FINAL=/usr/lib/go
+
+if [ -d "$GOROOT_FINAL" ]; then
+    export GOROOT_BOOTSTRAP=/usr/lib/go
 else
-    echo "Using binary go for bootstrap"
-    export GOROOT_BOOTSTRAP="$PWD/$(get_arch $KISS_XBUILD_ARCH)-bootstrap"
+    export GOROOT_BOOTSTRAP="$PWD/lib/go-bootstrap"
 fi
 
-export CC="clang"
-export CC_FOR_TARGET="$CC"
-export GOHOSTOS=linux
-export GOHOSTARCH="$(get_arch $KISS_XBUILD_ARCH)"
-export GOOS=linux
-export GOARCH="$(get_arch $KISS_XHOST_ARCH)"
-export GO_LDFLAGS="-w -s"
-export GOROOT_FINAL=/usr/lib/go
-export GOROOT=$PWD/go-current
+export GOROOT="$PWD/go-current"
 
-# Build go for the target
 (
     cd "$GOROOT/src"
     ./make.bash --no-clean -v
@@ -60,16 +44,9 @@ cd "$GOROOT"
 
 mkdir -p "$1/usr/bin" "$1/usr/lib/go/bin"
 
-# Install main file
-if [ "$KISS_XBUILD_TRIPLE" != "$KISS_XHOST_TRIPLE" ]; then
-    install -m755 "bin/linux_$GOARCH/go"    "$1/usr/lib/go/bin/go"
-    install -m755 "bin/linux_$GOARCH/gofmt" "$1/usr/lib/go/bin/gofmt"
-else
-    install -m755 "bin/go"    "$1/usr/lib/go/bin/go"
-    install -m755 "bin/gofmt" "$1/usr/lib/go/bin/gofmt"
-fi
+install -m755 "bin/go"    "$1/usr/lib/go/bin/go"
+install -m755 "bin/gofmt" "$1/usr/lib/go/bin/gofmt"
 
-# Create standard symlinks
 ln -s "/usr/lib/go/bin/go"    "$1/usr/bin"
 ln -s "/usr/lib/go/bin/gofmt" "$1/usr/bin"
 

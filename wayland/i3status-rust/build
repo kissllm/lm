@@ -21,7 +21,7 @@ options="net !check" # no tests
 provides="i3status-rs=$pkgver-r$pkgrel"
 subpackages="$pkgname-doc"
 source="https://github.com/greshake/i3status-rust/archive/refs/tags/v$pkgver/i3status-rust-v$pkgver.tar.gz"
-
+pkgdir="$1"
 export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
 export CARGO_PROFILE_RELEASE_LTO=true
 export CARGO_PROFILE_RELEASE_OPT_LEVEL=s

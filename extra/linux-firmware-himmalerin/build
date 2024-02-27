@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+install -Dm644 amd-ucode/* -t "$1/usr/lib/firmware/amd-ucode"
+install -Dm644 amdgpu/vega10* -t "$1/usr/lib/firmware/amdgpu"
+install -Dm644 rtl_nic/rtl8168h-2.fw -t "$1/usr/lib/firmware/rtl_nic"

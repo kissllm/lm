@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# \ls -al $PWD
+# read -r _
+
+rsync -aqz . "/usr/lib/firmware/"

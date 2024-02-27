@@ -1,0 +1,28 @@
+#!/bin/sh -e
+
+cd bmake
+
+sed -i 's/build) op_test/build) /' boot-strap
+sed -i '/	op_test/d'         boot-strap
+sed -i 's/-nostdinc//'             mk/sys/Linux.mk
+
+export CFLAGS="$CFLAGS -static"
+export LDFLAGS="$LDFLAGS -static"
+
+./boot-strap \
+    --with-default-sys-path=/usr/share/mk \
+    op=build
+
+INSTALL=install \
+./boot-strap \
+    --prefix=/usr \
+    --with-mksrc=/usr/share/mk \
+    --install-destdir="$1" \
+    op=install
+
+rm -rf "$1/usr/share/man/cat1"
+install -Dm644 bmake.1 "$1/usr/share/man/man1/bmake.1"
+ln -s bmake "$1/usr/bin/make"
+
+# Install the license
+install -Dm755 LICENSE "$1/usr/share/LICENSES/bmake.license"

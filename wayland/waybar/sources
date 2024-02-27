@@ -1,1 +1,3 @@
-../../modules/sauzer/extra/waybar/sources
+git+https://github.com/Alexays/Waybar.git
+patches/libxkbcommon.patch
+patches/config-fix-clock.patch

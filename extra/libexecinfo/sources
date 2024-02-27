@@ -3,4 +3,3 @@ patches/01-execinfo.patch
 patches/02-makefile.patch
 patches/03-define-gnu-source.patch
 patches/libexecinfo_pc.patch
-patches/make.patch

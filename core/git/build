@@ -1,10 +1,4 @@
-#!/usr/bin/env sh
-
-mkdir -p bin
-ln -s /usr/bin/gmake "$PWD/bin/make"
-export PATH="$PWD/bin:$PATH"
-
-export LDFLAGS="$LDFLAGS -static"
+#!/bin/sh -e
 
 cat > config.mak <<EOF
 NO_GETTEXT=YesPlease
@@ -14,10 +8,10 @@ NO_EXPAT=YesPlease
 NO_NSEC=YesPlease
 NO_PYTHON=YesPlease
 NO_PERL=YesPlease
+NO_SVN_TESTS=YesPlease
 NO_SYS_POLL_H=1
 NO_CROSS_DIRECTORY_HARDLINKS=1
 NO_INSTALL_HARDLINKS=1
-NO_OPENSSL=YesPlease
 EOF
 
 ./configure \
@@ -27,7 +21,7 @@ EOF
     ac_cv_snprintf_returns_bogus=no \
     ac_cv_fread_reads_directories=yes
 
-make LIBS="$(curl-config --static-libs) libgit.a reftable/libreftable.a xdiff/lib.a -lz"
+make
 make install
 
 cp -Rf man "$1/usr/share/man"

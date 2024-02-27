@@ -1,8 +1,31 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
+for item in *.patch; do
+    echo "Applying '$item'"
+    patch -p1 < "$item"
+done
+mkdir output
+meson --prefix=/usr \
+    -Ddefault_library=shared \
+    -Dsystemd=disabled \
+    -Ddbusmenu-gtk=disabled \
+    -Dgtk-layer-shell=disabled \
+    -Dlogind=disabled \
+    -Dtests=disabled \
+    -Dman-pages=disabled \
+    -Dpulseaudio=disabled \
+    -Djack=disabled \
+    -Dupower_glib=disabled \
+    -Dlibevdev=disabled \
+    -Dlibudev=enabled \
+    -Dlibnl=enabled \
+    -Dsndio=enabled \
+    -Dmpd=enabled \
+    -Drfkill=enabled \
+    . output
 
-mkdir build
-meson --prefix=/usr build
+# cd output
+# ninja
+meson compile ${JOBS:+-j $(($(nproc) + 1))} -C output
+# ninja install
 
-cd build
-ninja
-ninja install
+DESTDIR="$1" meson install --no-rebuild -C output

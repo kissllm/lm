@@ -1,0 +1,165 @@
+# diff a/llvm/CMakeLists.txt b/llvm/CMakeLists.txt
+# --- a/llvm/CMakeLists.txt
+# +++ b/llvm/CMakeLists.txt
+# @@ -156,7 +156,7 @@
+#  # As we migrate runtimes to using the bootstrapping build, the set of default runtimes
+#  # should grow as we remove those runtimes from LLVM_ENABLE_PROJECTS above.
+#  set(LLVM_DEFAULT_RUNTIMES "libcxx;libcxxabi;libunwind")
+# -set(LLVM_SUPPORTED_RUNTIMES "libc;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp;llvm-libgcc")
+# +set(LLVM_SUPPORTED_RUNTIMES "libc;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp")
+#  set(LLVM_ENABLE_RUNTIMES "" CACHE STRING
+#    "Semicolon-separated list of runtimes to build, or \"all\" (${LLVM_DEFAULT_RUNTIMES}). Supported runtimes are ${LLVM_SUPPORTED_RUNTIMES}.")
+#  if(LLVM_ENABLE_RUNTIMES STREQUAL "all")
+# @@ -564,9 +564,9 @@
+#    option(LLVM_ENABLE_MODULE_DEBUGGING "Compile with -gmodules." OFF)
+#  endif()
+#  option(LLVM_ENABLE_LOCAL_SUBMODULE_VISIBILITY "Compile with -fmodules-local-submodule-visibility." ON)
+# -option(LLVM_ENABLE_LIBCXX "Use libc++ if available." OFF)
+# +option(LLVM_ENABLE_LIBCXX "Use libc++ if available." ON)
+#  option(LLVM_STATIC_LINK_CXX_STDLIB "Statically link the standard library." OFF)
+# -option(LLVM_ENABLE_LLD "Use lld as C and C++ linker." OFF)
+# +option(LLVM_ENABLE_LLD "Use lld as C and C++ linker." ON)
+#  option(LLVM_ENABLE_PEDANTIC "Compile with pedantic enabled." ON)
+#  option(LLVM_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
+# 
+# 
+# diff --git a/llvm/CMakeLists.txt b/llvm/CMakeLists.txt
+# index 8a02f017cac7..72559b006912 100644
+# --- a/llvm/CMakeLists.txt
+# +++ b/llvm/CMakeLists.txt
+# @@ -819,9 +819,13 @@ mark_as_advanced(LLVM_TARGET_TRIPLE_ENV)
+# 
+#  # Per target dir not yet supported on Arm 32 bit due to arm vs armhf handling
+#  if(CMAKE_SYSTEM_NAME MATCHES "BSD|Linux" AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
+# -  set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default ON)
+# +  if (LLVM_TARGET_TRIPLE MATCHES "$ENV{KISS_XHOST_TRIPLE}")
+# +    set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
+# +  else()
+# +    set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default ON)
+# +  endif()
+#  else()
+# -  set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
+# +    set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
+#  endif()
+#  set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR ${LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default} CACHE BOOL
+#    "Enable per-target runtimes directory")
+
+# diff a/llvm/CMakeLists.txt b/llvm/CMakeLists.txt
+# --- a/llvm/CMakeLists.txt
+# +++ b/llvm/CMakeLists.txt
+# @@ -67,7 +67,7 @@
+#  include(GNUInstallDirs)
+# 
+#  # This C++ standard is required to build LLVM.
+# -set(LLVM_REQUIRED_CXX_STANDARD 17)
+# +set(LLVM_REQUIRED_CXX_STANDARD 20)
+# 
+#  # If we find that the cache contains CMAKE_CXX_STANDARD it means that it's a old CMakeCache.txt
+#  # and we can just inform the user and then reset it.
+# @@ -156,7 +156,7 @@
+#  # As we migrate runtimes to using the bootstrapping build, the set of default runtimes
+#  # should grow as we remove those runtimes from LLVM_ENABLE_PROJECTS above.
+#  set(LLVM_DEFAULT_RUNTIMES "libcxx;libcxxabi;libunwind")
+# -set(LLVM_SUPPORTED_RUNTIMES "libc;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp;llvm-libgcc")
+# +set(LLVM_SUPPORTED_RUNTIMES "libc;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp")
+#  set(LLVM_ENABLE_RUNTIMES "" CACHE STRING
+#    "Semicolon-separated list of runtimes to build, or \"all\" (${LLVM_DEFAULT_RUNTIMES}). Supported runtimes are ${LLVM_SUPPORTED_RUNTIMES}.")
+#  if(LLVM_ENABLE_RUNTIMES STREQUAL "all")
+# @@ -554,9 +554,9 @@
+#    option(LLVM_ENABLE_MODULE_DEBUGGING "Compile with -gmodules." OFF)
+#  endif()
+#  option(LLVM_ENABLE_LOCAL_SUBMODULE_VISIBILITY "Compile with -fmodules-local-submodule-visibility." ON)
+# -option(LLVM_ENABLE_LIBCXX "Use libc++ if available." OFF)
+# +option(LLVM_ENABLE_LIBCXX "Use libc++ if available." ON)
+#  option(LLVM_STATIC_LINK_CXX_STDLIB "Statically link the standard library." OFF)
+# -option(LLVM_ENABLE_LLD "Use lld as C and C++ linker." OFF)
+# +option(LLVM_ENABLE_LLD "Use lld as C and C++ linker." ON)
+#  option(LLVM_ENABLE_PEDANTIC "Compile with pedantic enabled." ON)
+#  option(LLVM_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
+# 
+# @@ -819,9 +819,13 @@
+# 
+#  # Per target dir not yet supported on Arm 32 bit due to arm vs armhf handling
+#  if(CMAKE_SYSTEM_NAME MATCHES "BSD|Linux" AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
+# -  set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default ON)
+# +  if (LLVM_TARGET_TRIPLE MATCHES "$ENV{KISS_XHOST_TRIPLE}")
+# +    set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
+# +  else()
+# +    set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default ON)
+# +  endif()
+#  else()
+# -  set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
+# +    set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
+#  endif()
+#  set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR ${LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default} CACHE BOOL
+#    "Enable per-target runtimes directory")
+# @@ -842,10 +846,18 @@
+#  find_package(Python3 ${LLVM_MINIMUM_PYTHON_VERSION} REQUIRED
+#      COMPONENTS Interpreter)
+# 
+# +set(c_cache "${CMAKE_C_FLAGS}")
+# +set(CMAKE_C_FLAGS "")
+# +set(cxx_cache "${CMAKE_CXX_FLAGS}")
+# +set(CMAKE_CXX_FLAGS "")
+#  # All options referred to from HandleLLVMOptions have to be specified
+#  # BEFORE this include, otherwise options will not be correctly set on
+#  # first cmake run
+#  include(config-ix)
+# +set(CMAKE_C_FLAGS "${c_cache}")
+# +unset(c_cache CACHE)
+# +set(CMAKE_CXX_FLAGS "${cxx_cache}")
+# +unset(cxx_cache CACHE)
+# 
+#  # By default, we target the host, but this can be overridden at CMake
+#  # invocation time. Except on 64-bit AIX, where the system toolchain
+
+git --diff a/llvm/CMakeLists.txt b/llvm/CMakeLists.txt
+--- a/llvm/CMakeLists.txt
++++ b/llvm/CMakeLists.txt
+@@ -67,7 +67,7 @@
+ include(GNUInstallDirs)
+
+ # This C++ standard is required to build LLVM.
+-set(LLVM_REQUIRED_CXX_STANDARD 17)
++set(LLVM_REQUIRED_CXX_STANDARD 20)
+
+ # If we find that the cache contains CMAKE_CXX_STANDARD it means that it's a old CMakeCache.txt
+ # and we can just inform the user and then reset it.
+@@ -156,7 +156,7 @@
+ # As we migrate runtimes to using the bootstrapping build, the set of default runtimes
+ # should grow as we remove those runtimes from LLVM_ENABLE_PROJECTS above.
+ set(LLVM_DEFAULT_RUNTIMES "libcxx;libcxxabi;libunwind")
+-set(LLVM_SUPPORTED_RUNTIMES "libc;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp;llvm-libgcc")
++set(LLVM_SUPPORTED_RUNTIMES "libc;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp")
+ set(LLVM_ENABLE_RUNTIMES "" CACHE STRING
+   "Semicolon-separated list of runtimes to build, or \"all\" (${LLVM_DEFAULT_RUNTIMES}). Supported runtimes are ${LLVM_SUPPORTED_RUNTIMES}.")
+ if(LLVM_ENABLE_RUNTIMES STREQUAL "all")
+@@ -554,9 +554,9 @@
+   option(LLVM_ENABLE_MODULE_DEBUGGING "Compile with -gmodules." OFF)
+ endif()
+ option(LLVM_ENABLE_LOCAL_SUBMODULE_VISIBILITY "Compile with -fmodules-local-submodule-visibility." ON)
+-option(LLVM_ENABLE_LIBCXX "Use libc++ if available." OFF)
++option(LLVM_ENABLE_LIBCXX "Use libc++ if available." ON)
+ option(LLVM_STATIC_LINK_CXX_STDLIB "Statically link the standard library." OFF)
+-option(LLVM_ENABLE_LLD "Use lld as C and C++ linker." OFF)
++option(LLVM_ENABLE_LLD "Use lld as C and C++ linker." ON)
+ option(LLVM_ENABLE_PEDANTIC "Compile with pedantic enabled." ON)
+ option(LLVM_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
+
+@@ -819,9 +819,13 @@
+
+ # Per target dir not yet supported on Arm 32 bit due to arm vs armhf handling
+ if(CMAKE_SYSTEM_NAME MATCHES "BSD|Linux" AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
+-  set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default ON)
++  if (LLVM_TARGET_TRIPLE MATCHES "$ENV{KISS_XHOST_TRIPLE}")
++    set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
++  else()
++    set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default ON)
++  endif()
+ else()
+-  set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
++    set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
+ endif()
+ set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR ${LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default} CACHE BOOL
+   "Enable per-target runtimes directory")
+

@@ -1,0 +1,11 @@
+#!/bin/sh -e
+
+autoreconf -i
+automake --foreign -Wall
+
+./configure --prefix=/usr
+
+make
+make DESTDIR="$1" install
+
+install -Dm644 libspiro.pc "$1/usr/lib/pkgconfig/libspiro.pc"

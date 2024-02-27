@@ -1,0 +1,30 @@
+#!/bin/sh -e
+# Contributor: Rob Blanckaert <basicer@gmail.com>
+# Maintainer: Rob Blanckaert <basicer@gmail.com>
+pkgname=dtrx
+pkgver=8.5.0
+pkgrel=0
+pkgdesc="Do The Right eXtraction"
+url="http://www.brettcsmith.org/2007/dtrx/"
+arch="noarch"
+license="GPL-3.0-or-later"
+depends="python3"
+makedepends="py3-setuptools"
+checkdepends="py3-invoke"
+source="$pkgname-$pkgver.tar.gz::https://github.com/dtrx-py/dtrx/archive/refs/tags/$pkgver.tar.gz"
+pkgdir="$1"
+build() {
+    python3 setup.py build
+}
+build
+check() {
+    python3 setup.py test
+}
+check
+package() {
+    python3 setup.py install --skip-build --root="$pkgdir"
+}
+package
+sha512sums="
+f15ae74b7dd7ec2004f847c802833934e9e48852721bae725b3923e0c82b0521d125acca44dd649e8bb8a9712628115a223bd9e17cb00a2427e6b0bab0649b2b  dtrx-8.5.0.tar.gz
+"

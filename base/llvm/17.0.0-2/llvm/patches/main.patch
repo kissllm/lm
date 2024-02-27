@@ -1,0 +1,34 @@
+diff --git a/llvm/CMakeLists.txt b/llvm/CMakeLists.txt
+index 8a02f017cac7..7e5d88c6e677 100644
+--- a/llvm/CMakeLists.txt
++++ b/llvm/CMakeLists.txt
+@@ -67,7 +67,7 @@ set(LLVM_LIBDIR_SUFFIX "" CACHE STRING "Define suffix of library directory name
+ include(GNUInstallDirs)
+ 
+ # This C++ standard is required to build LLVM.
+-set(LLVM_REQUIRED_CXX_STANDARD 17)
++set(LLVM_REQUIRED_CXX_STANDARD 20)
+ 
+ # If we find that the cache contains CMAKE_CXX_STANDARD it means that it's a old CMakeCache.txt
+ # and we can just inform the user and then reset it.
+@@ -156,7 +156,7 @@ endif()
+ # As we migrate runtimes to using the bootstrapping build, the set of default runtimes
+ # should grow as we remove those runtimes from LLVM_ENABLE_PROJECTS above.
+ set(LLVM_DEFAULT_RUNTIMES "libcxx;libcxxabi;libunwind")
+-set(LLVM_SUPPORTED_RUNTIMES "libc;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp;llvm-libgcc")
++set(LLVM_SUPPORTED_RUNTIMES "libc;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp")
+ set(LLVM_ENABLE_RUNTIMES "" CACHE STRING
+   "Semicolon-separated list of runtimes to build, or \"all\" (${LLVM_DEFAULT_RUNTIMES}). Supported runtimes are ${LLVM_SUPPORTED_RUNTIMES}.")
+ if(LLVM_ENABLE_RUNTIMES STREQUAL "all")
+@@ -554,9 +554,9 @@ else()
+   option(LLVM_ENABLE_MODULE_DEBUGGING "Compile with -gmodules." OFF)
+ endif()
+ option(LLVM_ENABLE_LOCAL_SUBMODULE_VISIBILITY "Compile with -fmodules-local-submodule-visibility." ON)
+-option(LLVM_ENABLE_LIBCXX "Use libc++ if available." OFF)
++option(LLVM_ENABLE_LIBCXX "Use libc++ if available." ON)
+ option(LLVM_STATIC_LINK_CXX_STDLIB "Statically link the standard library." OFF)
+-option(LLVM_ENABLE_LLD "Use lld as C and C++ linker." OFF)
++option(LLVM_ENABLE_LLD "Use lld as C and C++ linker." ON)
+ option(LLVM_ENABLE_PEDANTIC "Compile with pedantic enabled." ON)
+ option(LLVM_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
+ 

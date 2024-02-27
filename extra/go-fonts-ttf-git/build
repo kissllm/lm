@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+mkdir -p "$1/usr/share/fonts"
+cp font/gofont/ttfs/*.ttf "$1/usr/share/fonts"

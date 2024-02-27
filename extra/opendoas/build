@@ -1,15 +1,9 @@
-#!/usr/bin/env sh
-
-# Needed when cross building
-sed -i 's/UID_MAX/65535/g' doas.c
-sed -i 's/GID_MAX/65535/g' doas.c
+#!/bin/sh -e
 
 BINOWN="$(id -u)" \
 BINGRP="$(id -g)" \
 ./configure \
     --prefix=/usr \
-    --build=$KISS_XBUILD_TRIPLE \
-    --host=$KISS_XHOST_TRIPLE \
     --enable-static \
     --with-shadow \
     --with-timestamp \

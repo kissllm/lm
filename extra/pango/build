@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
 
 patch -p1 < no-fribidi.patch
 
@@ -10,15 +10,11 @@ rm -rf subprojects
 : > examples/meson.build
 : > docs/meson.build
 
-kiss-meson-config > meson.config
-
 meson \
     --prefix=/usr \
-    --cross-file="meson.config" \
     -Dgtk_doc=false \
     -Dxft=disabled \
     -Dintrospection=disabled \
-    -Dinstall-tests=false \
     . build
 
 ninja -C build

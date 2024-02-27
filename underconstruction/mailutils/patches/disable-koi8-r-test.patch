@@ -1,0 +1,18 @@
+musl does not support this charset.
+diff --git a/libmailutils/tests/decode2047.at b/libmailutils/tests/decode2047.at
+index d255844..806d4bd 100644
+--- a/libmailutils/tests/decode2047.at
++++ b/libmailutils/tests/decode2047.at
+@@ -50,12 +50,6 @@ TESTDEC2047([],[decode04],
+ [If you can read this yo ... u understand the example.
+ ])
+ 
+-# Malformed input string: lacks trailing =. MU 0.6.90 hanged on it.
+-TESTDEC2047([malformed input],[decode05],
+-[=?koi8-r?B?RndkOiDSxcfJ09TSwcPJ0SDEz83FzsE?=],
+-[Fwd: \322\305\307\311\323\324\322\301\303\311\321 \304\317\315\305
+-])
+-
+ m4_popdef([TESTDEC2047])
+ 
+ 

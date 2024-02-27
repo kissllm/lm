@@ -1,0 +1,68 @@
+#! /bin/sh -e
+
+# # Error: Rock luajit 2.1.0-beta3-1 is already provided by VM or via 'rocks_provided' in the config file.
+# luajit=$(luarocks list|grep "luajit")
+# [ ${luajit} != "luajit" ] && {
+#     luarocks --lua-version 5.1 install --dev luajit
+# }
+
+# Install packages with current lua version
+# luv=$(luarocks list|grep "luv")
+# [ ${luv} = "luv" ] ||
+#     luarocks install --dev luv
+
+# v0.9.0
+# /usr/bin/luajit: module 'jit.bcsave' not found:
+[ -z "${IS_KISS:+x}" ] || {
+	set -E
+	trap "Error at \$LINENO [pre-build]" EXIT
+}
+# nlua0
+luainlua=$(luarocks list | grep "luainlua")
+[ "${luainlua}" = "luainlua" ] ||
+    luarocks --lua-version 5.1 install --dev luainlua
+    # luarocks --lua-version 5.1 install --dev luainlua --local
+
+lpeg_patterns=$(luarocks list | grep "lpeg_patterns")
+[ "${lpeg_patterns}" = "lpeg_patterns" ] ||
+    luarocks --lua-version 5.1 install --dev lpeg_patterns
+
+xmllpegparser=$(luarocks list | grep "xmllpegparser")
+[ "${xmllpegparser}" = "xmllpegparser" ] ||
+    luarocks --lua-version 5.1 install --dev xmllpegparser
+
+snowflake=$(luarocks list | grep "snowflake")
+[ -z "${snowflake:+x}" ] ||
+[ -z "${snowflake##*"dickens7-snowflake"*}" ] ||
+    luarocks --lua-version 5.1 install --dev dickens7-snowflake
+
+compat53=$(luarocks list | grep "compat53")
+[ "${compat53}" = "compat53" ] ||
+    luarocks --lua-version 5.1 install --dev compat53
+
+ltui=$(luarocks list | grep "ltui")
+[ "${ltui}" = "ltui" ] || {
+    luarocks --lua-version 5.1 build --dev ltui
+    luarocks --lua-version 5.1 install --dev ltui
+}
+
+busted=$(luarocks list | grep "busted")
+[ "${busted}" = "busted" ] || {
+    luarocks --lua-version 5.1 build --dev busted
+    luarocks --lua-version 5.1 install --dev busted
+}
+
+mpack=$(luarocks list | grep "mpack")
+[ "${mpack}" = "mpack" ] ||
+    luarocks --lua-version 5.1 install --dev mpack
+
+lpeg=$(luarocks list | awk "\$1 == \"lpeg\" {print}")
+[ "${lpeg}" = "lpeg" ] ||
+    luarocks --lua-version 5.1 install --dev lpeg
+
+ltreesitter=$(luarocks list | grep "ltreesitter")
+[ "${ltreesitter}" = "ltreesitter" ] ||
+    luarocks --lua-version 5.1 install --dev ltreesitter
+
+# main() {}
+# main "$@"

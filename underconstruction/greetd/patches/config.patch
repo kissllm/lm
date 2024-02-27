@@ -1,0 +1,12 @@
+Change the `user` to the one we have created for greetd.
+
+diff --git a/config.toml b/config.toml
+index c323af2..a90685a 100644
+--- a/config.toml
++++ b/config.toml
+@@ -13,4 +13,4 @@ command = "agreety --cmd /bin/sh"
+ # The user to run the command as. The privileges this user must have depends
+ # on the greeter. A graphical greeter may for example require the user to be
+ # in the `video` group.
+-user = "greeter"
++user = "greetd"

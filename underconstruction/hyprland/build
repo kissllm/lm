@@ -1,0 +1,17 @@
+#! /bin/sh -e
+
+# https://wiki.hyprland.org/Getting-Started/Installation/
+
+jobs=$(($(nproc) + 1))
+MAKEOPTS="-j$jobs" && export MAKEOPTS
+
+: ${OBJ_ROOT:="$KISS_TMPDIR/objects"} && export OBJ_ROOT
+
+OUTPUT_DIR="$OBJ_ROOT/$pkg_name" && export OUTPUT_DIR
+# echo "\$OUTPUT_DIR = $OUTPUT_DIR"
+// log '$OUTPUT_DIR' "$OUTPUT_DIR"
+
+meson subprojects update --reset
+meson setup "$OUTPUT_DIR"
+ninja -j $jobs -C "$OUTPUT_DIR"
+ninja -C "$OUTPUT_DIR" install --tags runtime,man

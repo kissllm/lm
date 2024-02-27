@@ -1,0 +1,19 @@
+#!/bin/sh -e
+
+version_target="$1"
+
+cd "$KISS_ROOT/usr/lib/clang"
+
+[ ! -d "system" ] || mv "system" "system.backup"
+
+[ ! -d "$version_target" ] ||
+[ "$(readlink -f "system")" == "$version_target" ] ||
+ln -s -f "$version_target" "system"
+
+cd "$KISS_ROOT/usr/lib/llvm"
+
+[ ! -d "system" ] || mv "system" "system.backup"
+
+[ ! -d "$version_target" ] ||
+[ "$(readlink -f "system")" == "$version_target" ] ||
+ln -s -f "$version_target" "system"

@@ -1,0 +1,117 @@
+Changelog for utmps.
+
+In 0.1.2.1
+----------
+
+ - Adaptation to skalibs-2.13.0.0.
+
+
+In 0.1.2.0
+----------
+
+ - Make the wtmp file name configurable.
+
+
+In 0.1.1.0
+----------
+
+ - Bugfixes.
+ - New binary: utmps-write. It's a generic utmp client, writing
+user-defined records to the utmp and/or wtmp databases.
+
+
+In 0.1.0.3
+----------
+
+ - Adaptation to skalibs-2.11.0.0.
+
+
+In 0.1.0.2
+----------
+
+ - Bugfixes.
+ - The wtmpd example now uses /var/log/wtmp instead of /run/utmps/wtmp
+since wtmp is supposed to survive across reboots.
+ - WTMPX_FILE, which is unused by utmps, now points to /var/log/wtmp
+so that programs that want to read that file (e.g. lastlog) can
+access wtmp without patching. Or with less patching.
+
+
+In 0.1.0.1
+----------
+
+ - Bugfixes.
+ - The addition of WTMP_FILE counts as a bugfix, too. :P
+ - Alignment to the glibc behaviour for pututxline().
+
+
+In 0.1.0.0
+----------
+
+ - Bugfixes.
+ - utmpx.h is not installed by default anymore.
+You now need to explicitly give the --enable-libc-includes
+configure option.
+
+
+In 0.0.3.2
+----------
+
+ - Bugfixes.
+
+
+In 0.0.3.1
+----------
+
+ - Bugfixes.
+
+ 
+In 0.0.3.0
+----------
+
+ - Adaptation to skalibs-2.9.0.0.
+
+
+In 0.0.2.2
+----------
+
+ - Bugfixes.
+
+
+In 0.0.2.1
+----------
+
+ - Adaptation to skalibs-2.8.0.0.
+ - Everything builds as PIC by default.
+
+
+In 0.0.2.0
+----------
+
+ - Bugfixes.
+ - Members of the utmp group can use pututxline().
+
+
+In 0.0.1.3
+----------
+
+ - Adaptation to skalibs-2.7.0.0.
+ - Optional nsss support added.
+
+
+In 0.0.1.2
+----------
+
+ - Bugfixes.
+
+
+In 0.0.1.1
+----------
+
+ - Bugfixes.
+
+
+In 0.0.1.0
+----------
+
+ - Initial release.

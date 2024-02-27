@@ -1,20 +1,16 @@
-#!/usr/bin/env sh
-
-export PKG_CONFIG_SYSROOT_DIR=
-
-kiss-meson-config > meson.config
+#!/bin/sh -e
 
 meson \
     --prefix=/usr \
-    --cross-file="meson.config" \
     --libexecdir=/usr/lib \
     -Ddefault_library=both \
     -Denable-docs=false \
     -Denable-wayland=true \
     -Denable-x11=false \
     -Denable-xkbregistry=true \
-    -Dxkb-config-extra-path="/usr/share/X11/xkb" \
     . output
 
 ninja -C output
 ninja -C output install
+rsync -aqzL "include"/xkbcommon/* "$1/usr/include/xkbcommon/"
+sync

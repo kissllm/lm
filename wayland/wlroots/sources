@@ -1,4 +1,5 @@
-git+https://gitlab.freedesktop.org/wlroots/wlroots@0.15
+git+https://gitlab.freedesktop.org/wlroots/wlroots.git
+# git+https://gitlab.freedesktop.org/wlroots/wlroots.git@0.15
 # git+https://github.com/swaywm/wlroots
 # https://github.com/swaywm/wlroots/releases/download/VERSION/wlroots-VERSION.tar.gz
 # https://gitlab.freedesktop.org/wlroots/wlroots/-/archive/VERSION/wlroots-VERSION.tar.bz2

@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+
+cp -r usr "$1/usr"

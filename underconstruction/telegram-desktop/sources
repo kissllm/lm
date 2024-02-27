@@ -1,0 +1,6 @@
+https://github.com/telegramdesktop/tdesktop/releases/download/vVERSION/tdesktop-VERSION-full.tar.gz
+https://invent.kde.org/frameworks/kcoreaddons/-/archive/v5.98.0/kcoreaddons-v5.98.0.tar.gz kcoreaddons-v5.98.0
+patches/small-sizes.patch
+patches/add-libvpx.patch
+# patches/disable-jemalloc.patch
+

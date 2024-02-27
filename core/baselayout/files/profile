@@ -8,9 +8,13 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/bin
 # Set default umask.
 umask 022
 
+: "${LOGNAME:="$(/usr/bin/whoami)"}" && export LOGNAME
+: "${HOME:="$(/usr/bin/awk -F : -v v="${LOGNAME}" "\$1 == v {print \$6}" /etc/passwd)"}" && export HOME
+
 # Load profiles from /etc/profile.d
-for file in /etc/profile.d/*.sh; do
+for file in /etc/profile.d/*; do
     [ -r "$file" ] && . "$file"
 done
 
 unset file
+export loaded_profile=

@@ -1,9 +1,7 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
 
 ./configure \
     --prefix=/usr \
-    --build=$KISS_XBUILD_TRIPLE \
-    --host=$KISS_XHOST_TRIPLE \
     --datadir=/usr/share/openssh \
     --sysconfdir=/etc/ssh \
     --sbindir=/usr/bin \

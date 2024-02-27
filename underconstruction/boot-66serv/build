@@ -1,0 +1,21 @@
+#! /bin/sh -e
+#
+# https://sysdfree.wordpress.com/2019/12/15/291/
+#
+./configure \
+	--prefix=${KISS_ROOT}/usr \
+	--with-sysdeps=${KISS_ROOT}/lib/skalibs/sysdeps \
+	--with-lib=${KISS_ROOT}/lib \
+	--with-s6-log-timestamp=iso \
+	--HOSTNAME=kiss \
+	--TZ=America/New_York \
+	--KEYMAP='!us' \
+	--TTY=7
+	#
+	# --TZ=Europe/Sofia \
+	#
+make PREFIX=/usr
+
+make DESTDIR=$1 install
+
+

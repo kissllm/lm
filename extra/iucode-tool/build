@@ -1,0 +1,36 @@
+#!/bin/sh -e
+# Maintainer: Natanael Copa <ncopa@alpinelinux.org>
+pkgname=iucode-tool
+pkgver=2.3.1
+pkgrel=3
+pkgdesc="manipulate microcode update collections for Intel i686 and X86-64"
+url="https://gitlab.com/iucode-tool/iucode-tool"
+arch="x86 x86_64"
+license="GPL-2.0-or-later"
+makedepends="autoconf automake libtool argp-standalone"
+subpackages="$pkgname-doc"
+source="https://gitlab.com/iucode-tool/iucode-tool/-/archive/v$pkgver/iucode-tool-v$pkgver.tar.gz"
+# builddir="$srcdir/iucode-tool-v$pkgver"
+builddir="$PWD"
+pkgdir="$1"
+build() {
+    ./autogen.sh
+    ./configure \
+        --build=$CBUILD \
+        --host=$CHOST \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --mandir=/usr/share/man \
+        --localstatedir=/var
+    make
+}
+build
+check() {
+    make check
+}
+check
+package() {
+    make install DESTDIR="$pkgdir"
+}
+package
+sha512sums="e6b1d6b6362e129037105b8759f372ff1e3bfacde5525fd58d87a479807c59e0491348f5891bc995aec6bd3cb150401fe10b4beccd5b96742665d735fbf2c911  iucode-tool-v2.3.1.tar.gz"

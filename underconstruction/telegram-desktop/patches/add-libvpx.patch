@@ -1,0 +1,13 @@
+diff --git a/Telegram/CMakeLists.txt b/Telegram/CMakeLists.txt
+index 8a99981..868a0f4 100644
+--- a/Telegram/CMakeLists.txt
++++ b/Telegram/CMakeLists.txt
+@@ -88,6 +88,7 @@
+     desktop-app::external_openssl
+     desktop-app::external_openal
+     desktop-app::external_xxhash
++    /usr/lib/libvpx.so
+ )
+
+ target_precompile_headers(Telegram PRIVATE $<$<COMPILE_LANGUAGE:CXX,OBJCXX>:${src_loc}/stdafx.h>)
+

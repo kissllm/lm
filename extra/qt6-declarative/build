@@ -1,0 +1,6 @@
+#!/bin/sh -e
+
+cmake -B build
+
+cmake --build   build
+cmake --install build

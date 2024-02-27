@@ -1,0 +1,63 @@
+#! /bin/sh -e
+
+SCRIPT_NAME="build" && export SCRIPT_NAME
+
+# [ ! -z "${KISS_XHOST_ABI+x}" ] ||
+# KISS_XHOST_ABI="$($KISS_ROOT/usr/bin/ldd --version 2>&1 | grep musl | awk '{print $1}')" || :
+
+# // log '$KISS_XHOST_ABI' "$KISS_XHOST_ABI"
+// log '$OBJ_ROOT' "$OBJ_ROOT"
+# [ "$KISS_XHOST_ABI" != "musl" ] ||
+! expr "$($KISS_ROOT/usr/bin/ldd --version 2>&1 | grep libc)" : "^musl" 1>/dev/null ||
+[ -z "${CXXFLAGS##*"-D LIBCXX_HAS_MUSL_LIBC"*}" ] ||
+CXXFLAGS="-D LIBCXX_HAS_MUSL_LIBC -D _LIBCPP_HAS_MUSL_LIBC ${CXXFLAGS-}"
+
+CXXFLAGS="-isystem /usr/include/tirpc ${CXXFLAGS-}"
+
+MAKE_DIR="$PWD"
+
+// log '$OBJ_ROOT' "$OBJ_ROOT"
+OUTPUT_DIR="$OBJ_ROOT/${PWD##*/}" && export OUTPUT_DIR
+
+[ ! -d "Modules" ] || mv Modules/* cmake/Modules/
+
+cmake -S . -B "$OUTPUT_DIR" \
+    -G Ninja \
+    -D CMAKE_INSTALL_PREFIX=/usr \
+    -D CMAKE_BUILD_TYPE=Release \
+    -D COMPILER_RT_BUILD_XRAY=OFF \
+    -D CMAKE_CXX_FLAGS="${CXXFLAGS-} -lexecinfo -isystem /usr/include/tirpc ${CMAKE_CXX_FLAGS-}" \
+    -D COMPILER_RT_BUILD_SANITIZERS=ON \
+    -D _LIBCPP_HAS_MUSL_LIBC=ON \
+    -D LIBCXX_HAS_MUSL_LIBC=ON \
+	-D LIBUNWIND_USE_COMPILER_RT=ON \
+	-D LIBUNWIND_ENABLE_STATIC=ON \
+	-D LIBUNWIND_ENABLE_SHARED=ON \
+	-D LIBUNWIND_INSTALL_LIBRARY=ON \
+	-D LIBUNWIND_INSTALL_SHARED_LIBRARY=ON \
+	-D LIBUNWIND_INSTALL_STATIC_LIBRARY=ON \
+	-D CMAKE_POSITION_INDEPENDENT_CODE=ON \
+	-D LIBUNWIND_HAS_GCC_LIB:BOOL=OFF \
+	-D LIBUNWIND_HAS_GCC_S_LIB:BOOL=OFF \
+	-D LIBUNWIND_ENABLE_EXCEPTIONS=ON \
+	-D LIBUNWIND_INSTALL_LIBRARY_DIR:PATH=lib \
+    -D_LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE=ON
+
+		# This is the key option
+		# -D CMAKE_POSITION_INDEPENDENT_CODE=ON \
+
+cmake --build   "$OUTPUT_DIR"
+cmake --install "$OUTPUT_DIR"
+
+echo "\$1 = $1"
+# $1 = /working/kiss/proc/pkg/libunwind
+echo "\$2 = $2"
+# $2 = 15.0.6
+
+cd "$1"
+tree "$1"
+
+[ ! -d "usr/lib/linux" ] || {
+	mkdir -p usr/lib/clang/$2/lib
+	mv usr/lib/linux usr/lib/clang/$2/lib
+}

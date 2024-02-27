@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+sed '/#include/a #define QT_EGL_NO_X11' \
+    src/hardwareintegration/compositor/wayland-egl/waylandeglclientbufferintegration.cpp > _
+mv -f _  src/hardwareintegration/compositor/wayland-egl/waylandeglclientbufferintegration.cpp
+
+cmake -B build
+
+cmake --build   build
+cmake --install build

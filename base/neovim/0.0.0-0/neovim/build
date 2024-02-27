@@ -1,0 +1,281 @@
+#! /bin/sh -e
+
+# v0.8.2
+# v0.9.0
+# Outer dependencies
+# 1. libvterm 0.3
+# /var/db/kiss/lm/extra/libvterm
+# https://launchpad.net/libvterm/trunk/v0.3/+download/libvterm-0.3.tar.gz
+# 2. luv git
+# /var/db/kiss/lm/extra/luv
+# git+https://github.com/luvit/luv@master
+# 3. libuv 1.44.2
+# 4. popt
+
+# Due to some changes in the package manager/pigz, we have to...
+# unset DESTDIR
+[ -z "${DESTDIR:+x}" ] || {
+	echo "DESTDIR original: $DESTDIR"
+	unset DESTDIR
+}
+[ -z "${PREFIX:+x}" ] || {
+	echo "PREFIX  original: $PREFIX"
+	unset PREFIX
+}
+DESTDIR="$1"
+PREFIX="$KISS_ROOT/usr"
+echo "DESTDIR updated: $DESTDIR"
+echo "PREFIX  updated: $PREFIX"
+export DESTDIR
+export PREFIX
+
+# export USE_GMAKE=1
+unset USE_GMAKE
+# export CCACHE_DISABLE=1
+unset CCACHE_DISABLE
+PKG_DIR="$1"
+export PKG_DIR
+
+# Clang: POSIX compliance
+[ -d "$DESTDIR"/usr/bin ] || \mkdir -p "$DESTDIR"/usr/bin
+rsync -aqz c99 "$DESTDIR"/usr/bin/
+chmod 755 "$DESTDIR/usr/bin/c99"
+
+# $0 won't work in source scripts mode
+# script=$(readlink -f "$0")
+# script_path=${script%/*}
+# script_folder=${script_path##*/}
+# echo "\$script_folder = $script_folder"
+#
+# [ ! -z "${SRC_ROOT+x}" ] || SRC_ROOT="$HOME/.cache/kiss/sources"
+# [ ! -z "${SRC_PATH+x}" ] || SRC_PATH="$SRC_ROOT/${PWD##*/}"
+
+
+# Moved to kiss package manager
+# repo update rejected!
+# cd "$SRC_PATH"
+# com=${2##*[@#]}
+# com=${com#${2%[#@]*}}
+#
+# # repo update rejected!
+# # git fetch --prune --unshallow --tags
+# git rev-parse --short HEAD
+# git describe --always
+# git fetch --depth=1 origin "$com"
+# git reset --hard FETCH_HEAD
+#
+# git submodule init
+# git submodule sync
+# git submodule update --init --remote --recursive --force
+
+
+# rsync -aqz "${SRC_PATH}/cmake.deps" "${SRC_PATH}/third-party" && sync
+#
+# [ -d "${SRC_PATH}/cmake.deps" ] && {
+#     rsync -aqz "${SRC_PATH}/cmake.deps" "$PWD/.deps" && sync
+# }
+# [ -d "$PWD/.deps/usr/bin" ] || \mkdir -p "$PWD/.deps/usr/bin"
+
+target=$(find . -type f -name "BuildLuajit.cmake")
+echo "patch target: "$target
+# Got "./third-party/cmake/BuildLuajit.cmake", not "cmake.deps/cmake/BuildLuajit.cmake", which is source expected
+
+for item in *.patch; do
+	echo "Applying $item"
+	patch -p1 < "$item"
+done
+
+# Remove mandatory gettext dependency.
+# [ ! -s "src/nvim/po/CMakeLists.txt" ] ||
+# sed -i 's/^/#/' src/nvim/po/CMakeLists.txt
+
+# sed -i 's/find_package(LIBVTERM 0.3 REQUIRED)/find_package(LIBVTERM git REQUIRED)/' \
+# src/nvim/CMakeLists.txt
+
+# Following patches come from 'make DESTDIR="$1" install'
+# # sed -i 's/${CMAKE_COMMAND} -E create_symlink/ln -sf/' /home/kiss/sources/neovim/neovim/cmake.deps/cmake/BuildLuajit.cmake
+# sed -i 's:luajit-2.1.0-beta3 ${DEPS_BIN_DIR}:luajit-2.1.0-beta3 '${1}'${DEPS_BIN_DIR}:g' third-party/cmake/BuildLuajit.cmake
+# # sed -i 's:${HOSTDEPS_INSTALL_DIR}:'${1}'${HOSTDEPS_INSTALL_DIR}:g' third-party/cmake/BuildLuarocks.cmake
+# sed -i 's:--with-lua=${HOSTDEPS_INSTALL_DIR}:--with-lua='${1}'${HOSTDEPS_INSTALL_DIR}:g' third-party/cmake/BuildLuarocks.cmake
+# sed -i 's:--with-lua-include=${HOSTDEPS_INSTALL_DIR}:--with-lua-include='${1}'${HOSTDEPS_INSTALL_DIR}:g' third-party/cmake/BuildLuarocks.cmake
+# sed -i 's:--prefix=${HOSTDEPS_INSTALL_DIR}:--prefix='${1}'${HOSTDEPS_INSTALL_DIR}:g' third-party/cmake/BuildLuarocks.cmake
+
+# sed -i 's:=luajit:='${1}'${HOSTDEPS_INSTALL_DIR}/bin/luajit:g' third-party/cmake/BuildLuarocks.cmake
+# patch_file=$(find . -type f -name "symlink-crrection.patch")
+# echo "patch_file: "$patch_file
+# # sed -i 's/cmake.deps/third-party/g' $patch_file
+# # # sed -i 's:${LUAJIT_EXECUTABLE} ${DEPS_BIN_DIR}:${LUAJIT_EXECUTABLE} '${1}'${DEPS_BIN_DIR}:g' $patch_file
+# # patch -p1 < $patch_file
+# sed -i 's:luajit-2.1.0-beta3 ${DEPS_BIN_DIR}:luajit-2.1.0-beta3 '${1}'${DEPS_BIN_DIR}:g' $patch_file
+# # sed -i 's/cmake.deps/third-party/g' luajit-download.patch
+# # patch -p1 < luajit-download.patch
+# sed -i 's:${HOSTDEPS_INSTALL_DIR}:'${1}'${HOSTDEPS_INSTALL_DIR}:g' ./third-party/cmake/BuildLuarocks.cmake
+# sed -i 's:=luajit:='${1}'${HOSTDEPS_INSTALL_DIR}/bin/luajit:g' ./third-party/cmake/BuildLuarocks.cmake
+
+unset LUA_PATH
+unset LUA_CPATH
+export LUA_PATH=
+export LUA_CPATH=
+
+eval '$(/usr/bin/luarocks --lua-version 5.1 path --append --bin)'
+# eval '$(/usr/bin/luarocks path --append --bin)'
+export PATH=$(echo $PATH | sed "s/'//g")
+LUA_PATH="$KISS_ROOT/usr/share/luajit-2.1.0-beta3/jit/?.lua;$LUA_PATH"
+export LUA_PATH=$(echo $LUA_PATH | sed "s/'//g")
+export LUA_CPATH=$(echo $LUA_CPATH | sed "s/'//g")
+
+# neovim depends on luv
+# luv depends on libuv
+# Assertion failed: !uv__is_closing(handle) (/tmp/root/kiss/proc/libuv/make/src/unix/core.c: uv_close: 116)
+# Error loading shared library libuv.so.1: No such file or directory (needed by /lib/libluv.so.1)
+
+export LIBLUV_INCLUDE_DIR="$KISS_ROOT/usr/include"
+export LIBLUV_LIBRARY="$KISS_ROOT/usr/lib/libluv.so"
+
+: ${OUTPUT_DIR="$OBJ_ROOT/${PWD##*/}"} && export OUTPUT_DIR
+
+lua_headers="$(grep luajit.h "$KISS_ROOT/var/db/kiss/installed/luajit/manifest")"
+# luajit_ver="$($KISS_ROOT/usr/bin/luajit -v | awk '{print $2}')"
+# luajit_ver="${luajit_ver%.*}"
+luajit_version="$($KISS_ROOT/usr/bin/luajit -v | awk '{print $2}')"
+luajit_ver_tail="${luajit_version#*.}"
+luajit_ver_tail="${luajit_ver_tail#*.}"
+luajit_version="${luajit_version%".$luajit_ver_tail"}"
+
+// log '$luajit_version' "$luajit_version"
+for item in $lua_headers; do
+	[ ! -z "$item" ] && [ -z "${item##*"$luajit_version"*}" ] || continue
+	lua_header_dir="${item%/*}"
+	break
+done
+// log '$lua_header_dir' "$lua_header_dir"
+
+find $OUTPUT_DIR -mindepth 1 -delete
+
+# Also OK on my system
+# cmake -G Ninja \
+#     -S "." \
+#     -B "${OUTPUT_DIR}" \
+#     -UUSE_BUNDLED \
+#     -UUSE_BUNDLED_LUAJIT \
+#     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+#     -DCMAKE_INSTALL_PREFIX=/usr
+
+# cmake -G Ninja \
+#     -S "." \
+#     -B "${OUTPUT_DIR}" \
+#     -DUSE_BUNDLED=ON \
+#     -DUSE_BUNDLED_LIBLUV=ON \
+#     -DNVIM_BUILD_STATIC=ON \
+#     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+#     -DLIBVTERM_INCLUDE_DIR="/usr/include" \
+#     -DLIBVTERM_LIBRARY="/usr/lib/libvterm.so" \
+#     -DLIBLUV_INCLUDE_DIR="/usr/include" \
+#     -DLIBLUV_LIBRARY="/usr/lib/libluv.so" \
+#     -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS-} $CFLAGS -isystem /usr/include/node -isystem $lua_header_dir" \
+#     -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS-} $CXXFLAGS -isystem /usr/include/node -isystem $lua_header_dir" \
+#     -DCMAKE_HAVE_PTHREAD_H:INTERNAL=1 \
+#     -DLIBTERMKEY_LIBRARY:FILEPATH=/usr/lib/libtermkey.a \
+#     -DLIBUV_LIBRARY:FILEPATH=/usr/lib/libuv.so \
+#     -Dpkgcfg_lib_PC_LIBTERMKEY_termkey:FILEPATH=/usr/lib/libtermkey.a \
+#     -DLUAJIT_INCLUDE_DIR:PATH=$lua_header_dir \
+#     -DCMAKE_INSTALL_PREFIX=/usr
+
+# cmake -G Ninja -S . -B "${OUTPUT_DIR}" \
+#     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+#     -DLIBVTERM_INCLUDE_DIR="/usr/include" \
+#     -DLIBVTERM_LIBRARY="/usr/lib/libvterm.so" \
+#     -DLIBLUV_INCLUDE_DIR="/usr/include" \
+#     -DLIBLUV_LIBRARY="/usr/lib/libluv.so" \
+#     -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS} $CFLAGS -isystem /usr/include/node -isystem $lua_header_dir" \
+#     -DENABLE_LIBICONV:BOOL=ON \
+#     -DFEAT_TUI:BOOL=ON \
+#     -DCCACHE_PRG:FILEPATH=/usr/bin/ccache \
+#     -DCMAKE_INSTALL_PREFIX=/usr
+
+# cmake -G "Unix Makefiles" \
+cmake -G Ninja \
+	-S "." \
+	-B "${OUTPUT_DIR}" \
+	-D CMAKE_BUILD_TYPE=RelWithDebInfo \
+	-D LIBVTERM_INCLUDE_DIR="$KISS_ROOT/usr/include" \
+	-D LIBVTERM_LIBRARY="$KISS_ROOT/usr/lib/libvterm.so" \
+	-D LIBLUV_INCLUDE_DIR="$KISS_ROOT/usr/include" \
+	-D LIBLUV_LIBRARY="$KISS_ROOT/usr/lib/libluv.so" \
+	-D CMAKE_C_FLAGS="${CMAKE_C_FLAGS-} $CFLAGS -std=c99 -isystem $KISS_ROOT/usr/include/node -isystem $lua_header_dir " \
+	-D CMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS-} $CXXFLAGS -isystem $KISS_ROOT/usr/include/node -isystem $lua_header_dir " \
+	-D CMAKE_HAVE_PTHREAD_H:INTERNAL=1 \
+	-D LIBTERMKEY_LIBRARY:FILEPATH=$KISS_ROOT/usr/lib/libtermkey.a \
+	-D LIBUV_LIBRARY:FILEPATH=$KISS_ROOT/usr/lib/libuv.so \
+	-D pkgcfg_lib_PC_LIBTERMKEY_termkey:FILEPATH=$KISS_ROOT/usr/lib/libtermkey.a \
+	-D LUAJIT_INCLUDE_DIR:PATH=$lua_header_dir \
+	-D CMAKE_INSTALL_LIBDIR=lib \
+	-D ENABLE_JEMALLOC=FALSE \
+	-D CMAKE_VERBOSE_MAKEFILE=TRUE \
+	-D NVIM_BUILD_STATIC=ON \
+	-D USE_BUNDLED=ON \
+	-D ENABLE_LTO=TRUE \
+	-D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
+	-D ENABLE_LIBICONV:BOOL=ON \
+	-D CMAKE_VERBOSE_MAKEFILE:BOOL=TRUE \
+	-U _GNU_SOURCE \
+	-D CCACHE_PRG:FILEPATH=/usr/bin/ccache \
+	-D FEAT_TUI:BOOL=ON \
+	-D CI_BUILD=OFF \
+	-D ENABLE_IWYU:BOOL=OFF \
+	-D COMPILE_LUA=OFF \
+	-D MIN_LOG_LEVEL=3 \
+	-D PREFER_LUA=OFF \
+	-D CMAKE_INSTALL_PREFIX=/usr
+
+	# -D USE_BUNDLED_LIBUV=ON \
+	# -D USE_BUNDLED_LUAJIT=ON \
+	# -D USE_BUNDLED_LUV=ON \
+	# -D USE_BUNDLED_LIBLUV=ON \
+	# -DENABLE_IWYU:BOOL=ON \
+	# Manually-specified variables were not used by the project:
+	# CMAKE_CXX_FLAGS
+	# NVIM_BUILD_STATIC
+	# USE_BUNDLED
+	# USE_BUNDLED_LIBUV
+	# USE_BUNDLED_LUAJIT
+	# USE_BUNDLED_LUV
+
+	# Segmentation fault
+	# /usr/lib/lua/5.1/luv.so
+	# -DLIBLUV_LIBRARY="/usr/lib/lua/5.1/luv.so" \
+	# -DLIBLUV_LIBRARY="/usr/lib/libluv.so" \
+
+	# -DCMAKE_BUILD_TYPE=MinSizeRel \
+	# -DCMAKE_INSTALL_PREFIX=/usr \
+
+	# -DCMAKE_INSTALL_LIBDIR=lib \
+	# -DENABLE_JEMALLOC=FALSE \
+	# -DENABLE_LTO=TRUE \
+	# -DCMAKE_VERBOSE_MAKEFILE=TRUE \
+
+	# -DNVIM_BUILD_STATIC=ON \
+	# No such option
+	# -DUSE_BUNDLED_LIBLUV=ON \
+	# -DUSE_BUNDLED_LUAJIT=ON \
+
+# More verbose than ninja
+# cmake --build "${OUTPUT_DIR}" --target all --parallel
+ninja -C "${OUTPUT_DIR}"
+
+# make \
+#     CMAKE_BUILD_TYPE=Release \
+#     CMAKE_INSTALL_PREFIX=/usr \
+#     NVIM_BUILD_STATIC=ON \
+#     USE_BUNDLED=OFF \
+#     USE_BUNDLED_LUAJIT=OFF \
+#     -Wno-dev
+
+
+# make install
+ninja -C "${OUTPUT_DIR}" install
+# More verbose than ninja
+# doas cmake --build "${OUTPUT_DIR}" --target install --parallel
+# CMAKE_INSTALL_LIBDIR is not respected
+# mv -f "$1/usr/lib64" "$1/usr/lib"
+

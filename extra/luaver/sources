@@ -1,2 +1,2 @@
-git+https://github.com/lux-archive/luaver
+git+https://github.com/lux-archive/luaver.git
 patches/luaenv

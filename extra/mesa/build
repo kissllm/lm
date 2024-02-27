@@ -1,9 +1,15 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
+# Building and using mesa for development and testing
+# https://gist.github.com/Venemo/a9483106565df3a83fc67a411191edbd
+echo "\$MAKE_DIR = $MAKE_DIR"
+[ -n "${MAKE_DIR:+x}" ] || kill 0
 for patch in *.patch; do
+    echo "Applying patch $patch"
     patch -p1 < "$patch"
 done
-
+# mv "$MAKE_DIR/mesa/src/c11/threahs.h" "$MAKE_DIR/mesa/src/c11/threads.hh"
+pwd_origin=$PWD
 # Install python-mako which is solely needed for mesa
 # and thus contained in this build.
 {
@@ -29,26 +35,97 @@ done
     else
         pip3 install mako
     fi
-
+    [ "$PWD" == "$pwd_origin" ] || cd $pwd_origin
 }
 
 export PYTHONPATH
 # https://github.com/libretro/parallel-n64/issues/493
 # -MT will crash the build
-export CFLAGS="$CFLAGS \
-    -Wno-implicit-fallthrough \
-    -Wno-constant-conversion \
-    -Wno-deprecated-declarations \
-    -Wno-implicit-const-int-float-conversion \
-    -Wno-c99-designator \
-    "
-export CXXFLAGS="$CXXFLAGS \
-    -Wno-implicit-fallthrough \
-    -Wno-constant-conversion \
-    -Wno-deprecated-declarations \
-    -Wno-implicit-const-int-float-conversion \
-    "
+# ../src/mapi/glapi/glapi.h:85:22: error: unknown type name 'thread_local'
+#     $(llvm-config --cflags) \
+#     $(llvm-config --cxxflags) \
 
+export CFLAGS="$CFLAGS \
+-pthread \
+-MT \
+-g1 \
+$(llvm-config --cflags) \
+-Wno-implicit-fallthrough \
+-Wno-constant-conversion \
+-Wno-deprecated-declarations \
+-Wno-implicit-const-int-float-conversion \
+-Wno-c99-designator \
+-Wno-unused-variable \
+-Wno-unused-but-set-variable \
+-Wno-non-virtual-dtor \
+-Wno-ambiguous-reversed-operator \
+-Wno-incompatible-pointer-types \
+-Wno-initializer-overrides \
+-Wno-overloaded-virtual \
+-Wno-unused-function \
+"
+export CXXFLAGS="$CXXFLAGS \
+-pthread \
+-MT \
+-g1 \
+$(llvm-config --cflags) \
+-std=c++20 \
+-stdlib=libc++ -fno-exceptions \
+-Wno-implicit-fallthrough \
+-Wno-constant-conversion \
+-Wno-deprecated-declarations \
+-Wno-implicit-const-int-float-conversion \
+-Wno-unused-variable \
+-Wno-unused-but-set-variable \
+-Wno-non-virtual-dtor \
+-Wno-ambiguous-reversed-operator \
+-Wno-incompatible-pointer-types \
+-Wno-initializer-overrides \
+-Wno-overloaded-virtual \
+-Wno-unused-function \
+"
+# $(llvm-config --cxxflags) \
+# -std=c++14 \
+export CPPFLAGS="$CPPFLAGS"
+# https://serverfault.com/questions/163487/how-to-tell-if-a-linux-system-is-big-endian-or-little-endian
+[ "$(printf '\0\1' | hexdump -e '/2 "%04x"')" -ne "0100" ] || {
+    export CFLAGS="$CFLAGS \
+-DHAVE_LINUX_FUTEX_H \
+-DMAJOR_IN_SYSMACROS \
+-DHAVE_STRUCT_TIMESPEC \
+-DHAVE_PTHREAD \
+-DHAVE_THRD_CREATE \
+-DHAVE_ENDIAN_H \
+-DHAVE_DLFCN_H \
+-D_BSD_SOURCE \
+-D__BYTE_ORDER=__LITTLE_ENDIAN"
+    export CXXFLAGS="$CXXFLAGS \
+-DHAVE_LINUX_FUTEX_H \
+-DMAJOR_IN_SYSMACROS \
+-DHAVE_STRUCT_TIMESPEC \
+-DHAVE_PTHREAD \
+-DHAVE_THRD_CREATE \
+-DHAVE_ENDIAN_H \
+-DHAVE_DLFCN_H \
+-D_BSD_SOURCE \
+-D__BYTE_ORDER=__LITTLE_ENDIAN"
+
+    export ENDIANESS=little
+}
+
+# For futex_wait
+# -DHAVE_LINUX_FUTEX_H \
+
+# For major minor macros
+# -DMAJOR_IN_SYSMACROS \
+
+# /working/kiss/sources/mesa/src/util/disk_cache.h
+# /usr/include/dlfcn.h
+# #if defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
+# -DHAVE_DLFCN_H \
+# -D_BSD_SOURCE \
+echo "\$CFLAGS   = $CFLAGS"
+echo "\$CXXFLAGS = $CXXFLAGS"
 # Link in the required llvm libs
 llvmLibs=""
 for x in RISCV AArch64 ARM PowerPC X86; do
@@ -59,18 +136,33 @@ done
 
 LDFLAGS="$LDFLAGS $llvmLibs -lLLVMCFGuard -lLLVMAArch64Utils"
 
+# LLVM is an environment variable
 case $KISS_XHOST_ARCH in
-   armv7)      GALL=-Dgallium-drivers=panfrost,kmsro,lima,etnaviv,v3d,vc4,swrast LLVM=-Dllvm=enabled VULK=-Dvulkan-drivers=panfrost;;
-   aarch64)    GALL=-Dgallium-drivers=panfrost,kmsro,lima,etnaviv,v3d,vc4,swrast LLVM=-Dllvm=enabled VULK=-Dvulkan-drivers=panfrost;;
-   x86_64) ;; # Auto configured
-   powerpc64*) GALL=-Dgallium-drivers=radeonsi,r300,r600 LLVM=-Dllvm=enabled VULK=-Dvulkan-drivers=amd;;
-   riscv64*)   GALL=-Dgallium-drivers=radeonsi,r300,r600 LLVM=-Dllvm=enabled VULK=-Dvulkan-drivers=amd;;
-   *) echo "Unsupported platform: $(cc -dumpmachine)"; exit;;
+    armv7)
+        gall=-Dgallium-drivers=panfrost,kmsro,lima,etnaviv,v3d,vc4,swrast
+        llvm=-Dllvm=enabled
+        vulk=-Dvulkan-drivers=panfrost
+        ;;
+    aarch64)
+        gall=-Dgallium-drivers=panfrost,kmsro,lima,etnaviv,v3d,vc4,swrast
+        llvm=-Dllvm=enabled
+        vulk=-Dvulkan-drivers=panfrost;;
+    x86_64)
+        gall=-Dgallium-drivers=i915,iris,r300,r600,radeonsi,nouveau,swrast,virgl,zink
+        llvm=-Dllvm=enabled
+        # vulk=-Dvulkan-drivers=amd,swrast,intel,intel_hasvk
+        vulk=-Dvulkan-drivers=swrast,intel
+        ;; # Auto configured
+    powerpc64*)
+        gall=-Dgallium-drivers=radeonsi,r300,r600
+        llvm=-Dllvm=enabled
+        vulk=-Dvulkan-drivers=amd;;
+    riscv64*)
+        gall=-Dgallium-drivers=radeonsi,r300,r600
+        llvm=-Dllvm=enabled
+        vulk=-Dvulkan-drivers=amd;;
+    *) echo "Unsupported platform: $(cc -dumpmachine)"; exit;;
 esac
-
-# if [ -z "$LLVM" ] ; then
-    LLVM=-Dllvm=enabled
-# fi
 
 # Fix issues with musl and firefox.
 # https://bugs.freedesktop.org/show_bug.cgi?id=35268
@@ -85,11 +177,6 @@ mv -f _ meson.build
 ! kiss l libglvnd >/dev/null 2>&1 || glvnd_enabled=true
 
 kiss-meson-config > meson.config
-# [ -f "meson.config" ] && rm -f meson.config
-output_path=$(find . -type d -name "output")
-echo ">>>>output_path = $output_path"
-meson . output --wipe
-# rm -rf "./output"
 
 meson \
     --prefix=/usr \
@@ -98,54 +185,42 @@ meson \
     --mandir=/usr/share/man \
     --localstatedir=/var \
     --buildtype=release \
-    -Ddri-drivers= \
+    -Ddri-drivers-path= \
     -Dvulkan-layers=device-select,intel-nullhw \
-    -Dgallium-drivers=swrast,iris,zink,i915 \
+    -Dgallium-extra-hud=true \
+    -Dgallium-xa=enabled \
+    -Dgallium-va=enabled \
     -Dgallium-nine=true \
-    -Dvulkan-drivers=intel,swrast \
     -Dbuild-aco-tests=false \
-    -Dosmesa=false \
+    -Dosmesa=true \
     -Dplatforms=wayland \
+    -Dgbm=enabled \
     -Dglx=disabled \
     -Degl=enabled \
     -Dgles1=enabled \
     -Dgles2=enabled \
     -Degl-native-platform=wayland \
+    -Dopengl=true \
     -Dvalgrind=disabled \
-    -Dzstd=true \
+    -Dzstd=enabled \
     -Dglvnd="${glvnd_enabled:-false}" \
-    $VULK \
-    $GALL \
-    $LLVM \
-    -Dshared-llvm=disabled \
-    . output
+    $vulk \
+    $gall \
+    $llvm \
+    -Dvideo-codecs=h264dec,h264enc,h265dec,h265enc \
+    -Db_ndebug=true \
+    -Db_lto=false \
+    -Dshared-llvm=enabled \
+    -Dshared-glapi=enabled \
+    . output 2>&1 || kill 0
 
-# meson \
-#     --prefix=/usr \
-#     --sysconfdir=/etc \
-#     --mandir=/usr/share/man \
-#     --localstatedir=/var \
-#     --buildtype=release \
-#     -Ddri-drivers= \
-#     -Dgallium-drivers=swrast,iris,zink,i915 \
-#     -Dvulkan-drivers=intel,swrast \
-#     -Dbuild-aco-tests=false \
-#     -Dgallium-nine=true \
-#     -Dosmesa=false \
-#     -Dplatforms=wayland \
-#     -Degl-native-platform=wayland \
-#     -Dglx=disabled \
-#     -Degl=enabled \
-#     -Dvalgrind=disabled \
-#     -Dzstd=true \
-#     -Dglvnd="${glvnd_enabled:-false}" \
-#     . output
+    # meson.build:652:4: ERROR: Problem encountered: VDPAU state tracker requires X11 support.
+    # -Dgallium-vdpau=enabled \
 
+    # -Dosmesa=true \
+    # -Dvulkan-drivers=intel,swrast \
+    # -Dgallium-drivers=swrast,iris,zink,i915,nouveau \
 
-    # --cross-file="meson.config" \
-    # $VULK \
-    # $GALL \
-    # $LLVM \
     # -Dshared-llvm=disabled \
     # -Dshared-glapi=disabled \
     # -Dglx-read-only-text=true \
@@ -160,5 +235,17 @@ find -iname "*.ninja" -exec sed -i "{}" \
     -e "s;-isystem;-I${KISS_ROOT};g" \
     \;
 
-ninja -C output
-ninja -C output install
+ninja -C output \
+    src/compiler/nir/nir_intrinsics.h \
+    src/util/format/u_format_pack.h 2>&1 || kill 0
+
+meson compile -C output 2>&1 || kill 0
+ninja -C output install 2>&1 || kill 0
+
+# https://stackoverflow.com/questions/8440816/message-warning-implicit-declaration-of-function
+# implicit declaration of function is invalid in C99
+# Often this error happens because of a forgotten or missing header file
+# +++ b/src/meson.build
+# +inc_vulkan_runtime = include_directories('vulkan/runtime')
+# +++ b/src/gallium/frontends/lavapipe/meson.build
+# +  include_directories : [inc_vulkan_runtime, inc_include, inc_src, inc_util, inc_gallium, inc_compiler, inc_gallium_aux ],

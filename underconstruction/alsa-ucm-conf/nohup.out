@@ -1,0 +1,4 @@
+$name -- say [104 : pipe_reader : kiss-pipe : 8403]
+$pid_name -- PID_SAY [158 : pipe_reader : kiss-pipe : 8403]
+Terminated
+/usr/bin/kiss-pipe: line 312: can't create /tmp/root/kiss/logs/init.log: Read-only file system

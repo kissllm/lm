@@ -1,0 +1,8 @@
+#! /bin/sh -e
+#
+# export PATH=/opt/dotnet:$PATH
+# ./configure --prefix=/usr
+#
+make PREFIX=/usr
+
+make DESTDIR=$1 install

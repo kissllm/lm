@@ -1,0 +1,779 @@
+# From f8e83c4c7866ae830abe9bec15cfe805dd825b6e Mon Sep 17 00:00:00 2001
+# From: xentec <xentec@aix0.eu>
+# Date: Tue, 12 Sep 2017 07:18:38 +0200
+# Subject: [PATCH] Disable dynamic lib tests for musl's dlclose() is noop
+# 
+# ---
+#  unittests/Support/CMakeLists.txt | 2 +-
+#  1 file changed, 1 insertion(+), 1 deletion(-)
+# 
+# diff --git a/unittests/Support/CMakeLists.txt b/unittests/Support/CMakeLists.txt
+# index 641163e..4f508d9 100644
+# --- a/llvm/unittests/Support/CMakeLists.txt
+# +++ b/llvm/unittests/Support/CMakeLists.txt
+# @@ -130,7 +130,7 @@
+# 
+#  if(NOT LLVM_INTEGRATED_CRT_ALLOC)
+#    # The test doesn't pass when using a custom allocator, PR47881.
+# -  add_subdirectory(DynamicLibrary)
+# +  # add_subdirectory(DynamicLibrary)
+#  endif()
+# 
+#  add_subdirectory(CommandLineInit)
+
+diff --git a/llvm/unittests/Support/CMakeLists.txt b/llvm/unittests/Support/CMakeLists.txt
+index 92aca0010186..12ef8ee437c4 100644
+--- a/llvm/unittests/Support/CMakeLists.txt
++++ b/llvm/unittests/Support/CMakeLists.txt
+@@ -132,7 +132,7 @@ target_link_libraries(SupportTests PRIVATE LLVMTestingSupport ${LLVM_PTHREAD_LIB
+ 
+ if(NOT LLVM_INTEGRATED_CRT_ALLOC)
+   # The test doesn't pass when using a custom allocator, PR47881.
+-  add_subdirectory(DynamicLibrary)
++  # add_subdirectory(DynamicLibrary)
+ endif()
+ 
+ add_subdirectory(CommandLineInit)
+
+
+# diff --git a/libcxx/CMakeLists.txt b/libcxx/CMakeLists.txt
+# index 90eb60c8eb6f..21ffc4b82b4c 100644
+# --- a/libcxx/CMakeLists.txt
+# +++ b/libcxx/CMakeLists.txt
+# @@ -535,7 +535,7 @@ function(cxx_add_basic_build_flags target)
+#        target_compile_definitions(${target} PRIVATE -D_LIBCPP_LINK_RT_LIB)
+#      endif()
+#    endif()
+# -  target_compile_options(${target} PUBLIC "${LIBCXX_ADDITIONAL_COMPILE_FLAGS}")
+# +  target_compile_options(${target} PUBLIC ${LIBCXX_ADDITIONAL_COMPILE_FLAGS})
+#  endfunction()
+#  
+#  # Exception flags =============================================================
+# diff --git a/libcxxabi/CMakeLists.txt b/libcxxabi/CMakeLists.txt
+# index 19047835607e..b185c1167e14 100644
+# --- a/libcxxabi/CMakeLists.txt
+# +++ b/libcxxabi/CMakeLists.txt
+# @@ -246,8 +246,8 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "AIX")
+#    add_flags_if_supported("-mdefault-visibility-export-mapping=explicit")
+#    set(CMAKE_AIX_EXPORT_ALL_SYMBOLS OFF)
+#  endif()
+# -add_compile_flags("${LIBCXXABI_ADDITIONAL_COMPILE_FLAGS}")
+# -add_library_flags("${LIBCXXABI_ADDITIONAL_LIBRARIES}")
+# +add_compile_flags(${LIBCXXABI_ADDITIONAL_COMPILE_FLAGS})
+# +add_library_flags(${LIBCXXABI_ADDITIONAL_LIBRARIES})
+#  
+#  # Configure compiler. Must happen after setting the target flags.
+#  include(config-ix)
+# diff --git a/libunwind/src/CMakeLists.txt b/libunwind/src/CMakeLists.txt
+# index e5897fedd212..87a562b8dd4f 100644
+# --- a/libunwind/src/CMakeLists.txt
+# +++ b/libunwind/src/CMakeLists.txt
+# @@ -132,8 +132,8 @@ else()
+#    target_compile_options(unwind_shared_objects PRIVATE -fno-rtti)
+#  endif()
+#  target_link_libraries(unwind_shared_objects PRIVATE unwind-headers ${LIBUNWIND_LIBRARIES})
+# -target_compile_options(unwind_shared_objects PUBLIC "${LIBUNWIND_ADDITIONAL_COMPILE_FLAGS}")
+# -target_link_libraries(unwind_shared_objects PUBLIC "${LIBUNWIND_ADDITIONAL_LIBRARIES}")
+# +target_compile_options(unwind_shared_objects PUBLIC ${LIBUNWIND_ADDITIONAL_COMPILE_FLAGS})
+# +target_link_libraries(unwind_shared_objects PUBLIC ${LIBUNWIND_ADDITIONAL_LIBRARIES})
+#  set_target_properties(unwind_shared_objects
+#    PROPERTIES
+#      CXX_EXTENSIONS OFF
+# @@ -172,8 +172,8 @@ else()
+#    target_compile_options(unwind_static_objects PRIVATE -fno-rtti)
+#  endif()
+#  target_link_libraries(unwind_static_objects PRIVATE unwind-headers ${LIBUNWIND_LIBRARIES})
+# -target_compile_options(unwind_static_objects PUBLIC "${LIBUNWIND_ADDITIONAL_COMPILE_FLAGS}")
+# -target_link_libraries(unwind_static_objects PUBLIC "${LIBUNWIND_ADDITIONAL_LIBRARIES}")
+# +target_compile_options(unwind_static_objects PUBLIC ${LIBUNWIND_ADDITIONAL_COMPILE_FLAGS})
+# +target_link_libraries(unwind_static_objects PUBLIC ${LIBUNWIND_ADDITIONAL_LIBRARIES})
+#  set_target_properties(unwind_static_objects
+#    PROPERTIES
+#      CXX_EXTENSIONS OFF
+
+
+# diff --git a/libcxx/CMakeLists.txt b/libcxx/CMakeLists.txt
+# index 1400233b7..0a7b38737 100644
+# --- a/libcxx/CMakeLists.txt
+# +++ b/libcxx/CMakeLists.txt
+# @@ -201,7 +201,7 @@
+# 
+#  set(LIBCXX_ABI_DEFINES "" CACHE STRING "A semicolon separated list of ABI macros to define in the site config header.")
+#  option(LIBCXX_EXTRA_SITE_DEFINES "Extra defines to add into __config_site")
+# -option(LIBCXX_USE_COMPILER_RT "Use compiler-rt instead of libgcc" OFF)
+# +option(LIBCXX_USE_COMPILER_RT "Use compiler-rt instead of libgcc" ON)
+# 
+#  option(LIBCXX_ENABLE_BACKWARDS_COMPATIBILITY_DEBUG_MODE_SYMBOLS
+#    "Whether to include the old Debug mode symbols in the compiled library. This
+# @@ -261,7 +261,7 @@
+#     libc++abi. Doing otherwise is an ODR violation." OFF)
+#  # Build libc++abi with libunwind. We need this option to determine whether to
+#  # link with libunwind or libgcc_s while running the test cases.
+# -option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." OFF)
+# +option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." ON)
+# 
+#  # Target options --------------------------------------------------------------
+#  option(LIBCXX_BUILD_32_BITS "Build 32 bit multilib libc++. This option is not supported anymore when building the runtimes. Please specify a full triple instead." ${LLVM_BUILD_32_BITS})
+# @@ -269,6 +269,10 @@
+#    message(FATAL_ERROR "LIBCXX_BUILD_32_BITS is not supported anymore when building the runtimes, please specify a full triple instead.")
+#  endif()
+# 
+# +set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nostdlib++")
+# +# set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nostdinc++")
+# +set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} --sysroot=${KISS_ROOT}")
+# +
+#  # Feature options -------------------------------------------------------------
+#  option(LIBCXX_ENABLE_EXCEPTIONS "Use exceptions." ON)
+#  option(LIBCXX_ENABLE_RTTI "Use run time type information." ON)
+# @@ -276,7 +280,7 @@
+#  option(LIBCXX_ENABLE_MONOTONIC_CLOCK
+#    "Build libc++ with support for a monotonic clock.
+#     This option may only be set to OFF when LIBCXX_ENABLE_THREADS=OFF." ON)
+# -option(LIBCXX_HAS_MUSL_LIBC "Build libc++ with support for the Musl C library" OFF)
+# +option(LIBCXX_HAS_MUSL_LIBC "Build libc++ with support for the Musl C library" ON)
+#  option(LIBCXX_HAS_PTHREAD_API "Ignore auto-detection and force use of pthread API" OFF)
+#  option(LIBCXX_HAS_WIN32_THREAD_API "Ignore auto-detection and force use of win32 thread API" OFF)
+#  option(LIBCXX_HAS_EXTERNAL_THREAD_API
+# @@ -448,6 +452,15 @@
+#  # LIBCXX_LINK_FLAGS: Linker only flags.
+#  # LIBCXX_LIBRARIES: libraries libc++ is linked to.
+#  set(LIBCXX_COMPILE_FLAGS "")
+# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
+# +-isystem $ENV{MAKE_DIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
+# +-isystem $ENV{MAKE_DIR}/$ENV{OUTPUT_FOLDER}/runtimes/runtimes-bins/pstl/generated_headers \
+# +-isystem $ENV{MAKE_DIR}/pstl/include \
+# +-isystem $ENV{MAKE_DIR}/libcxx/include \
+# +${CMAKE_CXX_FLAGS}")
+# +message(STATUS "\${CMAKE_CXX_FLAGS} = ${CMAKE_CXX_FLAGS}")
+# +message(STATUS "\${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
+# +message(STATUS "\${LIBCXX_COMPILE_FLAGS} = ${LIBCXX_COMPILE_FLAGS}")
+#  set(LIBCXX_LINK_FLAGS "")
+#  set(LIBCXX_LIBRARIES "")
+#  set(LIBCXX_ADDITIONAL_COMPILE_FLAGS "" CACHE STRING
+
+# diff --git a/libcxx/CMakeLists.txt b/libcxx/CMakeLists.txt
+# index 90eb60c8eb6f..02395fd10486 100644
+# --- a/libcxx/CMakeLists.txt
+# +++ b/libcxx/CMakeLists.txt
+# @@ -198,7 +198,7 @@ endif()
+#  
+#  set(LIBCXX_ABI_DEFINES "" CACHE STRING "A semicolon separated list of ABI macros to define in the site config header.")
+#  option(LIBCXX_EXTRA_SITE_DEFINES "Extra defines to add into __config_site")
+# -option(LIBCXX_USE_COMPILER_RT "Use compiler-rt instead of libgcc" OFF)
+# +option(LIBCXX_USE_COMPILER_RT "Use compiler-rt instead of libgcc" ON)
+#  
+#  # ABI Library options ---------------------------------------------------------
+#  if (MSVC)
+# @@ -251,7 +251,7 @@ option(LIBCXX_ENABLE_NEW_DELETE_DEFINITIONS
+#     libc++abi. Doing otherwise is an ODR violation." OFF)
+#  # Build libc++abi with libunwind. We need this option to determine whether to
+#  # link with libunwind or libgcc_s while running the test cases.
+# -option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." OFF)
+# +option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." ON)
+#  
+#  # Target options --------------------------------------------------------------
+#  option(LIBCXX_BUILD_32_BITS "Build 32 bit multilib libc++. This option is not supported anymore when building the runtimes. Please specify a full triple instead." ${LLVM_BUILD_32_BITS})
+# @@ -266,7 +266,7 @@ option(LIBCXX_ENABLE_THREADS "Build libc++ with support for threads." ON)
+#  option(LIBCXX_ENABLE_MONOTONIC_CLOCK
+#    "Build libc++ with support for a monotonic clock.
+#     This option may only be set to OFF when LIBCXX_ENABLE_THREADS=OFF." ON)
+# -option(LIBCXX_HAS_MUSL_LIBC "Build libc++ with support for the Musl C library" OFF)
+# +option(LIBCXX_HAS_MUSL_LIBC "Build libc++ with support for the Musl C library" ON)
+#  option(LIBCXX_HAS_PTHREAD_API "Ignore auto-detection and force use of pthread API" OFF)
+#  option(LIBCXX_HAS_WIN32_THREAD_API "Ignore auto-detection and force use of win32 thread API" OFF)
+#  option(LIBCXX_HAS_EXTERNAL_THREAD_API
+
+
+# diff --git a/libcxxabi/CMakeLists.txt b/libcxxabi/CMakeLists.txt
+# index 8f48d402bc22..9c117f4ed12c 100644
+# --- a/libcxxabi/CMakeLists.txt
+# +++ b/libcxxabi/CMakeLists.txt
+# @@ -45,9 +45,9 @@ option(LIBCXXABI_ENABLE_EXCEPTIONS
+#  option(LIBCXXABI_ENABLE_ASSERTIONS "Enable assertions independent of build mode." ON)
+#  option(LIBCXXABI_ENABLE_PEDANTIC "Compile with pedantic enabled." ON)
+#  option(LIBCXXABI_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
+# -option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." OFF)
+# +option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." ON)
+#  option(LIBCXXABI_ENABLE_STATIC_UNWINDER "Statically link the LLVM unwinder." OFF)
+# -option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" OFF)
+# +option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" ON)
+#  option(LIBCXXABI_ENABLE_THREADS "Build with threads enabled" ON)
+#  option(LIBCXXABI_HAS_PTHREAD_API "Ignore auto-detection and force use of pthread API" OFF)
+#  option(LIBCXXABI_HAS_WIN32_THREAD_API "Ignore auto-detection and force use of win32 thread API" OFF)
+# @@ -229,7 +229,15 @@ endif()
+#  set(LIBCXXABI_C_FLAGS "")
+#  set(LIBCXXABI_CXX_FLAGS "")
+#  set(LIBCXXABI_COMPILE_FLAGS "")
+# -set(LIBCXXABI_LINK_FLAGS "")
+# +set(LIBCXXABI_LINK_FLAGS "-nostdlib -lc -lc++ -lexecinfo -lrt -ldl -lz -lm \
+# +-fuse-ld=lld -stdlib=libc++ -rtlib=compiler-rt --unwindlib=none \
+# +-dynamic-linker -rdynamic -lc++experimental -lpthread \
+# +-Wl,-z,relro \
+# +-Wl,--build-id \
+# +-Wl,--undefined-version \
+# +Scrt1.o crti.o crtn.o \
+# +libclang_rt.builtins-x86_64.a clang_rt.crtbegin-x86_64.o clang_rt.crtend-x86_64.o \
+# +")
+#  set(LIBCXXABI_LIBRARIES "")
+#  set(LIBCXXABI_ADDITIONAL_COMPILE_FLAGS "" CACHE STRING
+#      "Additional Compile only flags which can be provided in cache")
+# @@ -464,7 +472,13 @@ if (C_SUPPORTS_COMMENT_LIB_PRAGMA)
+#  endif()
+# 
+#  string(REPLACE ";" " " LIBCXXABI_CXX_FLAGS "${LIBCXXABI_CXX_FLAGS}")
+# -set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LIBCXXABI_CXX_FLAGS}")
+# +set(CMAKE_CXX_FLAGS "-D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} \
+# +-isystem /usr/include -isystem $ENV{MAKE_DIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
+# +-isystem $ENV{MAKE_DIR}/$ENV{OUTPUT_FOLDER}/runtimes/runtimes-bins/pstl/generated_headers \
+# +-isystem $ENV{MAKE_DIR}/pstl/include \
+# +-isystem $ENV{MAKE_DIR}/libcxx/include \
+# +${CMAKE_CXX_FLAGS} ${LIBCXXABI_CXX_FLAGS}")
+# +string(REPLACE "-Wsuggest-override" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+#  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBCXXABI_C_FLAGS}")
+# 
+#  # On AIX, avoid picking up VMX extensions(i.e. vec_malloc) which would change
+
+
+diff --git a/libcxx/CMakeLists.txt b/libcxx/CMakeLists.txt
+index 90eb60c8eb6f..d1c89cf7d53c 100644
+--- a/libcxx/CMakeLists.txt
++++ b/libcxx/CMakeLists.txt
+@@ -198,7 +198,7 @@ endif()
+ 
+ set(LIBCXX_ABI_DEFINES "" CACHE STRING "A semicolon separated list of ABI macros to define in the site config header.")
+ option(LIBCXX_EXTRA_SITE_DEFINES "Extra defines to add into __config_site")
+-option(LIBCXX_USE_COMPILER_RT "Use compiler-rt instead of libgcc" OFF)
++option(LIBCXX_USE_COMPILER_RT "Use compiler-rt instead of libgcc" ON)
+ 
+ # ABI Library options ---------------------------------------------------------
+ if (MSVC)
+@@ -251,7 +251,7 @@ option(LIBCXX_ENABLE_NEW_DELETE_DEFINITIONS
+    libc++abi. Doing otherwise is an ODR violation." OFF)
+ # Build libc++abi with libunwind. We need this option to determine whether to
+ # link with libunwind or libgcc_s while running the test cases.
+-option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." OFF)
++option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." ON)
+ 
+ # Target options --------------------------------------------------------------
+ option(LIBCXX_BUILD_32_BITS "Build 32 bit multilib libc++. This option is not supported anymore when building the runtimes. Please specify a full triple instead." ${LLVM_BUILD_32_BITS})
+@@ -266,7 +266,7 @@ option(LIBCXX_ENABLE_THREADS "Build libc++ with support for threads." ON)
+ option(LIBCXX_ENABLE_MONOTONIC_CLOCK
+   "Build libc++ with support for a monotonic clock.
+    This option may only be set to OFF when LIBCXX_ENABLE_THREADS=OFF." ON)
+-option(LIBCXX_HAS_MUSL_LIBC "Build libc++ with support for the Musl C library" OFF)
++option(LIBCXX_HAS_MUSL_LIBC "Build libc++ with support for the Musl C library" ON)
+ option(LIBCXX_HAS_PTHREAD_API "Ignore auto-detection and force use of pthread API" OFF)
+ option(LIBCXX_HAS_WIN32_THREAD_API "Ignore auto-detection and force use of win32 thread API" OFF)
+ option(LIBCXX_HAS_EXTERNAL_THREAD_API
+@@ -437,6 +437,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${LIBCXX_LIBRARY_DIR})
+ set(LIBCXX_COMPILE_FLAGS "")
+ set(LIBCXX_LINK_FLAGS "")
+ set(LIBCXX_LIBRARIES "")
++set(LIBCXX_INSTALL_RPATH "")
+ set(LIBCXX_ADDITIONAL_COMPILE_FLAGS "" CACHE STRING
+     "Additional Compile only flags which can be provided in cache")
+ set(LIBCXX_ADDITIONAL_LIBRARIES "" CACHE STRING
+@@ -667,10 +668,6 @@ function(cxx_link_system_libraries target)
+     if (LIBCXX_BUILTINS_LIBRARY)
+       target_link_libraries(${target} PRIVATE "${LIBCXX_BUILTINS_LIBRARY}")
+     endif()
+-  elseif (LIBCXX_HAS_GCC_LIB)
+-    target_link_libraries(${target} PRIVATE gcc)
+-  elseif (LIBCXX_HAS_GCC_S_LIB)
+-    target_link_libraries(${target} PRIVATE gcc_s)
+   endif()
+ 
+   if (LIBCXX_HAS_ATOMIC_LIB)
+
+
+diff --git a/libcxx/src/CMakeLists.txt b/libcxx/src/CMakeLists.txt
+index 35b466527096..5e261890a935 100644
+--- a/libcxx/src/CMakeLists.txt
++++ b/libcxx/src/CMakeLists.txt
+@@ -178,12 +178,25 @@ if (APPLE AND LLVM_USE_SANITIZER)
+     message(STATUS "Manually linking compiler-rt library: ${LIBCXX_SANITIZER_LIBRARY}")
+     add_library_flags("${LIBCXX_SANITIZER_LIBRARY}")
+     add_link_flags("-Wl,-rpath,${LIBDIR}")
++    set(LIBCXX_INSTALL_RPATH "${LIBDIR}")
+   endif()
+ endif()
+ 
+ split_list(LIBCXX_COMPILE_FLAGS)
+ split_list(LIBCXX_LINK_FLAGS)
+ 
++if (NOT APPLE AND LIBCXX_ENABLE_SHARED AND LIBCXXABI_USE_LLVM_UNWINDER AND
++  NOT LIBCXXABI_STATICALLY_LINK_UNWINDER_IN_SHARED_LIBRARY AND (TARGET unwind_shared OR HAVE_LIBUNWIND))
++  add_library_flags("-Wl,-rpath,'$$ORIGIN'")
++  set(LIBCXX_INSTALL_RPATH "\$ORIGIN")
++endif()
++
++if (LIBCXX_ENABLE_PARALLEL_ALGORITHMS
++    AND TARGET pstl
++    AND NOT TARGET pstl::ParallelSTL)
++  message(FATAL_ERROR "Could not find ParallelSTL")
++endif()
++
+ # Build the shared library.
+ if (LIBCXX_ENABLE_SHARED)
+   add_library(cxx_shared SHARED ${exclude_from_all} ${LIBCXX_SOURCES} ${LIBCXX_HEADERS})
+@@ -273,6 +286,11 @@ if (LIBCXX_ENABLE_SHARED)
+     set_target_properties(cxx_shared PROPERTIES
+                           APPEND_STRING PROPERTY LINK_FLAGS " /MANIFEST:NO")
+   endif()
++
++  set_target_properties(cxx_shared PROPERTIES
++    INSTALL_RPATH "${LIBCXX_INSTALL_RPATH}"
++    )
++
+ endif()
+ 
+ set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
+
+
+# diff --git a/libcxxabi/CMakeLists.txt b/libcxxabi/CMakeLists.txt
+# index 19047835607e..f981f6ea5a85 100644
+# --- a/libcxxabi/CMakeLists.txt
+# +++ b/libcxxabi/CMakeLists.txt
+# @@ -46,9 +46,9 @@ option(LIBCXXABI_ENABLE_EXCEPTIONS
+#  option(LIBCXXABI_ENABLE_ASSERTIONS "Enable assertions independent of build mode." ON)
+#  option(LIBCXXABI_ENABLE_PEDANTIC "Compile with pedantic enabled." OFF)
+#  option(LIBCXXABI_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
+# -option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." OFF)
+# -option(LIBCXXABI_ENABLE_STATIC_UNWINDER "Statically link the LLVM unwinder." OFF)
+# -option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" OFF)
+# +option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." ON)
+# +option(LIBCXXABI_ENABLE_STATIC_UNWINDER "Statically link the LLVM unwinder." ON)
+# +option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" ON)
+#  option(LIBCXXABI_ENABLE_THREADS "Build with threads enabled" ON)
+#  option(LIBCXXABI_HAS_PTHREAD_API "Ignore auto-detection and force use of pthread API" OFF)
+#  option(LIBCXXABI_HAS_WIN32_THREAD_API "Ignore auto-detection and force use of win32 thread API" OFF)
+
+
+diff --git a/libcxxabi/CMakeLists.txt b/libcxxabi/CMakeLists.txt
+index 19047835607e..84ed18b05aa6 100644
+--- a/libcxxabi/CMakeLists.txt
++++ b/libcxxabi/CMakeLists.txt
+@@ -46,9 +46,9 @@ option(LIBCXXABI_ENABLE_EXCEPTIONS
+ option(LIBCXXABI_ENABLE_ASSERTIONS "Enable assertions independent of build mode." ON)
+ option(LIBCXXABI_ENABLE_PEDANTIC "Compile with pedantic enabled." OFF)
+ option(LIBCXXABI_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
+-option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." OFF)
++option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." ON)
+ option(LIBCXXABI_ENABLE_STATIC_UNWINDER "Statically link the LLVM unwinder." OFF)
+-option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" OFF)
++option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" ON)
+ option(LIBCXXABI_ENABLE_THREADS "Build with threads enabled" ON)
+ option(LIBCXXABI_HAS_PTHREAD_API "Ignore auto-detection and force use of pthread API" OFF)
+ option(LIBCXXABI_HAS_WIN32_THREAD_API "Ignore auto-detection and force use of win32 thread API" OFF)
+@@ -229,6 +229,7 @@ set(LIBCXXABI_CXX_FLAGS "")
+ set(LIBCXXABI_COMPILE_FLAGS "")
+ set(LIBCXXABI_LINK_FLAGS "")
+ set(LIBCXXABI_LIBRARIES "")
++set(LIBCXXABI_INSTALL_RPATH "")
+ set(LIBCXXABI_ADDITIONAL_COMPILE_FLAGS "" CACHE STRING
+     "Additional Compile only flags which can be provided in cache")
+ set(LIBCXXABI_ADDITIONAL_LIBRARIES "" CACHE STRING
+
+
+diff --git a/libcxxabi/src/CMakeLists.txt b/libcxxabi/src/CMakeLists.txt
+index 54002bafa0e2..60cd372ab1f7 100644
+--- a/libcxxabi/src/CMakeLists.txt
++++ b/libcxxabi/src/CMakeLists.txt
+@@ -130,6 +130,7 @@ if ( APPLE )
+       message(STATUS "Manually linking compiler-rt library: ${LIBCXXABI_SANITIZER_LIBRARY}")
+       add_library_flags("${LIBCXXABI_SANITIZER_LIBRARY}")
+       add_link_flags("-Wl,-rpath,${LIBDIR}")
++      set(LIBCXXABI_INSTALL_RPATH "${LIBDIR}")
+     endif()
+   endif()
+ 
+@@ -145,6 +146,12 @@ if ( APPLE )
+   endif()
+ endif()
+ 
++if (NOT APPLE AND LIBCXXABI_ENABLE_SHARED AND LIBCXXABI_USE_LLVM_UNWINDER AND
++  NOT LIBCXXABI_STATICALLY_LINK_UNWINDER_IN_SHARED_LIBRARY AND (TARGET unwind_shared OR HAVE_LIBUNWIND))
++  add_library_flags("-Wl,-rpath,'$$ORIGIN'")
++  set(LIBCXXABI_INSTALL_RPATH "\$ORIGIN")
++endif()
++
+ split_list(LIBCXXABI_COMPILE_FLAGS)
+ split_list(LIBCXXABI_LINK_FLAGS)
+ 
+@@ -238,6 +245,11 @@ if (LIBCXXABI_ENABLE_SHARED)
+       endif()
+     endif()
+   endif()
++
++  set_target_properties(cxxabi_shared PROPERTIES
++    INSTALL_RPATH "${LIBCXXABI_INSTALL_RPATH}"
++    )
++
+ endif()
+ 
+ # Build the static library.
+
+
+# diff --git a/libcxxabi/CMakeLists.txt b/libcxxabi/CMakeLists.txt
+# index 19047835607e..f981f6ea5a85 100644
+# --- a/libcxxabi/CMakeLists.txt
+# +++ b/libcxxabi/CMakeLists.txt
+# @@ -46,9 +46,9 @@ option(LIBCXXABI_ENABLE_EXCEPTIONS
+#  option(LIBCXXABI_ENABLE_ASSERTIONS "Enable assertions independent of build mode." ON)
+#  option(LIBCXXABI_ENABLE_PEDANTIC "Compile with pedantic enabled." OFF)
+#  option(LIBCXXABI_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
+# -option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." OFF)
+# -option(LIBCXXABI_ENABLE_STATIC_UNWINDER "Statically link the LLVM unwinder." OFF)
+# -option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" OFF)
+# +option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." ON)
+# +option(LIBCXXABI_ENABLE_STATIC_UNWINDER "Statically link the LLVM unwinder." ON)
+# +option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" ON)
+#  option(LIBCXXABI_ENABLE_THREADS "Build with threads enabled" ON)
+#  option(LIBCXXABI_HAS_PTHREAD_API "Ignore auto-detection and force use of pthread API" OFF)
+#  option(LIBCXXABI_HAS_WIN32_THREAD_API "Ignore auto-detection and force use of win32 thread API" OFF)
+
+
+# diff --git a/libcxxabi/cmake/config-ix.cmake b/libcxxabi/cmake/config-ix.cmake
+# index f4ee8946c1fe..06337ad3d50f 100644
+# --- a/libcxxabi/cmake/config-ix.cmake
+# +++ b/libcxxabi/cmake/config-ix.cmake
+# @@ -8,9 +8,9 @@ check_library_exists(c fopen "" LIBCXXABI_HAS_C_LIB)
+#  if (NOT LIBCXXABI_USE_COMPILER_RT)
+#    if (ANDROID)
+#      check_library_exists(gcc __gcc_personality_v0 "" LIBCXXABI_HAS_GCC_LIB)
+# -  else ()
+# -    check_library_exists(gcc_s __gcc_personality_v0 "" LIBCXXABI_HAS_GCC_S_LIB)
+# -    check_library_exists(gcc __aeabi_uldivmod "" LIBCXXABI_HAS_GCC_LIB)
+# +  # else ()
+# +  #   check_library_exists(gcc_s __gcc_personality_v0 "" LIBCXXABI_HAS_GCC_S_LIB)
+# +  #   check_library_exists(gcc __aeabi_uldivmod "" LIBCXXABI_HAS_GCC_LIB)
+#    endif ()
+#  endif ()
+ 
+diff --git a/libcxxabi/cmake/config-ix.cmake b/libcxxabi/cmake/config-ix.cmake
+index f4ee8946c1fe..41e4a142b27a 100644
+--- a/libcxxabi/cmake/config-ix.cmake
++++ b/libcxxabi/cmake/config-ix.cmake
+@@ -8,9 +8,9 @@ check_library_exists(c fopen "" LIBCXXABI_HAS_C_LIB)
+ if (NOT LIBCXXABI_USE_COMPILER_RT)
+   if (ANDROID)
+     check_library_exists(gcc __gcc_personality_v0 "" LIBCXXABI_HAS_GCC_LIB)
+-  else ()
+-    check_library_exists(gcc_s __gcc_personality_v0 "" LIBCXXABI_HAS_GCC_S_LIB)
+-    check_library_exists(gcc __aeabi_uldivmod "" LIBCXXABI_HAS_GCC_LIB)
++  # else ()
++  #   check_library_exists(gcc_s __gcc_personality_v0 "" LIBCXXABI_HAS_GCC_S_LIB)
++  #   check_library_exists(gcc __aeabi_uldivmod "" LIBCXXABI_HAS_GCC_LIB)
+   endif ()
+ endif ()
+ 
+@@ -46,13 +46,13 @@ if (CXX_SUPPORTS_NOSTDLIBXX_FLAG OR C_SUPPORTS_NODEFAULTLIBS_FLAG)
+     else()
+       message(WARNING "Could not find builtins library from libc++abi")
+     endif()
+-  else ()
+-    if (LIBCXXABI_HAS_GCC_S_LIB)
+-      list(APPEND CMAKE_REQUIRED_LIBRARIES gcc_s)
+-    endif ()
+-    if (LIBCXXABI_HAS_GCC_LIB)
+-      list(APPEND CMAKE_REQUIRED_LIBRARIES gcc)
+-    endif ()
++  # else ()
++  #   if (LIBCXXABI_HAS_GCC_S_LIB)
++  #     list(APPEND CMAKE_REQUIRED_LIBRARIES gcc_s)
++  #   endif ()
++  #   if (LIBCXXABI_HAS_GCC_LIB)
++  #     list(APPEND CMAKE_REQUIRED_LIBRARIES gcc)
++  #   endif ()
+   endif ()
+   if (MINGW)
+     # Mingw64 requires quite a few "C" runtime libraries in order for basic
+
+# diff --git a/libcxx/cmake/config-ix.cmake b/libcxx/cmake/config-ix.cmake
+# index 3bae53643683..1c7f213c08b5 100644
+# --- a/libcxx/cmake/config-ix.cmake
+# +++ b/libcxx/cmake/config-ix.cmake
+# @@ -129,5 +129,5 @@ else()
+#    check_library_exists(m ccos "" LIBCXX_HAS_M_LIB)
+#    check_library_exists(rt clock_gettime "" LIBCXX_HAS_RT_LIB)
+#    set(LIBCXX_HAS_SYSTEM_LIB NO)
+# -  check_library_exists(atomic __atomic_fetch_add_8 "" LIBCXX_HAS_ATOMIC_LIB)
+# +  # check_library_exists(atomic __atomic_fetch_add_8 "" LIBCXX_HAS_ATOMIC_LIB)
+#  endif()
+
+diff --git a/libcxx/cmake/config-ix.cmake b/libcxx/cmake/config-ix.cmake
+index 3bae53643683..4bab3046628c 100644
+--- a/libcxx/cmake/config-ix.cmake
++++ b/libcxx/cmake/config-ix.cmake
+@@ -28,8 +28,8 @@ if (NOT LIBCXX_USE_COMPILER_RT)
+   else()
+     if(ANDROID)
+       check_library_exists(gcc __gcc_personality_v0 "" LIBCXX_HAS_GCC_LIB)
+-    else()
+-      check_library_exists(gcc_s __gcc_personality_v0 "" LIBCXX_HAS_GCC_S_LIB)
++    # else()
++    #   check_library_exists(gcc_s __gcc_personality_v0 "" LIBCXX_HAS_GCC_S_LIB)
+     endif()
+   endif()
+ endif()
+@@ -66,10 +66,10 @@ if (CXX_SUPPORTS_NOSTDLIBXX_FLAG OR C_SUPPORTS_NODEFAULTLIBS_FLAG)
+     else()
+       message(WARNING "Could not find builtins library from libc++")
+     endif()
+-  elseif (LIBCXX_HAS_GCC_LIB)
+-    list(APPEND CMAKE_REQUIRED_LIBRARIES gcc)
+-  elseif (LIBCXX_HAS_GCC_S_LIB)
+-    list(APPEND CMAKE_REQUIRED_LIBRARIES gcc_s)
++  # elseif (LIBCXX_HAS_GCC_LIB)
++  #   list(APPEND CMAKE_REQUIRED_LIBRARIES gcc)
++  # elseif (LIBCXX_HAS_GCC_S_LIB)
++  #   list(APPEND CMAKE_REQUIRED_LIBRARIES gcc_s)
+   endif ()
+   if (MINGW)
+     # Mingw64 requires quite a few "C" runtime libraries in order for basic
+@@ -129,5 +129,5 @@ else()
+   check_library_exists(m ccos "" LIBCXX_HAS_M_LIB)
+   check_library_exists(rt clock_gettime "" LIBCXX_HAS_RT_LIB)
+   set(LIBCXX_HAS_SYSTEM_LIB NO)
+-  check_library_exists(atomic __atomic_fetch_add_8 "" LIBCXX_HAS_ATOMIC_LIB)
++  # check_library_exists(atomic __atomic_fetch_add_8 "" LIBCXX_HAS_ATOMIC_LIB)
+ endif()
+
+diff --git a/libunwind/cmake/config-ix.cmake b/libunwind/cmake/config-ix.cmake
+index d311477f02c6..55942fa16dc7 100644
+--- a/libunwind/cmake/config-ix.cmake
++++ b/libunwind/cmake/config-ix.cmake
+@@ -16,9 +16,9 @@ check_library_exists(c fopen "" LIBUNWIND_HAS_C_LIB)
+ if (NOT LIBUNWIND_USE_COMPILER_RT)
+   if (ANDROID)
+     check_library_exists(gcc __gcc_personality_v0 "" LIBUNWIND_HAS_GCC_LIB)
+-  else ()
+-    check_library_exists(gcc_s __gcc_personality_v0 "" LIBUNWIND_HAS_GCC_S_LIB)
+-    check_library_exists(gcc __absvdi2 "" LIBUNWIND_HAS_GCC_LIB)
++  # else ()
++  #   check_library_exists(gcc_s __gcc_personality_v0 "" LIBUNWIND_HAS_GCC_S_LIB)
++  #   check_library_exists(gcc __absvdi2 "" LIBUNWIND_HAS_GCC_LIB)
+   endif ()
+ endif()
+ 
+@@ -50,13 +50,13 @@ if (CXX_SUPPORTS_NOSTDLIBXX_FLAG OR C_SUPPORTS_NODEFAULTLIBS_FLAG)
+     find_compiler_rt_library(builtins LIBUNWIND_BUILTINS_LIBRARY
+                              FLAGS ${LIBUNWIND_COMPILE_FLAGS})
+     list(APPEND CMAKE_REQUIRED_LIBRARIES "${LIBUNWIND_BUILTINS_LIBRARY}")
+-  else ()
+-    if (LIBUNWIND_HAS_GCC_S_LIB)
+-      list(APPEND CMAKE_REQUIRED_LIBRARIES gcc_s)
+-    endif ()
+-    if (LIBUNWIND_HAS_GCC_LIB)
+-      list(APPEND CMAKE_REQUIRED_LIBRARIES gcc)
+-    endif ()
++  # else ()
++  #   if (LIBUNWIND_HAS_GCC_S_LIB)
++  #     list(APPEND CMAKE_REQUIRED_LIBRARIES gcc_s)
++  #   endif ()
++  #   if (LIBUNWIND_HAS_GCC_LIB)
++  #     list(APPEND CMAKE_REQUIRED_LIBRARIES gcc)
++  #   endif ()
+   endif ()
+   if (MINGW)
+     # Mingw64 requires quite a few "C" runtime libraries in order for basic
+
+
+# diff --git a/compiler-rt/cmake/config-ix.cmake b/compiler-rt/cmake/config-ix.cmake
+# index fc62d5ecc..3f46d08a9 100644
+# --- a/compiler-rt/cmake/config-ix.cmake
+# +++ b/compiler-rt/cmake/config-ix.cmake
+# @@ -151,7 +151,7 @@ check_library_exists(dl dlopen "" COMPILER_RT_HAS_LIBDL)
+#  check_library_exists(rt shm_open "" COMPILER_RT_HAS_LIBRT)
+#  check_library_exists(m pow "" COMPILER_RT_HAS_LIBM)
+#  check_library_exists(pthread pthread_create "" COMPILER_RT_HAS_LIBPTHREAD)
+# -check_library_exists(execinfo backtrace "" COMPILER_RT_HAS_LIBEXECINFO)
+# +# check_library_exists(execinfo backtrace "" COMPILER_RT_HAS_LIBEXECINFO)
+# 
+#  # Look for terminfo library, used in unittests that depend on LLVMSupport.
+#  if(LLVM_ENABLE_TERMINFO STREQUAL FORCE_ON)
+# @@ -695,7 +695,7 @@ if (SANITIZER_COMMON_SUPPORTED_ARCH AND NOT LLVM_USE_SANITIZER AND
+#      (OS_NAME MATCHES "Android|Darwin|Linux|FreeBSD|NetBSD|Fuchsia|SunOS" OR
+#      (OS_NAME MATCHES "Windows" AND NOT CYGWIN AND
+#          (NOT MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))))
+# -  set(COMPILER_RT_HAS_SANITIZER_COMMON TRUE)
+# +  set(COMPILER_RT_HAS_SANITIZER_COMMON FALSE)
+#  else()
+#    set(COMPILER_RT_HAS_SANITIZER_COMMON FALSE)
+#  endif()
+# @@ -719,7 +719,9 @@  set(COMPILER_RT_ASAN_HAS_STATIC_RUNTIME FALSE)
+#  endif()
+# 
+#  # TODO: Add builtins support.
+# -
+# +
+# +set(COMPILER_RT_HAS_CRT TRUE)
+# +
+#  if (COMPILER_RT_HAS_SANITIZER_COMMON AND DFSAN_SUPPORTED_ARCH AND
+#      OS_NAME MATCHES "Linux")
+#    set(COMPILER_RT_HAS_DFSAN TRUE)
+
+# diff --git a/compiler-rt/cmake/config-ix.cmake b/compiler-rt/cmake/config-ix.cmake
+# index 8d3dc8d208b2..189d719c5ede 100644
+# --- a/compiler-rt/cmake/config-ix.cmake
+# +++ b/compiler-rt/cmake/config-ix.cmake
+# @@ -28,8 +28,8 @@ if (COMPILER_RT_USE_BUILTINS_LIBRARY)
+#  else()
+#    if (ANDROID)
+#      check_library_exists(gcc __gcc_personality_v0 "" COMPILER_RT_HAS_GCC_LIB)
+# -  else()
+# -    check_library_exists(gcc_s __gcc_personality_v0 "" COMPILER_RT_HAS_GCC_S_LIB)
+# +  # else()
+# +  #   check_library_exists(gcc_s __gcc_personality_v0 "" COMPILER_RT_HAS_GCC_S_LIB)
+#    endif()
+#  endif()
+#  
+# @@ -44,10 +44,10 @@ if (C_SUPPORTS_NODEFAULTLIBS_FLAG)
+#      if (${COMPILER_RT_BUILTINS_LIBRARY})
+#        list(APPEND CMAKE_REQUIRED_LIBRARIES "${COMPILER_RT_BUILTINS_LIBRARY}")
+#      endif()
+# -  elseif (COMPILER_RT_HAS_GCC_S_LIB)
+# -    list(APPEND CMAKE_REQUIRED_LIBRARIES gcc_s)
+# -  elseif (COMPILER_RT_HAS_GCC_LIB)
+# -    list(APPEND CMAKE_REQUIRED_LIBRARIES gcc)
+# +  # elseif (COMPILER_RT_HAS_GCC_S_LIB)
+# +  #   list(APPEND CMAKE_REQUIRED_LIBRARIES gcc_s)
+# +  # elseif (COMPILER_RT_HAS_GCC_LIB)
+# +  #   list(APPEND CMAKE_REQUIRED_LIBRARIES gcc)
+#    endif ()
+#    if (MINGW)
+#      # Mingw64 requires quite a few "C" runtime libraries in order for basic
+# @@ -168,7 +168,7 @@ check_library_exists(dl dlopen "" COMPILER_RT_HAS_LIBDL)
+#  check_library_exists(rt shm_open "" COMPILER_RT_HAS_LIBRT)
+#  check_library_exists(m pow "" COMPILER_RT_HAS_LIBM)
+#  check_library_exists(pthread pthread_create "" COMPILER_RT_HAS_LIBPTHREAD)
+# -check_library_exists(execinfo backtrace "" COMPILER_RT_HAS_LIBEXECINFO)
+# +# check_library_exists(execinfo backtrace "" COMPILER_RT_HAS_LIBEXECINFO)
+#  
+#  # Look for terminfo library, used in unittests that depend on LLVMSupport.
+#  if(LLVM_ENABLE_TERMINFO STREQUAL FORCE_ON)
+# @@ -712,7 +712,7 @@ if (SANITIZER_COMMON_SUPPORTED_ARCH AND NOT LLVM_USE_SANITIZER AND
+#      (OS_NAME MATCHES "Android|Darwin|Linux|FreeBSD|NetBSD|Fuchsia|SunOS" OR
+#      (OS_NAME MATCHES "Windows" AND NOT CYGWIN AND
+#          (NOT MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))))
+# -  set(COMPILER_RT_HAS_SANITIZER_COMMON TRUE)
+# +  # set(COMPILER_RT_HAS_SANITIZER_COMMON TRUE)
+#  else()
+#    set(COMPILER_RT_HAS_SANITIZER_COMMON FALSE)
+#  endif()
+# @@ -742,6 +742,8 @@ endif()
+#  
+#  # TODO: Add builtins support.
+#  
+# +set(COMPILER_RT_HAS_CRT TRUE)
+# +
+#  if (COMPILER_RT_HAS_SANITIZER_COMMON AND DFSAN_SUPPORTED_ARCH AND
+#      OS_NAME MATCHES "Linux")
+#    set(COMPILER_RT_HAS_DFSAN TRUE)
+
+
+
+diff --git a/compiler-rt/cmake/config-ix.cmake b/compiler-rt/cmake/config-ix.cmake
+index 8d3dc8d208b2..dbc90a3cbacc 100644
+--- a/compiler-rt/cmake/config-ix.cmake
++++ b/compiler-rt/cmake/config-ix.cmake
+@@ -28,8 +28,8 @@ if (COMPILER_RT_USE_BUILTINS_LIBRARY)
+ else()
+   if (ANDROID)
+     check_library_exists(gcc __gcc_personality_v0 "" COMPILER_RT_HAS_GCC_LIB)
+-  else()
+-    check_library_exists(gcc_s __gcc_personality_v0 "" COMPILER_RT_HAS_GCC_S_LIB)
++  # else()
++  #   check_library_exists(gcc_s __gcc_personality_v0 "" COMPILER_RT_HAS_GCC_S_LIB)
+   endif()
+ endif()
+ 
+@@ -44,10 +44,10 @@ if (C_SUPPORTS_NODEFAULTLIBS_FLAG)
+     if (${COMPILER_RT_BUILTINS_LIBRARY})
+       list(APPEND CMAKE_REQUIRED_LIBRARIES "${COMPILER_RT_BUILTINS_LIBRARY}")
+     endif()
+-  elseif (COMPILER_RT_HAS_GCC_S_LIB)
+-    list(APPEND CMAKE_REQUIRED_LIBRARIES gcc_s)
+-  elseif (COMPILER_RT_HAS_GCC_LIB)
+-    list(APPEND CMAKE_REQUIRED_LIBRARIES gcc)
++  # elseif (COMPILER_RT_HAS_GCC_S_LIB)
++  #   list(APPEND CMAKE_REQUIRED_LIBRARIES gcc_s)
++  # elseif (COMPILER_RT_HAS_GCC_LIB)
++  #   list(APPEND CMAKE_REQUIRED_LIBRARIES gcc)
+   endif ()
+   if (MINGW)
+     # Mingw64 requires quite a few "C" runtime libraries in order for basic
+@@ -701,12 +701,15 @@ find_program(GOLD_EXECUTABLE NAMES ${LLVM_DEFAULT_TARGET_TRIPLE}-ld.gold ld.gold
+ if(COMPILER_RT_SUPPORTED_ARCH)
+   list(REMOVE_DUPLICATES COMPILER_RT_SUPPORTED_ARCH)
+ endif()
+-message(STATUS "Compiler-RT supported architectures: ${COMPILER_RT_SUPPORTED_ARCH}")
++message(WARNING "\${COMPILER_RT_SUPPORTED_ARCH} = ${COMPILER_RT_SUPPORTED_ARCH}")
+ 
+ set(ALL_SANITIZERS asan;dfsan;msan;hwasan;tsan;safestack;cfi;scudo_standalone;ubsan_minimal;gwp_asan;asan_abi)
+ set(COMPILER_RT_SANITIZERS_TO_BUILD all CACHE STRING
+     "sanitizers to build if supported on the target (all;${ALL_SANITIZERS})")
+ list_replace(COMPILER_RT_SANITIZERS_TO_BUILD all "${ALL_SANITIZERS}")
++set(COMPILER_RT_SANITIZERS_TO_BUILD "${ALL_SANITIZERS}" CACHE STRING
++    "sanitizers to build if supported on the target (all;${ALL_SANITIZERS})")
++message(WARNING "\${COMPILER_RT_SANITIZERS_TO_BUILD} = ${COMPILER_RT_SANITIZERS_TO_BUILD}")
+ 
+ if (SANITIZER_COMMON_SUPPORTED_ARCH AND NOT LLVM_USE_SANITIZER AND
+     (OS_NAME MATCHES "Android|Darwin|Linux|FreeBSD|NetBSD|Fuchsia|SunOS" OR
+@@ -742,6 +745,8 @@ endif()
+ 
+ # TODO: Add builtins support.
+ 
++set(COMPILER_RT_HAS_CRT TRUE)
++
+ if (COMPILER_RT_HAS_SANITIZER_COMMON AND DFSAN_SUPPORTED_ARCH AND
+     OS_NAME MATCHES "Linux")
+   set(COMPILER_RT_HAS_DFSAN TRUE)
+
+
+diff --git a/openmp/runtime/cmake/LibompMicroTests.cmake b/openmp/runtime/cmake/LibompMicroTests.cmake
+index 88deb461dbaf..04c100d88b9c 100644
+--- a/openmp/runtime/cmake/LibompMicroTests.cmake
++++ b/openmp/runtime/cmake/LibompMicroTests.cmake
+@@ -188,12 +188,12 @@ else()
+     set(libomp_expected_library_deps libc.so.6 libpthread.so.0 libdl.so.2)
+     if("${LIBOMP_MIC_ARCH}" STREQUAL "knf")
+       libomp_append(libomp_expected_library_deps ld-linux-l1om.so.2)
+-      libomp_append(libomp_expected_library_deps libgcc_s.so.1)
++      libomp_append(libomp_expected_library_deps)
+     elseif("${LIBOMP_MIC_ARCH}" STREQUAL "knc")
+       libomp_append(libomp_expected_library_deps ld-linux-k1om.so.2)
+     endif()
+   else()
+-    set(libomp_expected_library_deps libdl.so.2 libgcc_s.so.1)
++    set(libomp_expected_library_deps libdl.so.2)
+     if(${IA32})
+       libomp_append(libomp_expected_library_deps libc.so.6)
+       libomp_append(libomp_expected_library_deps ld-linux.so.2)
+
+
+diff --git a/openmp/libomptarget/plugins-nextgen/x86_64/CMakeLists.txt b/openmp/libomptarget/plugins-nextgen/x86_64/CMakeLists.txt
+index 129d526a2ae7..3b12a106a1b4 100644
+--- a/openmp/libomptarget/plugins-nextgen/x86_64/CMakeLists.txt
++++ b/openmp/libomptarget/plugins-nextgen/x86_64/CMakeLists.txt
+@@ -12,6 +12,7 @@
+ 
+ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+   build_generic_elf64("x86_64" "x86_64" "x86_64" "x86_64-pc-linux-gnu" "62")
++  build_generic_elf64("x86_64" "x86_64" "x86_64" "x86_64-pc-linux-musl" "64")
+ else()
+  libomptarget_say("Not building x86_64 NextGen offloading plugin: machine not found in the system.")
+ endif()
+
+
+
+
+
+
+
+
+
+
+
+
+

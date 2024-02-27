@@ -1,13 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
 
 ./configure \
     --prefix=/usr \
-    --build=$KISS_XBUILD_TRIPLE \
-    --host=$KISS_XHOST_TRIPLE \
     --with-threads \
     --with-history \
     --without-python \
     --without-icu
 
 make
-make install
+make DESTDIR="$1" install

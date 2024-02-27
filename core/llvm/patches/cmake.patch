@@ -1,0 +1,27 @@
+diff --git a/llvm/cmake/modules/AddLLVM.cmake b/llvm/cmake/modules/AddLLVM.cmake
+index 230620c37027..add525ae59b0 100644
+--- a/llvm/cmake/modules/AddLLVM.cmake
++++ b/llvm/cmake/modules/AddLLVM.cmake
+@@ -1,3 +1,6 @@
++# Set to an arbitrary directory to silence GNUInstallDirs warnings
++# regarding being unable to determine libdir.
++set(CMAKE_INSTALL_LIBDIR "lib")
+ include(GNUInstallDirs)
+ include(LLVMDistributionSupport)
+ include(LLVMProcessSources)
+@@ -2352,8 +2355,13 @@ function(llvm_setup_rpath name)
+     # FIXME: update this when there is better solution.
+     set(_install_rpath "${LLVM_LIBRARY_OUTPUT_INTDIR}" "${CMAKE_INSTALL_PREFIX}/lib${LLVM_LIBDIR_SUFFIX}" ${extra_libdir})
+   elseif(UNIX)
+-    set(_build_rpath "\$ORIGIN/../lib${LLVM_LIBDIR_SUFFIX}" ${extra_libdir})
+-    set(_install_rpath "\$ORIGIN/../lib${LLVM_LIBDIR_SUFFIX}")
++    set(_build_rpath "\$ORIGIN/../lib${LLVM_LIBDIR_SUFFIX}/${LLVM_DEFAULT_TARGET_TRIPLE}"
++    "\$ORIGIN/../lib${LLVM_LIBDIR_SUFFIX}/clang/${LLVM_VERSION}/lib/${LLVM_DEFAULT_TARGET_TRIPLE}"
++    "\$ORIGIN/../lib${LLVM_LIBDIR_SUFFIX}"
++    ${extra_libdir})
++    set(_install_rpath "\$ORIGIN/../lib${LLVM_LIBDIR_SUFFIX}/${LLVM_DEFAULT_TARGET_TRIPLE}"
++    "\$ORIGIN/../lib${LLVM_LIBDIR_SUFFIX}/clang/${LLVM_VERSION}/lib/${LLVM_DEFAULT_TARGET_TRIPLE}"
++    "\$ORIGIN/../lib${LLVM_LIBDIR_SUFFIX}")
+     if(${CMAKE_SYSTEM_NAME} MATCHES "(FreeBSD|DragonFly)")
+       set_property(TARGET ${name} APPEND_STRING PROPERTY
+                    LINK_FLAGS " -Wl,-z,origin ")

@@ -1,5 +1,0 @@
-binutils-aarch64
-binutils-aarch64 make
-bison            make
-flex             make
-zlib

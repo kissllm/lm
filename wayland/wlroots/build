@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#! /bin/sh -e
 
 sed -i "s/all_backends = \['drm', 'libinput', 'x11'\]/all_backends = \['drm', 'libinput'\]/g" backend/meson.build
 sed -i "s/backends = get_option('backends')/backends = \['drm', 'libinput'\]/g" backend/meson.build

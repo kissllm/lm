@@ -1,0 +1,19 @@
+diff --git a/include/threads.h b/include/threads.h
+index 52ec3100..19ea2097 100644
+--- a/include/threads.h
++++ b/include/threads.h
+@@ -51,9 +51,9 @@ void thrd_yield(void);
+
+ thrd_t thrd_current(void);
+ int thrd_equal(thrd_t, thrd_t);
+-#ifndef __cplusplus
+-#define thrd_equal(A, B) ((A) == (B))
+-#endif
++// #ifndef __cplusplus
++// #define thrd_equal(A, B) ((A) == (B))
++// #endif
+
+ void call_once(once_flag *, void (*)(void));
+
+
+

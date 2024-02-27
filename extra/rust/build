@@ -1,139 +1,127 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
 
-unset CC
-unset CXX
-unset CFLAGS
-unset LDFLAGS
+patch -p1 < fix-curl.patch
 
-patch -p1 < openssl.patch
-patch -p1 < glasnost.patch
+# Instruct the compiler to trim absolute paths in resulting binaries and instead
+# change them to relative paths ($PWD/... ./...).
+export RUSTFLAGS="$RUSTFLAGS --remap-path-prefix=$PWD=."
 
-# std needs a musl root for each target
-build_musl() {(
-  cd musl
-  mkdir -p $2
-  export CC="clang --target=${1}"
+# Set shared linking as the default.
+sed 's/\(crt_static_default = \)true/\1false/' \
+    compiler/rustc_target/src/spec/linux_musl_base.rs > _
+mv -f _ compiler/rustc_target/src/spec/linux_musl_base.rs
 
-  ./configure \
-    --prefix="" \
-    --syslibdir=/lib \
-    --target=${1}
-
-  make CROSS_COMPILE=""
-  make CROSS_COMPILE="" DESTDIR="$2" install
-  make clean
-)}
-
-
-# Define all supported archs:
-archs="aarch64-unknown-linux-musl powerpc64-unknown-linux-musl powerpc64le-unknown-linux-musl x86_64-unknown-linux-musl"
-archlist="$(echo $archs | sed 's/[^ ][^ ]*/\"&\",/g' | sed 's/,$/\ /')"
-
-# Clear vendor checksums
-sed -i 's/\("files":{\)[^}]*/\1/' \
-    vendor/openssl-sys/.cargo-checksum.json \
-    vendor/openssl-src/.cargo-checksum.json \
-    vendor/libc/.cargo-checksum.json
-
-# Bootstrap correct version
-cp -f stage0.json src/
-
-build="$KISS_XBUILD_ARCH-unknown-linux-$KISS_XBUILD_ABI"
-target="$KISS_XHOST_ARCH-unknown-linux-$KISS_XHOST_ABI"
-
-
-# This package mimics the download process of rust's 'x.py'
-# bootstrap library to allow for the removal of the internet
-# connection requirement per build.
-{
-    cache_dir="build/cache/2022-02-24"
-    mkdir -p $cache_dir
-
-    for tarball in *.tar.xz\?no-extract; do
-        mv -f "$tarball" "$cache_dir/${tarball%%\?no-extract}"
-    done
-}
+# Ignore checksums of files modified above.
+sed 's/\("files":{\)[^}]*/\1/' \
+    vendor/curl-sys/.cargo-checksum.json > _
+mv -f _ vendor/curl-sys/.cargo-checksum.json
 
 cat > config.toml <<EOF
 [llvm]
-link-shared     = false
-skip-rebuild    = true
+link-shared = true
+skip-rebuild = true
 
 [build]
-build           =   "$build"
-host            = [ "$target" ]
-target          = [ $archlist ]
-docs            = false
-compiler-docs   = false
-extended        = true
-submodules      = false
-python          = "python3"
-locked-deps     = true
-vendor          = true
-sanitizers      = false
-profiler        = false
-tools           = ["cargo"]
-cargo-native-static = true
-full-bootstrap  = false
+build     = "x86_64-unknown-linux-musl"
+host      = [ "x86_64-unknown-linux-musl" ]
+target    = [ "x86_64-unknown-linux-musl" ]
+
+docs           = false
+compiler-docs  = false
+extended       = true
+submodules     = false
+python         = "python3"
+locked-deps    = true
+vendor         = true
+tools          = [ "cargo", "rustfmt" ]
+sanitizers     = false
+profiler       = false
+full-bootstrap = false
+EOF
+
+maj="${2%%.*}"
+min="${2%.*}"
+min="${min#*.}"
+
+rust_version=$(rustc --version 2>/dev/null) || rust_version=null
+rust_version="${rust_version#rustc }"
+
+# If possible, use system rust to bootstrap.
+case "$rust_version" in
+    "$maj.$min".*|"$maj.$((min - 1))".*)
+        cat >> config.toml <<EOF
+cargo          = "/usr/bin/cargo"
+rustc          = "/usr/bin/rustc"
+rustfmt        = "/usr/bin/rustfmt"
+EOF
+    ;;
+
+    *)
+        # This mimics the download process of rust's 'x.py'
+        # bootstrap library to allow for the removal of the internet
+        # connection requirement per build.
+        mkdir -p "${cache_dir:=build/cache/2022-08-11}"
+
+        for tarball in *.tar.xz\?no-extract; do
+            mv -f "$tarball" "$cache_dir/${tarball%%\?no-extract}"
+        done
+    ;;
+esac
+
+cat >> config.toml <<EOF
 
 [install]
 prefix = "/usr"
 
-[rust]
-channel           = "stable"
-rpath             = true
-codegen-units     = 0
-codegen-units-std = 1
-backtrace         = true
-jemalloc          = false
-codegen-tests     = false
-llvm-libunwind    = "in-tree"
-debug             = false
-debuginfo-level   = 0
-optimize          = true
-use-lld           = true
-llvm-tools        = true
-dist-src          = false
-
-EOF
-
-# Set up roots and compilers for each arch
-mkdir -p roots
-roots="$(realpath roots)"
-for arch in $archs
-do
-    # Add arch to config.toml
-    cat >> config.toml <<EOF
-
-[target.$arch]
+[target.x86_64-unknown-linux-musl]
 llvm-config = "/usr/bin/llvm-config"
 crt-static  = false
-cc          = "clang"
-cxx         = "clang++"
-linker      = "clang"
 sanitizers  = false
+
+[dist]
+src-tarball = false
+
+[rust]
+backtrace         = false
+channel           = "stable"
+codegen-tests     = false
+codegen-units-std = 1
+codegen-units     = 0
+debug             = false
+debug-assertions  = false
+debuginfo-level   = 0
+incremental       = false
+jemalloc          = false
+rpath             = false
+dist-src          = false
 EOF
 
-    # If $arch is the target arch, root is $KISS_ROOT
-    # If $arch is the build arch, root is /
-    # Build a musl root otherwise.
-    case $arch in
-        $target)                                 envs="$envs LIBDIR_$arch=$KISS_ROOT/usr/lib"; echo "sysroot = \"${KISS_ROOT:-/}\"" >> config.toml;;
-        $build)                                  envs="$envs LIBDIR_$arch=/usr/lib";           echo "sysroot = \"/\""               >> config.toml;;
-        *)      build_musl $arch "$roots/$arch"; envs="$envs LIBDIR_$arch=$roots/$arch/lib";   echo "sysroot = \"$roots/$arch\""    >> config.toml;;
-    esac
+# Workaround to get Rust to build in llvm-only environments.
+# libgcc_s.so is needed for Rust's bootstrap binaries, on llvm-only systems
+# this library does not exist. This hack creates it as alias to libunwind.
+libunwind_path=$("$CC" -print-file-name=libunwind.so)
+case $libunwind_path in */*)
+    printf 'llvm-libunwind = "system"\n' >> config.toml
 
-done
+    mkdir -p libgcc
 
-# Do the build
-env \
-$envs \
-CFLAGS="-Wno-unused-command-line-argument -Wno-shift-op-parentheses" \
-CXXFLAGS="-Wno-shift-op-parentheses" \
-LDFLAGS="" \
-RUSTFLAGS="" \
-DESTDIR="$1" \
-python3 ./x.py -j "$(nproc)" install
+    printf 'INPUT(-lunwind)\n' > \
+        libgcc/libgcc_s.so
 
-rm -rf "$1/usr/lib/rustlib/src/"
-rm -f  "$1/usr/lib/rustlib/uninstall.sh"
+    ln -sf "$libunwind_path" \
+        libgcc/libgcc_s.so.1
+
+    export \
+        LD_LIBRARY_PATH="$PWD/libgcc:$LD_LIBRARY_PATH" \
+        LIBRARY_PATH="$PWD/libgcc:$LIBRARY_PATH"
+esac
+
+python x.py build -j "$(grep -scF 'core id' /proc/cpuinfo)"
+python x.py install
+
+rm -rf \
+    "$1/usr/lib/rustlib/src/" \
+    "$1/usr/share/doc" \
+    "$1/usr/share/zsh" \
+    "$1/usr/lib/rustlib/uninstall.sh"
+

@@ -1,0 +1,2 @@
+https://ziglang.org/download/VERSION/zig-VERSION.tar.xz
+patches/zig-musl-1.2.4-lfs64.patch

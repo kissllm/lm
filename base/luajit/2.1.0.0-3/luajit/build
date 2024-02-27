@@ -1,0 +1,33 @@
+#!/bin/sh -e
+
+unset DESTDIR
+# mkdir -p bin
+# ln -s /usr/bin/gmake "$PWD/bin/make"
+# export PATH="$PWD/bin:$PATH"
+
+make amalg   PREFIX="/usr"
+# build_executable=$(find "$PWD" -type f -name "luajit*")
+# echo "build_executable = "$build_executable
+make install PREFIX="/usr" DESTDIR="$1"
+# make install PREFIX="/usr"
+
+# Create these symlinks ourselves as luajit relies
+# on ldconfig to do so and musl does not provide it.
+# ln -s libluajit-5.1.so.2.0.5 "$1/usr/lib/libluajit.so"
+# ln -s libluajit-5.1.so.2.0.5 "$1/usr/lib/libluajit-5.1.so"
+# ln -s libluajit-5.1.so.2.0.5 "$1/usr/lib/libluajit-5.1.so.2"
+# ln -s libluajit-5.1.so.2.0.5 "$1/usr/lib/libluajit-5.1.so.2.0"
+# ln -s libluajit-5.1.a "$1/usr/lib/libluajit.a"
+# ln -s libluajit-5.1.a "$1/usr/lib/libluajit-5.a"
+
+IFS=.+-_ read -r repo_major repo_minor repo_patch repo_ident \
+    < <(printf '%s\n' "$2") > /dev/null || // die "printf '%s\\n' \"$repo_ver\"" "failed"
+# config=$(find . -type f -name "luajit.h");
+# echo "config = "$config
+# num=$(cat "$config" | grep LUAJIT_VERSION_NUM | awk '{print $3}');
+# ver=$(expr substr $num 1 1).$(expr substr $num 3 1);
+# echo "ver = "$ver
+
+# luarocks config variables.LUA_INCDIR /usr/include/luajit-2.1
+ /usr/bin/luarocks config variables.LUA_INCDIR /usr/include/luajit-$repo_major.$repo_minor
+

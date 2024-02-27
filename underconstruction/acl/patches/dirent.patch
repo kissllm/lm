@@ -1,0 +1,13 @@
+diff a/tools/chacl.c b/tools/chacl.c
+--- a/tools/chacl.c
++++ b/tools/chacl.c
+@@ -320,7 +320,7 @@
+ {
+        int failed = 0;
+        DIR *dir;
+-       struct dirent64 *d;
++       struct dirent *d;
+        char *name;
+
+        if ((dir = opendir(fname)) == NULL) {
+

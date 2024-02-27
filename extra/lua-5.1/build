@@ -1,10 +1,5 @@
 #!/usr/bin/env sh
 
-mkdir -p bin
-ln -s /usr/bin/pigz  "$PWD/bin/gunzip"
-ln -s /usr/bin/gmake "$PWD/bin/make"
-export PATH="$PWD/bin:$PATH"
-
 make MYCFLAGS="$CFLAGS -fPIC" \
      MYLDFLAGS="$LDFLAGS" \
      posix

@@ -1,0 +1,166 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>How to upgrade utmps</title>
+    <meta name="Description" content="How to upgrade utmps" />
+    <meta name="Keywords" content="utmps installation upgrade" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">utmps</a><br />
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> What has changed in utmps </h1>
+
+<h2> in 0.1.2.1 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.13.0.0. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a> run-time
+dependency bumped to 2.11.2.0. </li>
+</ul>
+
+<h2> in 0.1.2.0 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.11.2.0. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a> run-time
+dependency bumped to 2.11.1.0. </li>
+</ul>
+
+<h2> in 0.1.1.0 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.11.1.0. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a> run-time
+dependency bumped to 2.11.0.1. </li>
+</ul>
+
+<h2> in 0.1.0.3 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.11.0.0. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a> run-time
+dependency bumped to 2.11.0.0. </li>
+</ul>
+
+<h2> in 0.1.0.2 </h2>
+
+<ul>
+  <li> WTMP_FILE is now <tt>/var/log/wtmp</tt>, to ease integration
+with distributions. (Unlike utmp, wtmp is supposed to be persistent.) </li>
+</ul>
+
+<h2> in 0.1.0.1 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.10.0.3. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a> run-time
+dependency bumped to 2.10.0.3. </li>
+</ul>
+
+<h2> in 0.1.0.0 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.10.0.0. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a> run-time
+dependency bumped to 2.10.0.0. </li>
+ <li> The <tt>utmpx.h</tt> header file is
+not installed by default anymore. You now need to explicitly give the
+<tt>--enable-libc-includes</tt> configure option in order to install it. The
+point of this change is to avoid overwriting libc headers accidentally. </li>
+</ul>
+
+<h2> in 0.0.3.2 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.9.2.0. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a> run-time
+dependency bumped to 2.9.1.0. </li>
+</ul>
+
+<h2> in 0.0.3.1 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.9.1.0. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a> run-time
+dependency bumped to 2.9.0.1. </li>
+</ul>
+
+<h2> in 0.0.3.0 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.9.0.0. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a> run-time
+dependency bumped to 2.9.0.0. </li>
+</ul>
+
+<h2> in 0.0.2.2 </h2>
+
+<ul>
+ <li> No functional changes. </li>
+</ul>
+
+<h2> in 0.0.2.1 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.8.0.0. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a> run-time
+dependency bumped to 2.8.0.0. </li>
+ <li> Everything now builds as PIC by default no matter
+the toolchain's settings. Use the <tt>--disable-all-pic</tt> configure
+option to build executables and static libraries as non-PIC. </li>
+</ul>
+
+<h2> in 0.0.2.0 </h2>
+
+<ul>
+ <li> Members of the <em>utmp</em> group (if <em>utmp</em> is the name
+of the group the <a href="utmps-utmpd.html">utmps-utmpd</a> daemon runs as)
+can now use <tt>pututxline()</tt> to write to the utmp database. </li>
+</ul>
+
+<h2> in 0.0.1.3 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.7.0.0. </li>
+ <li> Optional <a href="//skarnet.org/software/nsss/">nsss</a> support added. </li>
+</ul>
+
+<h2> in 0.0.1.2 </h2>
+
+<ul>
+ <li> No functional changes. </li>
+</ul>
+
+<h2> in 0.0.1.1 </h2>
+
+<ul>
+ <li> No functional changes. </li>
+</ul>
+
+<h2> in 0.0.1.0 </h2>
+
+<p>
+ Initial release.
+</p>
+
+</body>
+</html>

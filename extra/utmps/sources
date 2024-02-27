@@ -1,0 +1,11 @@
+https://skarnet.org/software/utmps/utmps-VERSION.tar.gz
+patches/0001-add-stub-utmp.h.patch
+files/utmp-prepare.initd
+files/utmpd.initd
+files/wtmpd.initd
+files/btmpd.initd
+files/utmp-init.initd
+files/setup-utmp
+files/utmps.pc
+files/wtmpd.logrotate
+files/btmpd.logrotate

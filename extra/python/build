@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#! /bin/sh -e
 
 # Remove util-linux dependency among other things.
 cat >> Modules/Setup <<EOF
@@ -48,7 +48,9 @@ ax_cv_c_float_words_bigendian="${BIG_ENDIAN:-no}" \
 make EXTRA_CFLAGS="$CFLAGS -DTHREAD_STACK_SIZE=0x100000"
 make install
 
+[ -L "$1/usr/bin/python" ] ||
 ln -s python3 "$1/usr/bin/python"
+[ -L "$1/usr/bin/pip" ] ||
 ln -s pip3    "$1/usr/bin/pip"
 
 # Let's make some kind of effort to reduce the overall

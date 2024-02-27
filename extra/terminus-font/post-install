@@ -1,1 +1,3 @@
-../../modules/community/community/terminus-font/post-install
+#!/bin/sh
+
+fc-cache -v

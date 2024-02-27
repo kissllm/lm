@@ -1,0 +1,13 @@
+cmake make
+fontconfig
+freetype-harfbuzz
+libdrm
+libglvnd
+libinput
+libjpeg-turbo
+libpng
+libxkbcommon
+mesa
+sqlite
+zlib
+zstd

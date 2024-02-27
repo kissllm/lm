@@ -1,1 +1,2 @@
-../../modules/noir/extra/libevdev/depends
+linux-headers make
+python        make

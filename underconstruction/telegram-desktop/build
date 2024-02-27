@@ -1,0 +1,122 @@
+#!/bin/sh -e
+# Contributor: Leo <thinkabit.ukim@gmail.com>
+# Contributor: Nulo <alpine@nulo.in>
+# Contributor: Donoban <donoban@riseup.net>
+# Contributor: psykose <alice@ayaya.dev>
+# Maintainer: Nulo <alpine@nulo.in>
+pkgname=telegram-desktop
+# NOTE: Keep in mind that seemingly normal releases may be pre-releases.
+# Check GitHub to make sure:
+# https://github.com/telegramdesktop/tdesktop/releases
+pkgver=4.6.5
+pkgrel=0
+pkgdesc="Telegram Desktop messaging app"
+options="!check" # no test suite
+url="https://desktop.telegram.org/"
+# armhf blocked by qt5-qtwayland
+# ppc64le and s390x blocked by tg_owt
+# x86, riscv64: textrels
+# riscv64: libdispatch
+arch="all !x86 !ppc64le !s390x !armhf !riscv64"
+license="GPL-3.0-or-later WITH OpenSSL"
+
+depends="qt6-qtimageformats font-opensans"
+
+[ "$CARCH" = "riscv64" ] && options="$options textrels"
+
+_kcoreaddons_version=5.98.0
+
+# Sorted according to
+# https://github.com/telegramdesktop/tdesktop/wiki/The-Packaged-Building-Mode
+# libtgvoip is bundled as suggested by upstream
+# jemalloc is disabled
+# rlottie is bundled as suggested by upstream
+# We are forcing it to use packaged libvpx with a patch below
+# kcoreaddons is bundled as it requires to be built with Qt6.
+makedepends="
+    python3
+    extra-cmake-modules
+    qt6-qt5compat-dev
+    qt6-qtsvg-dev
+    qt6-qtwayland-dev
+
+    tg_owt-dev
+    opus-dev
+    alsa-lib-dev
+    pulseaudio-dev
+
+    ffmpeg-dev
+    glibmm2.68-dev
+    libdispatch-dev
+    gsl-dev
+    hunspell-dev
+    lz4-dev
+    minizip-dev
+    openal-soft-dev
+    openssl-dev>3
+    range-v3-dev
+    rnnoise-dev
+    tl-expected
+    wayland-dev
+    webkit2gtk-dev
+    libxcb-dev
+    xcb-util-keysyms-dev
+    xxhash-dev
+    zlib-dev
+
+    libvpx-dev
+    protobuf-dev
+
+    cmake
+    samurai
+    meson
+    "
+
+# small-sizes.patch is for postmarketOS. It makes UI elements fit in small
+# screens.
+# https://github.com/telegramdesktop/tdesktop/issues/8058#issuecomment-643461605
+source="
+    https://github.com/telegramdesktop/tdesktop/releases/download/v$pkgver/tdesktop-$pkgver-full.tar.gz
+    https://invent.kde.org/frameworks/kcoreaddons/-/archive/v$_kcoreaddons_version/kcoreaddons-v$_kcoreaddons_version.tar.gz
+    small-sizes.patch
+    add-libvpx.patch
+    "
+srcdir="$PWD"
+# builddir="$srcdir/tdesktop-$pkgver-full"
+builddir="$PWD"
+pkgdir="$1"
+prepare() {
+    for item in *.patch; do
+        echo "Applying $item"
+            patch -p1 < "$item"
+    done
+    # default_prepare
+    mv "$srcdir/kcoreaddons-v$_kcoreaddons_version" "$builddir/Telegram/ThirdParty/kcoreaddons"
+    # Why yes of course this is upstream endorsed! https://github.com/telegramdesktop/tdesktop/issues/25073#issuecomment-1253908867
+    find "$builddir" -type f \( -iname '*.h' -or -iname '*.cpp' \) -print0 | xargs -0 sed -i 's/<KUrlMimeData>/<kurlmimedata.h>/g'
+}
+prepare
+CFLAGS="-DHAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME $CFLAGS"
+build() {
+    LDFLAGS="$LDFLAGS -Wl,-z,stack-size=1024768" \
+    cmake -B build -G Ninja . \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_BUILD_TYPE=MinSizeRel \
+        -DDESKTOP_APP_DISABLE_CRASH_REPORTS=ON \
+        -DTDESKTOP_API_ID=17349 \
+        -DTDESKTOP_API_HASH=344583e45741c457fe1862106095a5eb \
+        -DDESKTOP_APP_DISABLE_JEMALLOC=ON \
+        -DDESKTOP_APP_USE_PACKAGED=ON
+    cmake --build build
+}
+build
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}
+package
+# sha512sums="
+# 4a337e375d7746cb1fa652f5851f8be5718b7b9d9676bba8ab040489b8492b2a665a51848adba28117a910789aa942c386318a01f6c99b4caa12a1eac682c780  tdesktop-4.6.5-full.tar.gz
+# d84f0d0c29f819488fd7632df28b8a9da5fb3a0724652529d3f8a59b62ea12f5f0a1755b346d2d8b015ec492dd0fead8b74199f9a7e7ada26d45b8fd7ada21c8  kcoreaddons-v5.98.0.tar.gz
+# 396b5577bdeb852be3659fcbf09a1ebdc33432baea49296869e2f968d61343679187ed4b923c51c8f417b8d4679aedd7ac863abed255b5b6b1b589029fdc34f6  small-sizes.patch
+# c6b77a52547dc45f91f89cdd014c09fe318c49d34e88c4093f206b42ea3e61781a9447dbb4096424a845a519e101242bcac789272e8815a04c1be908cd304c37  add-libvpx.patch
+# "

@@ -1,0 +1,18 @@
+#! /bin/sh -e
+#
+# https://www.linuxquestions.org/questions/linux-from-scratch-13/%5Bhow-to%5D-installing-s6-4175529602/
+#
+./configure \
+	--prefix=${KISS_ROOT}/ \
+	--dynlibdir=${KISS_ROOT}/lib \
+	--bindir=${KISS_ROOT}/bin \
+	--sbindir=${KISS_ROOT}/sbin \
+	--libdir=${KISS_ROOT}/lib//execline \
+	--with-sysdeps=${KISS_ROOT}/lib/skalibs/sysdeps \
+	--with-lib=${KISS_ROOT}/lib/skalibs \
+	--with-dynlib=${KISS_ROOT}/lib \
+	--enable-shared
+
+make PREFIX=/
+
+make DESTDIR=$1 install

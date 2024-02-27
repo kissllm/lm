@@ -1,0 +1,13 @@
+#!/bin/sh
+
+export LDFLAGS="$LDFLAGS --static"
+
+patch -p1 < prevent-clobbering.patch
+
+make all-static 
+make  DESTDIR="$1" PREFIX=/usr install-static
+
+# clear is provided by ubase
+rm -rf \
+	"$1/usr/share/man/man1/clear.1" \
+	"$1/usr/bin/clear"

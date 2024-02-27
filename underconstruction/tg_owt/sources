@@ -1,0 +1,6 @@
+https://github.com/desktop-app/tg_owt/archive/1a18da2ed4d5ce134e984d1586b915738e0da257.tar.gz
+https://github.com/klemensn/libyuv/archive/00950840d1c9bcbb3eb6ebc5aac5793e71166c8b.tar.gz libyuv
+https://github.com/google/crc32c/archive/21fc8ef30415a635e7351ffa0e5d5367943d4a94.tar.gz crc32c
+patches/abseil.patch
+patches/cstdint.patch
+patches/gcc12.patch

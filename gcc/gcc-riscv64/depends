@@ -1,5 +1,0 @@
-binutils-riscv64
-binutils-riscv64 make
-bison            make
-flex             make
-zlib

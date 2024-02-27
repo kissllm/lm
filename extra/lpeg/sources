@@ -1,1 +1,2 @@
-../../modules/community/community/lpeg/sources
+http://www.inf.puc-rio.br/~roberto/lpeg/lpeg-1.1.0.tar.gz
+patches/build-static-lib.patch

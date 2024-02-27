@@ -1,0 +1,14 @@
+#! /bin/sh -e
+#
+# https://www.linuxquestions.org/questions/linux-from-scratch-13/%5Bhow-to%5D-installing-s6-4175529602/
+#
+./configure \
+	--prefix=${KISS_ROOT}/ \
+	--dynlibdir=${KISS_ROOT}/lib \
+	--libdir=${KISS_ROOT}/lib/skalibs \
+	--sysdepdir=${KISS_ROOT}/lib/skalibs/sysdeps \
+	--enable-force-devr
+
+make PREFIX=/
+
+make DESTDIR=$1 install

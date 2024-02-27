@@ -1,0 +1,27 @@
+#!/usr/bin/env sh
+
+if [ "$KISS_ROOT" ]; then
+    if [ ! -d /var/db/kiss/installed/wayland ]; then
+        echo "Error: to cross-build wayland, you need to have it on your build machine first."
+        exit 1
+    fi
+    opts="--cross-file=meson.config"
+fi
+
+kiss-meson-config > meson.config
+
+# It tries to use the target wayland-scanner. Use host instead.
+sed -i "s/scanner_dep =/#scanner_dep =/g" src/meson.build
+sed -i "s/find_program(scanner_dep\.get_pkgconfig_variable('wayland_scanner'))/'\/usr\/bin\/wayland-scanner'/g" src/meson.build
+
+meson \
+    --prefix=/usr \
+    -Ddefault_library=both \
+    -Dtests=false \
+    -Ddocumentation=false \
+    -Ddtd_validation=false \
+    $opts \
+    . build
+
+ninja -C build
+ninja -C build install

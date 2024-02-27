@@ -1,0 +1,11 @@
+#!/bin/sh -e
+
+meson --prefix=/usr \
+    -Db_lto=true \
+    -Dboost-shared=true \
+    . output
+
+# ninja
+meson compile ${JOBS:+-j ${JOBS}} -C output
+# DESTDIR=$1 ninja install
+DESTDIR="$1" meson install --no-rebuild -C output

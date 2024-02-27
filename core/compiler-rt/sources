@@ -1,1 +1,2 @@
-../../modules/ioraff/old/compiler-rt/sources
+https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/compiler-rt-VERSION.src.tar.xz
+https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/cmake-VERSION.src.tar.xz cmake

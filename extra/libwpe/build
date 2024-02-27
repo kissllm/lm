@@ -4,6 +4,6 @@ echo "\$PWD = $PWD"
 echo "\$1   = $1"
 echo "\$2   = $2"
 
-cmake -S $HOME/.cache/kiss/sources/libwpe/libwpe -B objects -DCMAKE_INSTALL_PREFIX="/usr" -Wno-dev $@
+cmake -S $SRC_DIR/libwpe -B objects -DCMAKE_INSTALL_PREFIX="/usr" -Wno-dev
 cmake --build objects --target all --parallel
 cmake --install objects

@@ -1,0 +1,14 @@
+#! /bin/sh -e
+
+./configure \
+	--prefix=/usr \
+	--with-sysdeps=${KISS_ROOT}/lib/skalibs/sysdeps \
+	--with-lib=${KISS_ROOT}/lib \
+	--with-s6-log-timestamp=iso \
+	--with-s6-log-user=s6log \
+	--with-system-dir=/etc/66/lib
+
+make PREFIX=usr
+
+make DESTDIR=$1 install
+

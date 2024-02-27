@@ -1,0 +1,18 @@
+diff --git a/cmake.deps/cmake/BuildLuajit.cmake b/cmake.deps/cmake/BuildLuajit.cmake
+index 9b393310d..7e81da621 100644
+--- a/cmake.deps/cmake/BuildLuajit.cmake
++++ b/cmake.deps/cmake/BuildLuajit.cmake
+@@ -35,9 +35,10 @@ function(BuildLuajit)
+ 
+   # Create symlink for development version manually.
+   if(UNIX)
++    execute_process(COMMAND find . -type f -name luajit-2.1.0-beta3 OUTPUT_VARIABLE LUAJIT_EXECUTABLE OUTPUT_STRIP_TRAILING_WHITESPACE)
+     add_custom_command(
+       TARGET ${_luajit_TARGET}
+-      COMMAND ${CMAKE_COMMAND} -E create_symlink luajit-2.1.0-beta3 ${DEPS_BIN_DIR}/${_luajit_TARGET})
++      COMMAND ln -sf ${LUAJIT_EXECUTABLE} ${DEPS_BIN_DIR}/${_luajit_TARGET})
++    execute_process(COMMAND find . -type f -name luajit OUTPUT_VARIABLE LUAJIT_EXECUTABLE OUTPUT_STRIP_TRAILING_WHITESPACE)
++    message(STATUS "LUAJIT_EXECUTABLE = ${LUAJIT_EXECUTABLE}")
+   endif()
+ endfunction()
+ 

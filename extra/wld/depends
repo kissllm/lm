@@ -1,1 +1,6 @@
-../../modules/dumpsterfire/wayland/wld/depends
+fontconfig    make
+freetype-harfbuzz      make
+libdrm        make
+linux-headers make
+pixman        make
+wayland

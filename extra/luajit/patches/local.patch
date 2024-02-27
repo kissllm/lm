@@ -1,0 +1,35 @@
+diff --git a/Makefile b/Makefile
+index 792d7e5..40700d0 100644
+--- a/Makefile
++++ b/Makefile
+@@ -30,7 +30,7 @@ VERSION= $(MMVERSION).$(RELVER)
+ # Change the installation path as needed. This automatically adjusts
+ # the paths in src/luaconf.h, too. Note: PREFIX must be an absolute path!
+ #
+-export PREFIX= /usr/local
++export PREFIX= /usr
+ export MULTILIB= lib
+ ##############################################################################
+ 
+diff --git a/src/Makefile b/src/Makefile
+index a83b862..6baffeb 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -213,7 +213,7 @@ TARGET_LD= $(CROSS)$(CC)
+ TARGET_AR= $(CROSS)ar rcus
+ TARGET_STRIP= $(CROSS)strip
+ 
+-TARGET_LIBPATH= $(or $(PREFIX),/usr/local)/$(or $(MULTILIB),lib)
++TARGET_LIBPATH= $(or $(PREFIX),/usr)/$(or $(MULTILIB),lib)
+ TARGET_SONAME= libluajit-$(ABIVER).so.$(MAJVER)
+ TARGET_DYLIBNAME= libluajit-$(ABIVER).$(MAJVER).dylib
+ TARGET_DYLIBPATH= $(TARGET_LIBPATH)/$(TARGET_DYLIBNAME)
+@@ -272,7 +272,7 @@ TARGET_XCFLAGS+= $(CCOPT_$(TARGET_LJARCH))
+ TARGET_ARCH+= $(patsubst %,-DLUAJIT_TARGET=LUAJIT_ARCH_%,$(TARGET_LJARCH))
+ 
+ ifneq (,$(PREFIX))
+-ifneq (/usr/local,$(PREFIX))
++ifneq (/usr,$(PREFIX))
+   TARGET_XCFLAGS+= -DLUA_ROOT=\"$(PREFIX)\"
+   ifneq (/usr,$(PREFIX))
+     TARGET_DYNXLDOPTS= -Wl,-rpath,$(TARGET_LIBPATH)

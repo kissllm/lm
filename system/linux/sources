@@ -1,6 +1,9 @@
 # https://github.com/kissllm/linux-stable/releases/download/VERSION/linux-stable.tar.xz
-git+https://github.com/kissllm/linux-stable@master
-files/config
+# git+git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable
+git+https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux-stable.git
+# git+https://github.com/kissllm/linux-stable@master
+files/.config
+patches/system-map.list
 patches/amdgpufb.patch
 patches/make-yacc-usage-POSIX-compliant.diff
 patches/no-perl.patch

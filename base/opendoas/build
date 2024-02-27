@@ -1,0 +1,24 @@
+#! /bin/sh -e
+
+# Needed when cross building
+sed -i 's/UID_MAX/65535/g' doas.c
+sed -i 's/GID_MAX/65535/g' doas.c
+
+BINOWN="$(id -u)" \
+BINGRP="$(id -g)" \
+./configure \
+    --prefix=/usr \
+    --build=$KISS_XBUILD_TRIPLE \
+    --host=$KISS_XHOST_TRIPLE \
+    --enable-static \
+    --with-shadow \
+    --with-timestamp \
+    --without-pam
+
+make
+make install
+
+chmod u+s  doas
+mkdir -p "$1/etc"
+cp -f doas.conf "$1/etc"
+chmod 600 "$1/etc/doas.conf"

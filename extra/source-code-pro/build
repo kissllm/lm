@@ -1,0 +1,6 @@
+#!/bin/sh -e
+
+mkdir -p "$1/usr/share/fonts/TTF" "$1/usr/share/fonts/OTF"
+
+install -Dm644 -t "$1/usr/share/fonts/TTF" TTF/*.ttf
+install -Dm644 -t "$1/usr/share/fonts/OTF" OTF/*.otf

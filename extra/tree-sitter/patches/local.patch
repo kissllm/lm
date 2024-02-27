@@ -1,0 +1,14 @@
+diff --git a/Makefile b/Makefile
+index 69f6f590..8cdd5188 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION := 0.20.9
+ 
+ # install directory layout
+-PREFIX ?= /usr/local
++PREFIX ?= /usr
+ INCLUDEDIR ?= $(PREFIX)/include
+ LIBDIR ?= $(PREFIX)/lib
+ PCLIBDIR ?= $(LIBDIR)/pkgconfig
+

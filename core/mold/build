@@ -1,10 +1,5 @@
 #!/bin/sh -e
 
-mkdir -p bin
-ln -sf /usr/bin/pigz  "$PWD/bin/gunzip"
-ln -sf /usr/bin/gmake "$PWD/bin/make"
-export PATH="$PWD/bin:$PATH"
-
 # make -j$(nproc) CC=clang CXX=clang++ -C xxhash
 
 # # Point mold to the local xxhash.
@@ -13,14 +8,19 @@ export PATH="$PWD/bin:$PATH"
 # # Force a static build so shared library breakage does not also break the
 # # linker (and therefore the ability to recover from the issue).
 # export LDFLAGS="$LDFLAGS -fuse-ld=lld -static"
-make clean
-make -j$(nproc) CC=clang CXX=clang++
-make CC=clang CXX=clang++ PREFIX=/usr install
+
+# make clean
+# make -j$(nproc) CC=clang CXX=clang++
+# make CC=clang CXX=clang++ PREFIX=/usr install
+cmake -S . -B objects -DCMAKE_INSTALL_PREFIX="/usr" -Wno-dev
+cmake --build objects --target all --parallel
+cmake --install objects
 
 # Create a symbolic link so users can use mold as the linker system-wide
 # (without need for special CFLAGS/CXXFLAGS).
-ln -s mold "$1/usr/bin/ld"
+# ln: /working/kiss/proc/pkg/mold/usr/bin/ld: File exists
+# ln -s mold "$1/usr/bin/ld"
 
 # To tell GCC to use mold we must put a symlink to it in a directory and set it
 # to search for the linker within.
-ln -s ../../bin/mold "$1/usr/lib/mold/ld"
+ln -s $1/usr/bin/mold "$1/usr/lib64/mold/ld"

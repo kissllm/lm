@@ -1,0 +1,17 @@
+#! /bin/sh -e
+
+./configure \
+	--prefix=${KISS_ROOT}/ \
+	--dynlibdir=${KISS_ROOT}/lib \
+	--bindir=${KISS_ROOT}/usr/bin \
+	--libdir=${KISS_ROOT}/lib/oblibs \
+	--sysdepdir=${KISS_ROOT}/lib/skalibs/sysdeps \
+	--with-lib=${KISS_ROOT}/lib/skalibs \
+	--with-lib=${KISS_ROOT}/lib/execline \
+	--enable-force-devr
+
+	# --libdir=${KISS_ROOT}/lib/skalibs \
+
+make PREFIX=/
+
+make DESTDIR=$1 install

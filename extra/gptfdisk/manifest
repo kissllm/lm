@@ -1,0 +1,17 @@
+/var/db/kiss/installed/gptfdisk/version
+/var/db/kiss/installed/gptfdisk/sources
+/var/db/kiss/installed/gptfdisk/manifest
+/var/db/kiss/installed/gptfdisk/depends
+/var/db/kiss/installed/gptfdisk/checksums
+/var/db/kiss/installed/gptfdisk/build
+/var/db/kiss/installed/gptfdisk/
+/var/db/kiss/installed/
+/var/db/kiss/
+/var/db/
+/var/
+/usr/bin/sgdisk
+/usr/bin/gdisk
+/usr/bin/fixparts
+/usr/bin/cgdisk
+/usr/bin/
+/usr/

@@ -1,0 +1,14 @@
+--- a/sftp.c
++++ b/sftp.c
+@@ -2285,8 +2285,10 @@
+ 			break;
+ 		}
+ 		if (el == NULL) {
+-			if (interactive)
++			if (interactive) {
+ 				printf("sftp> ");
++				fflush(stdout);
++			}
+ 			if (fgets(cmd, sizeof(cmd), infile) == NULL) {
+ 				if (interactive)
+ 					printf("\n");

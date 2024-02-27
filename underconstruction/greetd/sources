@@ -1,0 +1,6 @@
+https://git.sr.ht/~kennylevinsen/greetd/archive/VERSION.tar.gz
+patches/config.patch
+files/greetd.confd
+files/greetd.initd
+files/greetd.pam
+

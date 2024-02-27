@@ -1,0 +1,19 @@
+#!/bin/sh -e
+
+# mkdir -p bin
+# ln -s /usr/bin/gmake "$PWD/bin/make"
+# export PATH="$PWD/bin:$PATH"
+
+export LDFLAGS="$LDFLAGS -static"
+
+mk() {
+    make \
+        PREFIX=/usr \
+        ENABLE_DEBUG=0 \
+        ENABLE_SHARED=0 \
+        ENABLE_XWAYLAND=0 \
+        "$@"
+}
+
+mk
+mk install

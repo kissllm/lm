@@ -1,0 +1,107 @@
+#! /bin/sh -e
+
+# interrupt_type="$(type "interrupt" > /dev/null && type "interrupt")" || :
+# [ ! -z "${interrupt_type:+x}" ] || {
+#   . /usr/include/kiss-share
+#   # [ -t 0 ] || // die 'fd 0' "does not work"
+# }
+
+version() {
+	# local target="$1"
+	# local target="$(// delegate -- target)"
+	# // debug '$target' "$target"
+	local make_dir="$1"
+
+	# local  repo_ver= repo_rel=
+
+	# / "IFS=$(printf '%b' "$FS") read -r repo_ver repo_rel \
+	#   << $(// here_doc -- ver_parse "$target")" \
+	#   > /dev/null || // die 'ver_parse' "failed"
+
+	printf "$RS%s$FS%s" "$repo_ver" "$repo_rel"
+}
+
+target() {
+	# local repo_name="perl"
+
+	# local url_line="$(grep "git+" "$REPO_DIR/perl/sources")"
+	# local url_and_target="${url_line##*+}"
+	# local url="${url_and_target%%@*}"
+
+	# local upstream_name="${url_and_target##*@}"
+	local upstream_name="$1"
+	local _local_dir="$2"
+	local make_dir="$2"
+	local url="$3"
+
+	[ -n "${UNUSE_LATEST_TAG:+x}" ] || upstream_name=
+
+	local tag_list=
+	local query_pid=
+
+	# refs/tags/vx.x.x-x
+	tag_list="$( \
+		git -C "$make_dir" -c 'versionsort.suffix=-' ls-remote --exit-code --refs \
+		--sort='version:refname' --tags "$url" 2> /dev/null |
+		awk '{print $2}')" # & query_pid="$!"
+
+	# progress "git query" "$query_pid"
+
+	[ ! -z "$tag_list" ] || {
+		# awk 'BEGIN{ FS = "/" } {print $NF}' 2> /dev/null || {
+		git -C "$make_dir" config --local --unset remote.origin.tagopt > /dev/null 2>&1
+		git -C "$make_dir" config --local --unset remote.origin.fetch > /dev/null 2>&1
+		git -C "$make_dir" config --local remote.origin.fetch \
+		"+refs/heads/*:refs/remotes/origin/*" > /dev/null 2>&1
+		tag_list="$( \
+			git -C "$make_dir" -c 'versionsort.suffix=-' ls-remote --exit-code --refs \
+				--sort='version:refname' --tags "$url" 2> /dev/null |
+				awk '{print $2}'
+		)" # & query_pid="$!"
+		# progress "git query" "$query_pid"
+	}
+
+	[ -z "${upstream_name:+x}" ] ||
+		tag_list="$(printf '%s\n' "$tag_list" | grep "$upstream_name")"
+
+	local latest_target_ref=
+	# local ver_rel=
+
+	# [ -n "${tag_list:+x}" ] || {
+	#   printf "$RS%s$FS%s" "$latest_target_ref" "$ver_rel"
+	#   return 0
+	# }
+
+	latest_target_ref="$( \
+		printf '%s' "$tag_list" | tail -n 1
+		# tail -n 1 |
+		# awk -F "/" '{print $NF}'
+	)"
+
+	latest_target="$(printf '%s' "$latest_target_ref" | awk 'BEGIN{ FS = "/" } {print $NF}' 2> /dev/null)"
+
+	local  repo_ver= repo_rel=
+
+	version "$make_dir"
+	# / "IFS=$(printf '%b' "$FS") read -r repo_ver repo_rel \
+	#   << $(// here_doc -- version "$latest_target")" \
+	#   > /dev/null || // die 'version' "failed"
+
+	printf "$RS%s$FS%s$FS%s" "$latest_target" "$repo_ver" "$repo_rel"
+
+}
+
+main() {
+	local action="$1"
+	shift 1
+	"$action" "$@"
+}
+
+main "$@"
+
+
+
+
+
+
+

@@ -1,1 +1,5 @@
-../../../modules/static/wayland/swc/sources
+git+https://github.com/michaelforney/swc
+patches/defer.patch
+patches/popup.patch
+patches/restacking.patch
+patches/subsurface.patch

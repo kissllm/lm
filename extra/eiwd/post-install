@@ -1,1 +1,8 @@
-../../modules/repo/extra/eiwd/post-install
+#!/bin/sh
+
+cat <<EOF
+
+NOTE: You also need [1mopenresolv[m to use eiwd's
+      built-in DNS features.
+
+EOF

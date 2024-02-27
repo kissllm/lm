@@ -1,0 +1,10 @@
+#! /bin/sh -e
+
+./configure \
+	--prefix=${KISS_ROOT}/usr
+
+
+make PREFIX=/usr
+
+make DESTDIR=$1 install
+

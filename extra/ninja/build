@@ -1,0 +1,5 @@
+#!/bin/sh -e
+cmake -B objects \
+    -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build objects --target all --parallel
+cmake --build objects --target install

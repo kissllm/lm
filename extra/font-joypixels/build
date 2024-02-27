@@ -1,0 +1,6 @@
+#!/bin/sh -e
+
+mkdir -p   "$1/usr/share/fonts/TTF"
+cp ./*.ttf "$1/usr/share/fonts/TTF"
+
+install -Dm755 75-emoji.conf "$1/etc/fonts/conf.d/75-emoji.conf"

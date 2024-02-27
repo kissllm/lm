@@ -1,0 +1,40 @@
+# --- a/netsurf/content/fetchers/about.c
+# +++ b/netsurf/content/fetchers/about.c
+--- a/content/fetchers/about.c
++++ b/content/fetchers/about.c
+@@ -538,10 +538,10 @@
+ /* OpenSSL 1.0.x, 1.0.2, 1.1.0 and 1.1.1 API all changed
+  * LibreSSL declares its OpenSSL version as 2.1 but only supports 1.0.x API
+  */
+-#if (defined(LIBRESSL_VERSION_NUMBER) || (OPENSSL_VERSION_NUMBER < 0x1010000fL))
++#if (OPENSSL_VERSION_NUMBER < 0x1010000fL)
+ /* 1.0.x */
+ 
+-#if (defined(LIBRESSL_VERSION_NUMBER) || (OPENSSL_VERSION_NUMBER < 0x1000200fL))
++#if (OPENSSL_VERSION_NUMBER < 0x1000200fL)
+ /* pre 1.0.2 */
+ static int ns_X509_get_signature_nid(X509 *cert)
+ {
+@@ -2974,3 +2974,4 @@
+ 
+ 	return fetcher_add(scheme, &fetcher_ops);
+ }
++
+# --- a/netsurf/content/fetchers/curl.c
+# +++ b/netsurf/content/fetchers/curl.c
+--- a/content/fetchers/curl.c
++++ b/content/fetchers/curl.c
+@@ -92,7 +92,7 @@
+ /* OpenSSL 1.0.x to 1.1.0 certificate reference counting changed
+  * LibreSSL declares its OpenSSL version as 2.1 but only supports the old way
+  */
+-#if (defined(LIBRESSL_VERSION_NUMBER) || (OPENSSL_VERSION_NUMBER < 0x1010000fL))
++#if (OPENSSL_VERSION_NUMBER < 0x1010000fL)
+ static int ns_X509_up_ref(X509 *cert)
+ {
+ 	cert->references++;
+@@ -1833,3 +1833,4 @@
+ 	return NSERROR_INIT_FAILED;
+ #endif
+ }
++

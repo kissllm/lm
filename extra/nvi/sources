@@ -1,1 +1,29 @@
-../../modules/cemkeylan/editors/nvi/sources
+http://pkgs.fedoraproject.org/repo/pkgs/nvi/nvi-1.81.6.tar.bz2/88d1e23115ee9f2961186b62e55f5704/nvi-1.81.6.tar.bz2 nvi
+http://download.oracle.com/berkeley-db/db-5.3.28.tar.gz db
+patches/nvi-00-create-symlinks.patch
+patches/nvi-01-additional_upstream_data.patch
+patches/nvi-03-db4.patch
+patches/nvi-04-confdefs.patch
+patches/nvi-06-default_value_escapetime.patch
+patches/nvi-07-flush_cache.patch
+patches/nvi-08-lfs.patch
+patches/nvi-08-safe_printf.patch
+patches/nvi-08-tempfile_umask.patch
+patches/nvi-09-casting.patch
+patches/nvi-10-no_one_line_visual.patch
+patches/nvi-11-backward_sentence_moving.patch
+patches/nvi-12-horiz_scroll_count.patch
+patches/nvi-14-private_regex_fixes.patch
+patches/nvi-15-search_word.patch
+patches/nvi-16-manpage_errors.patch
+patches/nvi-17-tutorial_typos.patch
+patches/nvi-18-dbpagesize_binpower.patch
+patches/nvi-19-include_term_h.patch
+patches/nvi-20-glibc_has_grantpt.patch
+patches/nvi-21-exrc_writability_check.patch
+patches/nvi-23-debian_alternatives.patch
+patches/nvi-24-fallback_to_dumb_term.patch
+patches/nvi-25-manpage_note_dropped_F.patch
+patches/nvi-26-trailing_tab_segv.patch
+patches/nvi-27-support_C_locale.patch
+patches/nvi-29-file_backup.patch

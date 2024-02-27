@@ -1,0 +1,4 @@
+#!/bin/sh
+cmake -B objects
+cmake --build objects --target all --parallel
+cmake --build objects --target install

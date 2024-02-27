@@ -1,1 +1,2 @@
-../../modules/repo/extra/dhcpcd/sources
+https://github.com/NetworkConfiguration/dhcpcd/archive/refs/tags/v10.0.2.tar.gz
+files/dhcpcd.run

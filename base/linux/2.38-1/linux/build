@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+
+export CFLAGS="$CFLAGS -static"
+export SUID_CFLAGS="-static"
+export SUID_LDFLAGS="-static"
+export CPPFLAGS="-static"
+export LDFLAGS="$LDFLAGS -static"
+
+./configure \
+    --prefix=/usr \
+    --bindir=/usr/bin \
+    --sbindir=/usr/sbin \
+    --build=$KISS_XBUILD_TRIPLE \
+    --host=$KISS_XHOST_TRIPLE \
+    --localstatedir=/var \
+    --disable-shared \
+    --enable-libuuid \
+    --enable-libblkid \
+    --enable-fsck \
+    --disable-makeinstall-chown \
+    --disable-rpath \
+    --without-udev \
+    --without-python \
+    --without-systemd
+
+make LDFLAGS="$LDFLAGS --static"
+make DESTDIR="$1" install
+
+# Fix broken --sbindir.
+mv -f "$1/usr/sbin/"* "$1/usr/bin"
+rmdir "$1/usr/sbin"
+
+rm -rf \
+    "$1/usr/share/doc" \
+    "$1/usr/share/bash-completion"

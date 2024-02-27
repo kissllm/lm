@@ -1,0 +1,31 @@
+#! /bin/sh
+SCRIPT=$(readlink -f "$0")
+SCRIPT_PATH="${SCRIPT%/*}"
+{
+	[ ! -z "${REPO_MAIN:+x}" ] &&
+	[ "$REPO_MAIN" = "$SCRIPT_PATH" ]
+} || REPO_MAIN=$SCRIPT_PATH
+echo "\$REPO_MAIN = $REPO_MAIN"
+echo "\$REPO_ROOT = $REPO_ROOT"
+[ ! -z "${REPO_MAIN:+x}" ] || return
+[ ! -z "${REPO_ROOT:+x}" ] || return
+cd $REPO_ROOT
+for item in $(\ls -1 "$REPO_ROOT"); do
+	[ -d "$item" ] || continue
+	echo "\$item = $item"
+	[ "$item" = "${REPO_MAIN##*/}" ] ||
+	[ "$item" = "installed" ] ||
+	[ "$item" = "choices" ] ||
+	# No "false" will be returned in the following git test
+	[ "$(git -C "$item" rev-parse --is-inside-work-tree 2>/dev/null)" != "true" ] || {
+		cd "$item"
+		printf "%b%s%b\n" '\033[1;34m' "Entered $item" '\033[m'
+		[ "$item" != "${REPO_MAIN##*/}" ] || { echo "What!!!!! Do not touch '$item'"; continue; }
+		echo "Operating on $PWD"
+		BRANCH_NAME=$(git show-branch --list | grep \* | awk '{print $2}' | sed 's/\[//g' | sed 's/\]//g')
+		[ -z "$(git diff 2>/dev/null)" ] ||
+		git reset --hard origin/$BRANCH_NAME
+		( git pull 2>/dev/null ) || echo "pull failed"
+	}
+	cd $REPO_ROOT
+done

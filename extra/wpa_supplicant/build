@@ -1,8 +1,4 @@
-#!/usr/bin/env sh
-
-mkdir -p bin
-ln -s /usr/bin/gmake "$PWD/bin/make"
-export PATH="$PWD/bin:$PATH"
+#!/bin/sh -e
 
 # The wpa_supplicant package is built statically using
 # libnl-tiny which is a minimal version of libnl maintained

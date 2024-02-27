@@ -1,0 +1,8 @@
+#! /bin/sh -e
+#
+# https://sysdfree.wordpress.com/2019/12/15/291/
+#
+# rsync -aqz --rsync-path="\mkdir -p $1/usr/share/66/service &&
+# 	rsync" trunk/tty@ $1/usr/share/66/service/
+[ -d "$1/usr/share/66/service" ] || \mkdir -p "$1/usr/share/66/service"
+rsync -aqz trunk/tty@ $1/usr/share/66/service/

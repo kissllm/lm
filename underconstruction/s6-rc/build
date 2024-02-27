@@ -1,0 +1,17 @@
+#! /bin/sh -e
+
+./configure \
+	--prefix=/ \
+	--dynlibdir=${KISS_ROOT}/lib \
+	--bindir=${KISS_ROOT}/bin \
+	--sbindir=${KISS_ROOT}/sbin \
+	--libdir=${KISS_ROOT}/lib \
+	--with-sysdeps=${KISS_ROOT}/lib/skalibs/sysdeps \
+	--with-lib=${KISS_ROOT}/lib/skalibs \
+	--with-lib=${KISS_ROOT}/lib/execline \
+	--with-dynlib=${KISS_ROOT}/lib \
+	--enable-shared
+
+make PREFIX=/
+
+make DESTDIR=$1 install

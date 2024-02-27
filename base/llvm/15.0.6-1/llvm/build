@@ -1,0 +1,202 @@
+#!/bin/sh -e
+
+export CF="$CFLAGS -lz -Wno-unused-command-line-argument -O2"
+export CXXF="$CXXFLAGS -lz -Wno-unused-command-line-argument -O2"
+unset CC
+unset CXX
+unset CFLAGS
+unset CXXFLAGS
+unset LDFLAGS
+
+unset PKG_CONFIG_LIBDIR
+unset PKG_CONFIG_SYSROOT_DIR
+unset PKG_CONFIG_PATH
+unset KISS_ROOT
+
+pkgver=15.0.6
+_majorver=${pkgver%%.*}
+# _prefix="opt/lib/llvm$_majorver"
+_prefix="opt"
+export KISS_ROOT=/$_prefix
+
+# Don't set the compiler here, interferes with 2-stage build
+kiss-cmake-config | sed '/CMAKE_C_COMPILER/d;' | sed '/CMAKE_CXX_COMPILER/d;' > cmake.config
+
+patch -p1 < glasnost.patch
+
+# What version of llvm is currently installed?
+# llvm_ver="$(cat ${KISS_ROOT}/var/db/kiss/installed/llvm/version | cut -d " " -f 1)"
+llvm_ver="$(cat /var/db/kiss/installed/llvm/version | cut -d " " -f 1)"
+
+# Bootstrap only if version is different it's not a crossbuild
+if [ $llvm_ver != $2 ] || [ -z $KISS_ROOT ]; then
+    bootstrap="1"
+fi
+
+# If this is a cross, use a toolchain file
+if [ ! -z $KISS_ROOT ];  then
+    toolchain="-DCMAKE_TOOLCHAIN_FILE=$(realpath cmake.config)"
+    bstoolchain="-DBOOTSTRAP_CMAKE_TOOLCHAIN_FILE=$(realpath cmake.config)"
+fi
+
+# Default set of runtimes
+runtimes="compiler-rt;libcxx;libcxxabi;libunwind;polly;bolt"
+
+# Release type
+export CMAKE_BUILD_TYPE="Release"
+
+# Determine targets for architecture
+case $KISS_XHOST_ARCH in
+   aarch64_be)  TARGET_ARCH="AArch64" libname="aarch64_be";;
+   aarch64)     TARGET_ARCH="AArch64" libname="aarch64"     runtimes="${runtimes};openmp";;
+   armv7)       TARGET_ARCH="ARMv7"   libname="armhf";;
+   i686)        TARGET_ARCH="X86"     libname="i386";;
+   powerpc64)   TARGET_ARCH="PowerPC" libname="powerpc64"   runtimes="${runtimes};openmp";;
+   powerpc64le) TARGET_ARCH="PowerPC" libname="powerpc64le" runtimes="${runtimes};openmp";;
+   powerpcle)   TARGET_ARCH="PowerPC" libname="powerpcle";;
+   powerpc)     TARGET_ARCH="PowerPC" libname="powerpc";;
+   riscv64)     TARGET_ARCH="RISCV64" libname="riscv64";;
+   x86_64)      TARGET_ARCH="X86"     libname="x86_64"      runtimes="${runtimes};openmp";;
+   *) echo "Unsupported platform: $KISS_XHOST_ARCH"; exit 1;;
+esac
+
+
+echo "Building for: $TARGET_ARCH"
+echo "Building runtimes: $runtimes"
+
+if [ "$bootstrap" == "1" ]; then
+    echo "Building stage 1 and stage 2..."
+
+    cmake -B build \
+    -G Ninja \
+    -C Distribution.cmake \
+    -DCMAKE_POLICY_DEFAULT_CMP0114="NEW" \
+    -DCMAKE_INSTALL_PREFIX=/$_prefix \
+    -DBOOTSTRAP_CMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
+    -DBOOTSTRAP_CMAKE_ASM_FLAGS="$CF" \
+    -DBOOTSTRAP_CMAKE_CXX_FLAGS="$CXXF" \
+    -DBOOTSTRAP_CMAKE_C_FLAGS="$CF" \
+    -DBOOTSTRAP_KISS_ROOT=$KISS_ROOT \
+    -DBOOTSTRAP_LLVM_DEFAULT_TARGET_TRIPLE=$KISS_XHOST_TRIPLE \
+    -DBOOTSTRAP_LLVM_ENABLE_LTO=Thin \
+    -DBOOTSTRAP_LLVM_ENABLE_RUNTIMES="$runtimes" \
+    -DBOOTSTRAP_LLVM_HOST_TRIPLE=$KISS_XHOST_TRIPLE \
+    -DBOOTSTRAP_LLVM_TARGET_ARCH=$TARGET_ARCH \
+    -DBOOTSTRAP_LLVM_LINK_LLVM_DYLIB=ON \
+    $bstoolchain \
+    -DCLANG_ENABLE_BOOTSTRAP=ON \
+    -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
+    -DCMAKE_ASM_FLAGS="-isystem libcxx/include -lz -w" \
+    -DCMAKE_CXX_COMPILER=clang++ \
+    -DCMAKE_CXX_FLAGS="-isystem libcxx/include -lz -w" \
+    -DCMAKE_C_COMPILER=clang \
+    -DCMAKE_C_FLAGS="-isystem libcxx/include -lz -w" \
+    -DKISS_ROOT="/$_prefix" \
+    -DLLVM_HOST_TRIPLE="$KISS_XBUILD_TRIPLE" \
+    -DLLVM_TARGET_ARCH="host" \
+    -DHAVE_POSIX_REGEX="0" \
+    -DHAVE_STEADY_CLOCK="0" \
+    -DCLANG_DEFAULT_UNWINDLIB="libunwind" \
+    -DLIBCXXABI_USE_LLVM_UNWINDER="ON" \
+    -DLIBUNWIND_USE_COMPILER_RT="ON" \
+    -DLIBCXXABI_STATICALLY_LINK_UNWINDER_IN_SHARED_LIBRARY="ON" \
+    -DLIBCXXABI_ENABLE_STATIC_UNWINDER="ON" \
+    -DLIBUNWIND_ENABLE_SHARED="OFF" \
+    -DLIBUNWIND_INSTALL_LIBRARY="OFF" \
+    -DLIBUNWIND_USE_COMPILER_RT="ON" \
+    -DOPENMP_USE_LLVM_UNWINDER="ON" \
+    -DLIBUNWIND_SYSROOT="$KISS_ROOT" \
+    -DLLVM_BINUTILS_INCDIR=/usr/include \
+    llvm
+
+    # -DLIBUNWIND_COMPILE_FLAGS="$ENV{KISS_LIBUNWIND_FLAGS}" \
+    # -DCXX_SUPPORTS_FUNWIND_TABLES_FLAG=ON \
+    # -DCXX_SUPPORTS_FNO_EXCEPTIONS_FLAG=ON \
+    # -DLIBUNWIND_ENABLE_SHARED=ON \
+
+    cmake --build build --target llvm-tblgen 2>&1 || kill 0
+    cmake --build build --target clang-tblgen 2>&1 || kill 0
+    ninja -C build stage2-install-distribution 2>&1 || kill 0
+
+    # Clang: clang-tblgen, required for crossbuilding.
+    cp build/tools/clang/stage2-bins/bin/clang-tblgen  $1/$_prefix/bin/clang-tblgen
+else
+    echo "Building stage 2 only..."
+
+    cmake -B build \
+    -G Ninja \
+    -C Distribution-stage2.cmake \
+    -DCMAKE_POLICY_DEFAULT_CMP0114="NEW" \
+    -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
+    -DCMAKE_ASM_FLAGS="$CF" \
+    -DCMAKE_INSTALL_PREFIX=/$_prefix \
+    -DCMAKE_CXX_COMPILER=clang++ \
+    -DCMAKE_CXX_FLAGS="$CXXF" \
+    -DCMAKE_C_COMPILER=clang \
+    -DCMAKE_C_FLAGS="$CF" \
+    -DCMAKE_C_FLAGS_RELEASE="$CF" \
+    -DCMAKE_CXX_FLAGS_RELEASE="$CXXF" \
+    -DCMAKE_ASM_FLAGS_RELEASE="$CF" \
+    $toolchain \
+    -DKISS_ROOT=$KISS_ROOT \
+    -DLIBUNWIND_SYSROOT=$KISS_ROOT \
+    -DLLVM_ENABLE_LTO=OFF \
+    -DLLVM_DEFAULT_TARGET_TRIPLE=$KISS_XHOST_TRIPLE \
+    -DLLVM_ENABLE_RUNTIMES="$runtimes" \
+    -DLLVM_HOST_TRIPLE=$KISS_XHOST_TRIPLE \
+    -DLLVM_LINK_LLVM_DYLIB=ON \
+    -DLLVM_TARGET_ARCH=$TARGET_ARCH \
+    -DLLVM_TABLEGEN=/$_prefix/bin/llvm-tblgen \
+    -DCLANG_TABLEGEN=/$_prefix/bin/clang-tblgen \
+    llvm
+
+    ninja -C build install-distribution 2>&1 || kill 0
+    ninja -C build clang-tblgen 2>&1 || kill 0
+
+    # Clang: clang-tblgen, required for crossbuilding.
+    cp build/bin/clang-tblgen  $1/$_prefix/bin/clang-tblgen
+fi
+
+
+# LLD: Replace GNU binutils
+ln -s ld.lld "$1/$_prefix/bin/ld"
+
+# Clang: Some legacy programs may require cc
+ln -s clang "$1/$_prefix/bin/cc"
+
+# Clang: equivalent for c++
+ln -s clang++ "$1/$_prefix/bin/c++"
+
+# Clang: equivalent for cpp
+ln -s clang-cpp "$1/$_prefix/bin/cpp"
+
+# Clang: POSIX compliance
+cp c99 $1/$_prefix/bin
+
+# For GCC compatibility
+cd $1/$_prefix/bin/
+ln -s -f llvm-readobj  readelf
+ln -s -f llvm-objcopy  strip
+ln -s -f llvm-ar       ar
+ln -s -f llvm-nm       nm
+ln -s -f llvm-objcopy  objcopy
+ln -s -f llvm-objdump  objdump
+ln -s -f llvm-strings  strings
+ln -s -f llvm-objcopy  otool
+ln -s -f llvm-ranlib   ranlib
+ln -s -f llvm-as       as
+
+# This makes things like Rust easier:
+cd $1/$_prefix/lib/clang
+ln -s $2 system
+cd $1/$_prefix/lib
+ln -s clang/system/lib/linux/clang_rt.crtbegin-$libname.o    crtbegin.o
+ln -s clang/system/lib/linux/clang_rt.crtbegin-$libname.o    crtbeginS.o
+ln -s clang/system/lib/linux/clang_rt.crtend-$libname.o      crtend.o
+ln -s clang/system/lib/linux/clang_rt.crtend-$libname.o      crtendS.o
+ln -s clang/system/lib/linux/libclang_rt.builtins-$libname.a libatomic.a
+
+#   Compiler doesn't support generation of unwind tables if exception support
+#   is disabled.  Building libunwind DSO with runtime dependency on C++ ABI
+#   library is not supported.
+

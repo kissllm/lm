@@ -1,7 +1,0 @@
-bison   make
-meson   make
-pkgconf make
-wayland
-wayland-protocols
-wayland-protocols make
-xkeyboard-config

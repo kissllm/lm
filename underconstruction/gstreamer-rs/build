@@ -1,0 +1,5 @@
+#!/bin/sh -e
+# cargo build --release --no-default-features --features=wayland
+cargo build --release --no-default-features
+# meson objects
+# ninja -C objects

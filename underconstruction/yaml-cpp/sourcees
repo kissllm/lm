@@ -1,0 +1,4 @@
+git+https://github.com/jbeder/yaml-cpp.git
+patches/enable-pic.patch
+patches/fix-pkgconfig-and-cmake-install-dirs.patch
+patches/unbundle-gtest.patch

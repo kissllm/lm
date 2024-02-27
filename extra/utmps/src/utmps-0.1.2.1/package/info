@@ -1,0 +1,4 @@
+package=utmps
+version=0.1.2.1
+category=admin
+package_macro_name=UTMPS

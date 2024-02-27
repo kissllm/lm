@@ -1,0 +1,19 @@
+#!/bin/sh -e
+
+cd src
+
+sed -i -e '/eq 0/{N;s/12 //}'    plugins/kdb/db2/libdb2/test/run.test
+sed -i '/t_iprop.py/d'           tests/Makefile.in
+
+export CFLAGS="$CFLAGS -w"
+
+./configure --prefix=/usr            \
+            --bindir=/usr/bin        \
+            --sbindir=/usr/bin       \
+            --sysconfdir=/etc        \
+            --localstatedir=/var/lib \
+            --runstatedir=/run       \
+            --with-system-verto=no   \
+            --enable-dns-for-realm
+make
+make DESTDIR=$1 install

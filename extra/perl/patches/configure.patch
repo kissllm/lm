@@ -1,0 +1,11 @@
+--- a/Configure
++++ b/Configure
+@@ -23502,7 +23502,7 @@
+ 		"") dflt=y;;
+ 		*) dflt=n;;
+ 		esac;
+-		. ../UU/myread;
++		. $OUTPUT_DIR/UU/myread;
+ 		case "$ans" in
+ 		n*|N*) ;;
+ 		*) echo >&4;

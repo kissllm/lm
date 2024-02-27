@@ -1,0 +1,24 @@
+#!/bin/sh -e
+
+script=$(readlink -f "$0")
+script_path=${script%/*}
+pkg_name=${script_path##*/}
+repo_url="var/db/kiss/installed/$pkg_name"
+IFS=$' ' read -r repo_ver repo_rel repo_dir 2>/dev/null < "$repo_url/version" ||
+printf '%s %s\' "$pkg_name" "failed to read $repo_url/version"
+IFS=.+-_ read -r repo_major repo_minor repo_patch repo_ident \
+    < <(printf '%s\n' "$repo_ver") > /dev/null || printf '%s %s\' "printf '%s\\n' \"$repo_ver\"" "failed"
+# luajit linked to moonjit
+# And have 3 versions of executables
+# ls: usr/bin/luajit: No such file or directory
+executable_name="$(\ls "usr/bin/luajit-$repo_major.$repo_minor.$repo_patch"*)" || exit 1
+executable_name="${executable_name##*/}"
+echo "\$executable_name = $executable_name"
+real_executable=$(find /usr/bin -type f -name "$executable_name")
+
+echo "real_executable = "$real_executable
+
+{ command -v $real_executable > /dev/null 2>&1 &&
+[ "$real_executable" = "$(readlink -f /usr/bin/luajit)" ]; } ||
+    ln -sf $real_executable /usr/bin/luajit
+

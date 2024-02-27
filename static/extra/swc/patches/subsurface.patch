@@ -1,0 +1,277 @@
+From f7a97664194da119e2171656bd9eb79379fa5436 Mon Sep 17 00:00:00 2001
+From: ian <42294085+ianbeyst@users.noreply.github.com>
+Date: Sat, 18 Apr 2020 20:11:28 +0200
+Subject: [PATCH] Implement basic subsurface support
+
+Functionality is for now limited to creation, initial rendering and
+destruction.
+---
+ libswc/subcompositor.c |  7 ++--
+ libswc/subsurface.c    | 94 +++++++++++++++++++++++++++++++++++++-----
+ libswc/subsurface.h    | 20 ++++++++-
+ libswc/surface.c       |  6 ++-
+ libswc/surface.h       |  3 ++
+ 5 files changed, 115 insertions(+), 15 deletions(-)
+
+diff --git a/libswc/subcompositor.c b/libswc/subcompositor.c
+index 5d1da45..10d50c3 100644
+--- a/libswc/subcompositor.c
++++ b/libswc/subcompositor.c
+@@ -31,10 +31,11 @@ static void
+ get_subsurface(struct wl_client *client, struct wl_resource *resource,
+                uint32_t id, struct wl_resource *surface_resource, struct wl_resource *parent_resource)
+ {
+-	struct subsurface *subsurface;
+-
+-	subsurface = subsurface_new(client, wl_resource_get_version(resource), id);
++    struct surface *surface = wl_resource_get_user_data(surface_resource);
++    struct surface *parent = wl_resource_get_user_data(parent_resource);
++    struct subsurface *subsurface;
+ 
++	subsurface = subsurface_new(client, wl_resource_get_version(resource), id, surface, parent);
+ 	if (!subsurface) {
+ 		wl_resource_post_no_memory(resource);
+ 		return;
+diff --git a/libswc/subsurface.c b/libswc/subsurface.c
+index 6f68b2c..c8aaca0 100644
+--- a/libswc/subsurface.c
++++ b/libswc/subsurface.c
+@@ -21,40 +21,53 @@
+  * SOFTWARE.
+  */
+ 
++#include "compositor.h"
+ #include "subsurface.h"
+ #include "util.h"
+ 
+ #include <stdlib.h>
++#include <stdbool.h>
+ #include <wayland-server.h>
+ 
+ static void
+ set_position(struct wl_client *client, struct wl_resource *resource, int32_t x, int32_t y)
+ {
+-	/* TODO: Implement. */
++	struct subsurface *subsurface = wl_resource_get_user_data(resource);
++
++    subsurface->position.x = x;
++    subsurface->position.y = y;
++    subsurface->position.set = true;
++
++    view_move(subsurface->surface->view, subsurface->parent->view->geometry.x + x, subsurface->parent->view->geometry.y + y);
++    view_update(subsurface->surface->view);
++
++	struct compositor_view *comp_view = compositor_view(subsurface->surface->view);
++	if (comp_view)
++		compositor_view_show(comp_view);
+ }
+ 
+ static void
+ place_above(struct wl_client *client, struct wl_resource *resource, struct wl_resource *sibling_resource)
+ {
+-	/* TODO: Implement. */
++    DEBUG("subsurface::place_above\n");
+ }
+ 
+ static void
+ place_below(struct wl_client *client, struct wl_resource *resource, struct wl_resource *sibling_resource)
+ {
+-	/* TODO: Implement. */
++    DEBUG("subsurface::place_below\n");
+ }
+ 
+ static void
+ set_sync(struct wl_client *client, struct wl_resource *resource)
+ {
+-	/* TODO: Implement. */
++    DEBUG("subsurface::set_sync\n");
+ }
+ 
+ static void
+ set_desync(struct wl_client *client, struct wl_resource *resource)
+ {
+-	/* TODO: Implement. */
++    DEBUG("subsurface::set_desync\n");
+ }
+ 
+ static const struct wl_subsurface_interface subsurface_impl = {
+@@ -67,14 +80,63 @@ static const struct wl_subsurface_interface subsurface_impl = {
+ };
+ 
+ static void
+-subsurface_destroy(struct wl_resource *resource)
++unlink_from_parent(struct subsurface* subsurface)
+ {
+-	struct subsurface *subsurface = wl_resource_get_user_data(resource);
++	wl_list_remove(&subsurface->parent_link);
++	wl_list_remove(&subsurface->parent_destroy_listener.link);
++	subsurface->parent = NULL;
++}
++
++static void
++subsurface_destroy(struct subsurface *subsurface)
++{
++	if (subsurface->parent)
++	    unlink_from_parent(subsurface);
++
++	struct compositor_view *comp_view = compositor_view(subsurface->surface->view);
++	if (comp_view)
++	    compositor_view_destroy(comp_view);
++
++    wl_list_remove(&subsurface->surface_destroy_listener.link);
++
+ 	free(subsurface);
+ }
+ 
++static void
++subsurface_destroy_handler(struct wl_resource *resource)
++{
++	struct subsurface *subsurface = wl_resource_get_user_data(resource);
++    if (subsurface)
++        subsurface_destroy(subsurface);
++}
++
++static void
++subsurface_handle_surface_destroy(struct wl_listener *listener, void *data)
++{
++	struct subsurface *subsurface;
++	subsurface = wl_container_of(listener, subsurface, surface_destroy_listener);
++
++    if (subsurface->resource)
++		wl_resource_set_user_data(subsurface->resource, NULL);
++
++	subsurface_destroy(subsurface);
++}
++
++static void
++subsurface_handle_parent_destroy(struct wl_listener *listener, void *data)
++{
++	struct subsurface *subsurface;
++	subsurface = wl_container_of(listener, subsurface, parent_destroy_listener);
++
++	struct compositor_view *comp_view = compositor_view(subsurface->surface->view);
++	if (comp_view)
++	    compositor_view_hide(comp_view);
++
++	unlink_from_parent(subsurface);
++}
++
+ struct subsurface *
+-subsurface_new(struct wl_client *client, uint32_t version, uint32_t id)
++subsurface_new(struct wl_client *client, uint32_t version, uint32_t id, struct surface *surface, struct surface *parent)
+ {
+ 	struct subsurface *subsurface;
+ 
+@@ -82,11 +144,23 @@ subsurface_new(struct wl_client *client, uint32_t version, uint32_t id)
+ 		goto error0;
+ 
+ 	subsurface->resource = wl_resource_create(client, &wl_subsurface_interface, version, id);
+-
+ 	if (!subsurface->resource)
+ 		goto error1;
++	wl_resource_set_implementation(subsurface->resource, &subsurface_impl, subsurface, &subsurface_destroy_handler);
++
++    subsurface->surface = surface;
++    subsurface->parent = parent;
++
++	subsurface->surface_destroy_listener.notify = subsurface_handle_surface_destroy;
++	subsurface->parent_destroy_listener.notify = subsurface_handle_parent_destroy;
++	wl_signal_add(&surface->destroy_signal, &subsurface->surface_destroy_listener);
++	wl_signal_add(&parent->destroy_signal, &subsurface->parent_destroy_listener);
++
++	wl_list_insert(&parent->subsurface_list, &subsurface->parent_link);
++
++    subsurface->synchronized = true;
+ 
+-	wl_resource_set_implementation(subsurface->resource, &subsurface_impl, subsurface, &subsurface_destroy);
++    compositor_create_view(subsurface->surface);
+ 
+ 	return subsurface;
+ 
+diff --git a/libswc/subsurface.h b/libswc/subsurface.h
+index a78ed69..2bfd578 100644
+--- a/libswc/subsurface.h
++++ b/libswc/subsurface.h
+@@ -24,14 +24,32 @@
+ #ifndef SWC_SUBSURFACE_H
+ #define SWC_SUBSURFACE_H
+ 
++#include "surface.h"
++
++#include <stdbool.h>
+ #include <stdint.h>
+ 
+ struct wl_client;
+ 
+ struct subsurface {
+ 	struct wl_resource *resource;
++
++    struct surface *surface;
++    struct wl_listener surface_destroy_listener;
++
++    struct surface *parent;
++    struct wl_listener parent_destroy_listener;
++    struct wl_list parent_link;
++
++	struct {
++		int32_t x;
++		int32_t y;
++		bool set;
++	} position;
++
++	bool synchronized;
+ };
+ 
+-struct subsurface *subsurface_new(struct wl_client *client, uint32_t version, uint32_t id);
++struct subsurface *subsurface_new(struct wl_client *client, uint32_t version, uint32_t id, struct surface *surface, struct surface *parent);
+ 
+ #endif
+diff --git a/libswc/surface.c b/libswc/surface.c
+index 19a36ec..f6809d8 100644
+--- a/libswc/surface.c
++++ b/libswc/surface.c
+@@ -305,6 +305,8 @@ surface_destroy(struct wl_resource *resource)
+ {
+ 	struct surface *surface = wl_resource_get_user_data(resource);
+ 
++    wl_signal_emit(&surface->destroy_signal, surface);
++
+ 	state_finalize(&surface->state);
+ 	state_finalize(&surface->pending.state);
+ 
+@@ -339,10 +341,13 @@ surface_new(struct wl_client *client, uint32_t version, uint32_t id)
+ 	surface->pending.commit = 0;
+ 	surface->view = NULL;
+ 	surface->view_handler.impl = &view_handler_impl;
++	wl_list_init(&surface->subsurface_list);
+ 
+ 	state_initialize(&surface->state);
+ 	state_initialize(&surface->pending.state);
+ 
++    wl_signal_init(&surface->destroy_signal);
++
+ 	return surface;
+ 
+ error1:
+@@ -361,7 +366,6 @@ surface_set_view(struct surface *surface, struct view *view)
+ 		wl_list_remove(&surface->view_handler.link);
+ 
+ 	surface->view = view;
+-
+ 	if (view) {
+ 		wl_list_insert(&view->handlers, &surface->view_handler.link);
+ 		view_attach(view, surface->state.buffer);
+diff --git a/libswc/surface.h b/libswc/surface.h
+index 039ed4c..28d810b 100644
+--- a/libswc/surface.h
++++ b/libswc/surface.h
+@@ -67,6 +67,9 @@ struct surface {
+ 
+ 	struct view *view;
+ 	struct view_handler view_handler;
++
++    struct wl_signal destroy_signal;
++    struct wl_list subsurface_list;
+ };
+ 
+ struct surface *surface_new(struct wl_client *client, uint32_t version, uint32_t id);

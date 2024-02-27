@@ -1,1 +1,2 @@
-../../modules/boost/community/openvpn/depends
+lzo
+pkcs11-helper

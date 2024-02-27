@@ -1,0 +1,31 @@
+#!/bin/sh -e
+
+# Without this folder, Qt can't find its header files.
+mkdir .git
+
+./configure \
+    -confirm-license \
+    -opensource \
+    -prefix /usr \
+    -docdir /usr/share/doc/qt \
+    -headerdir /usr/include/qt \
+    -archdatadir /usr/lib/qt \
+    -datadir /usr/share/qt \
+    -sysconfdir /etc/xdg \
+    -examplesdir /usr/share/doc/qt/examples \
+    -nomake examples \
+    -nomake tests \
+    -optimized-qmake \
+    -no-separate-debug-info \
+    -system-libjpeg \
+    -system-libpng \
+    -system-sqlite \
+    -system-zlib \
+    -system-freetype \
+    -system-harfbuzz \
+    -silent 
+
+make
+make INSTALL_ROOT="$1" install
+
+install -Dm755 qt.conf "$1/usr/bin/qt.conf"

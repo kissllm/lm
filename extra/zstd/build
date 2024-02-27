@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
 
 sed 's/^FLAGS.*=/FLAGS = -static /' programs/Makefile > _
 mv -f _ programs/Makefile
@@ -11,6 +11,3 @@ make \
 make \
     PREFIX=/usr \
     install
-
-#make
-#make DESTDIR="$1" PREFIX=/usr install

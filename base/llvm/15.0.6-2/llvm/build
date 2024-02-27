@@ -1,0 +1,677 @@
+#!/bin/sh
+
+# CFLAGS="--target=$KISS_XHOST_TRIPLE -O3 -pipe -fPIC -march=x86-64 -mtune=native -mcpu=x86-64"
+# CXXFLAGS="--target=$KISS_XHOST_TRIPLE -O3 -pipe -fPIC -march=x86-64 -mtune=native -mcpu=x86-64"
+
+export CF="$CFLAGS"
+export CXXF="$CXXFLAGS"
+unset CFLAGS
+unset CXXFLAGS
+unset LDFLAGS
+
+[ ! -z "${CC+x}" ]  || CC="clang"
+[ ! -z "${CXX+x}" ] || CXX="clang++"
+echo "\$CC = $CC"
+
+[ ! -z "${SYS_ROOT+x}" ] || export SYS_ROOT=/
+echo "\$SYS_ROOT = $SYS_ROOT"
+export COMPILER_RESOURCE_DIR=$("$CC" --print-resource-dir)
+echo "\$COMPILER_RESOURCE_DIR = $COMPILER_RESOURCE_DIR"
+export USR_ROOT="${SYS_ROOT}usr"
+echo "\$USR_ROOT = $USR_ROOT"
+export HOST_LLVM_VERSION=$(llvm-config --version)
+[ ! -z "${CXX_STANDARD_VER+x}" ] ||
+export CXX_STANDARD_VER="c++20"
+export LLVM_BIN_DIR="${LLVM_BIN_DIR:=$(${USR_ROOT}/bin/llvm-config --bindir)}"
+export OUTPUT_DIR="objects"
+
+# LLVM_TOOLCHAIN_LIB_DIR=/usr/lib
+export LLVM_TOOLCHAIN_LIB_DIR=$(llvm-config --libdir)
+
+export PKG_DIR="$1"
+[ ! -z "${BUILD_PATH+x}" ] ||
+export BUILD_PATH=${KISS_TMPDIR:=/tmp$HOME/kiss}/proc/llvm/build
+echo "\$BUILD_PATH = $BUILD_PATH"
+
+[ -d "$BUILD_PATH/$OUTPUT_DIR/include/c++/v1" ] || \mkdir -p "$BUILD_PATH/$OUTPUT_DIR/include/c++/v1"
+[ -d "$BUILD_PATH/$OUTPUT_DIR/lib" ] || \mkdir -p "$BUILD_PATH/$OUTPUT_DIR/lib"
+[ -d "$BUILD_PATH/$OUTPUT_DIR/bin" ] || \mkdir -p "$BUILD_PATH/$OUTPUT_DIR/bin"
+export ORIGIN="$BUILD_PATH/$OUTPUT_DIR/bin"
+
+[ ! -z "${GENERATOR_TYPE+x}" ] || GENERATOR_TYPE="Ninja"
+[ ! -z "${MAKE_PROGRAM+x}" ] || MAKE_PROGRAM=$(which ninja)
+command -v "${MAKE_PROGRAM}" > /dev/null 2>&1 || {
+    echo "Provide \$MAKE_PROGRAM please."
+    exit 1;
+}
+
+[ ! -z "${CMAKE+x}" ] || CMAKE=$(which cmake)
+command -v "${CMAKE}" > /dev/null 2>&1 || {
+    echo "Provide \$CMAKE please."
+    exit 1;
+}
+
+ffi_include_dir="$(pkg-config --cflags-only-I libffi | sed 's|^-I||g')"
+
+# CF="$CF -resource-dir=${COMPILER_RESOURCE_DIR} -B${LLVM_BIN_DIR} -Os -fPIC -mtune=native"
+CF="$CF -resource-dir=${COMPILER_RESOURCE_DIR} -B${LLVM_BIN_DIR}"
+
+CF="$CF \
+--sysroot=$SYS_ROOT \
+-pthread \
+-pipe \
+-fno-pie \
+"
+
+# CF="$CF \
+# -resource-dir=${COMPILER_RESOURCE_DIR} -B${LLVM_BIN_DIR} \
+# -isystem $BUILD_PATH/lib/Headers \
+# -isystem $BUILD_PATH/include \
+# -Wno-bitwise-op-parentheses \
+# "
+
+# https://reviews.llvm.org/D66834?id=217991
+# Driver tests: set `--sysroot=""` to support clang with `DEFAULT_SYSROOT`
+# -nostdinc \
+
+LIBCXX_PREFIX=""
+[ ! -z "${OSTYPE+x}" ] ||
+OSTYPE=$(ldd --version 2>&1 | grep musl | awk '{print $1}')
+echo "\$OSTYPE = $OSTYPE"
+! expr "$OSTYPE" : "musl" 1>/dev/null || {
+CXXF="$CXXF -DLIBCXX_HAS_MUSL_LIBC=1"
+LIBCXX_PREFIX="std"
+}
+
+# # /tmp/root/kiss/proc/llvm/build/objects/include/c++/v1/__config
+# [ -z "${_LIBCPP_VERSION+x}" ] ||
+# CXXF="-D_LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE=1 $CXXF"
+
+CXXF="$CXXF -UHAVE_CXX_ATOMICS_WITH_LIB"
+CXXF="$CXXF -D_LARGEFILE64_SOURCE=1"
+# LIBCXX_COMPILE_FLAGS="-isystem /usr/include/c++/v1"
+# In runtimes/CMakeLists.txt
+# -nostdinc++ \
+CXXF=" \
+-std=$CXX_STANDARD_VER \
+--sysroot=$SYS_ROOT \
+$CF"
+
+# -isystem $BUILD_PATH/libcxx/include \
+# CXXF="$CXXF \
+# --sysroot=$SYS_ROOT \
+# -resource-dir=${COMPILER_RESOURCE_DIR} -B${LLVM_BIN_DIR} \
+# -D_LIBCPP_BUILDING_LIBRARY=1 \
+# -D_LIBCPP_HAS_NO_VENDOR_AVAILABILITY_ANNOTATIONS=1 \
+# -std=$CXX_STANDARD_VER \
+# -Wno-bitwise-op-parentheses \
+# "
+
+# -isystem /usr/include/c++/v1 \
+# -isystem /usr/include/tirpc \
+
+# -nostdinc++ \
+# clang-14: warning: argument unused during compilation: '-stdlib=libc++' [-Wunused-command-line-argument]
+# -stdlib=libc++ \
+
+# -isystem $ORIGIN/../include/c++/v1 \
+
+LDF="$LDF \
+--sysroot=$SYS_ROOT \
+-fuse-ld=lld \
+-rtlib=compiler-rt \
+--unwindlib=none \
+-Wl,-rpath=${ORIGIN}/../lib \
+-L$COMPILER_RESOURCE_DIR/lib/linux \
+-L${USR_ROOT}/lib \
+-lc \
+-lc++ \
+-lexecinfo \
+-lrt -ldl -lz -lm \
+-rdynamic -lc++experimental -lpthread -v \
+"
+
+# -nodefaultlibs \
+# -nostartfiles \
+# /usr/lib/crtn.o \
+
+# -stdlib=libc++ \
+# -nostdlib++ \
+
+# glasnost clang version 14.0.3
+# Target: x86_64-unknown-linux-musl
+# Thread model: posix
+# InstalledDir: /usr/bin
+#  "/usr/bin/ld.lld" --sysroot=/ -pie -export-dynamic --eh-frame-hdr -m elf_x86_64 -export-dynamic \
+# -dynamic-linker /lib/ld-musl-x86_64.so.1 -o bin/llvm-nm \
+# //lib/../lib64/Scrt1.o \
+# //lib/../lib64/crti.o \
+# /usr/lib/clang/14.0.3/lib/linux/clang_rt.crtbegin-x86_64.o \
+# -L/usr/lib/clang/14.0.3/lib/linux \
+# -L/usr/lib -L//lib/../lib64 -L//usr/lib/../lib64 -L/usr/bin/../lib -L/usr/bin/../lib64 -L//lib -L//usr/lib -rpath=/tmp/root/kiss/proc/llvm/build/objects/bin/../lib -lc -lc++ -lexecinfo -lrt -ldl -lz -lm -lc++experimental -lpthread \
+# --color-diagnostics \
+# --gc-sections \
+# tools/llvm-nm/CMakeFiles/llvm-nm.dir/llvm-nm.cpp.o -rpath "\$ORIGIN/../lib" lib/libLLVM-15.so \
+# -lc++ -lm /usr/lib/clang/14.0.3/lib/linux/libclang_rt.builtins-x86_64.a \
+# -lpthread -lc /usr/lib/clang/14.0.3/lib/linux/libclang_rt.builtins-x86_64.a \
+# /usr/lib/clang/14.0.3/lib/linux/clang_rt.crtend-x86_64.o \
+# //lib/../lib64/crtn.o
+
+export LLVM_IAS=1
+export LLVM=1
+export CF="$CF \
+-Wno-gcc-compat \
+-Wno-gnu-include-next \
+-Wno-zero-length-array \
+-Wno-gnu-anonymous-struct \
+-Wno-unused-parameter \
+-Wno-undef \
+-Wno-shift-op-parentheses \
+-Wno-unknown-warning-option"
+export CXXF="$CXXF \
+-Wno-gcc-compat \
+-Wno-gnu-include-next \
+-Wno-zero-length-array \
+-Wno-gnu-anonymous-struct \
+-Wno-unused-parameter \
+-Wno-undef \
+-Wno-unused-variable \
+-Wno-ignored-attributes \
+-Wno-unused-command-line-argument \
+-Wno-unknown-warning-option"
+export LDF="$LDF \
+-Wno-unknown-warning-option"
+export CFLAGS="$CF"
+echo "\$CFLAGS = $CFLAGS"
+export CXXFLAGS="$CXXF"
+echo "\$CXXFLAGS = $CXXFLAGS"
+export LDFLAGS="$LDF"
+echo "\$LDFLAGS = $LDFLAGS"
+
+SCRIPT=$(readlink -f "$0")
+[ "${SCRIPT%/*}" = "$BUILD_PATH" ] ||
+\ln -sf "$SCRIPT" ./
+
+[ -d "cmake/Modules/" ] || \mkdir -p "cmake/Modules/"
+[ ! -d "Modules" ] ||
+for file in $(\ls -1 "Modules"); do \mv -f "Modules/$file" "cmake/Modules/"; done
+
+# Don't set the compiler here, interferes with 2-stage build
+kiss-cmake-config | sed '/CMAKE_C_COMPILER/d;' | sed '/CMAKE_CXX_COMPILER/d;' > cmake.config
+
+[ -z "$1" ] || [ -z "$2" ] ||
+patch -p1 < glasnost.patch
+
+if [ -n "$2" ]; then
+    export LLVM_VER_TARGET="$2"
+fi
+# What version of llvm is currently installed?
+LLVM_VER_INSTALLED="$(cat ${KISS_ROOT}/var/db/kiss/installed/llvm/version | cut -d " " -f 1)"
+
+# Bootstrap only if version is different and it's not a crossbuild
+{ { [ "$LLVM_VER_INSTALLED" = "$LLVM_VER_TARGET" ] || [ -z "${KISS_ROOT+x}" ]; } &&
+    [ -z "${BOOTSTRAP+x}" ]; } || bootstrap="1"
+
+# If this is a cross, use a toolchain file
+[ -z "${KISS_ROOT+x}" ]  || {
+    toolchain="-D CMAKE_TOOLCHAIN_FILE=$(realpath cmake.config)"
+    bstoolchain="-D BOOTSTRAP_CMAKE_TOOLCHAIN_FILE=$(realpath cmake.config)"
+}
+
+# Default set of runtimes
+runtimes="compiler-rt;libcxx;libcxxabi;libunwind;polly;bolt"
+# -- clang project is enabled
+# -- clang-tools-extra project is enabled
+# -- lld project is enabled
+# -- polly project is enabled
+
+# -- bolt project is disabled
+# -- compiler-rt project is disabled
+# -- cross-project-tests project is disabled
+# -- libc project is disabled
+# -- libclc project is disabled
+# -- libcxx project is disabled
+# -- libcxxabi project is disabled
+# -- libunwind project is disabled
+# -- lldb project is disabled
+# -- mlir project is disabled
+# -- openmp project is disabled
+# -- pstl project is disabled
+# -- flang project is disabled
+
+# Determine targets for architecture
+case $KISS_XHOST_ARCH in
+   aarch64_be)  TARGET_ARCH="AArch64" libname="aarch64_be";;
+   aarch64)     TARGET_ARCH="AArch64" libname="aarch64"     runtimes="${runtimes};openmp";;
+   armv7)       TARGET_ARCH="ARMv7"   libname="armhf";;
+   i686)        TARGET_ARCH="X86"     libname="i386";;
+   powerpc64)   TARGET_ARCH="PowerPC" libname="powerpc64"   runtimes="${runtimes};openmp";;
+   powerpc64le) TARGET_ARCH="PowerPC" libname="powerpc64le" runtimes="${runtimes};openmp";;
+   powerpcle)   TARGET_ARCH="PowerPC" libname="powerpcle";;
+   powerpc)     TARGET_ARCH="PowerPC" libname="powerpc";;
+   riscv64)     TARGET_ARCH="RISCV64" libname="riscv64";;
+   x86_64)      TARGET_ARCH="X86"     libname="x86_64"      runtimes="${runtimes};openmp";;
+   *) echo "Unsupported platform: $KISS_XHOST_ARCH"; exit 1;;
+esac
+
+# From aports
+case "$KISS_XHOST_ARCH" in
+    x86) LDF="$LDF -Wl,--no-keep-memory";; # avoid exhausting memory limit
+esac
+
+APPEND_LINE="$CMAKE -G \"$GENERATOR_TYPE\" -B \"$BUILD_PATH/$OUTPUT_DIR\" \\"
+echo $APPEND_LINE
+
+CMAKE_COMMAND=$APPEND_LINE
+
+append_line () {
+    local append_key=$1
+    local append_arguments=$2
+    if [ -z "${append_arguments:+x}" ]; then
+        echo "$append_key \\"
+        CMAKE_COMMAND="$CMAKE_COMMAND$append_key "
+    else
+        echo "$append_key\"$append_arguments\" \\"
+        CMAKE_COMMAND="$CMAKE_COMMAND$append_key\"$append_arguments\" "
+    fi
+}
+
+if [ "$bootstrap" == "1" ]; then
+    append_line "-C " "distribution.cmake"
+else
+    append_line "-C " "distribution-stage2.cmake"
+fi
+
+[ -z "${_LIBCPP_VERSION+x}" ] ||
+append_line "-D _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE:STRING=" "1"
+
+! expr "$OSTYPE" : "musl" 1>/dev/null || {
+    append_line "-D _LIBCPP_HAS_MUSL_LIBC:STRING=" "ON"
+    append_line "-D LIBCXX_HAS_MUSL_LIBC:STRING="  "ON"
+}
+
+append_line "-D CMAKE_POLICY_DEFAULT_CMP0002=" "NEW"
+append_line "-D CMAKE_POLICY_DEFAULT_CMP0003=" "NEW"
+append_line "-D CMAKE_POLICY_DEFAULT_CMP0056=" "NEW"
+append_line "-D CMAKE_POLICY_DEFAULT_CMP0057=" "NEW"
+append_line "-D CMAKE_POLICY_DEFAULT_CMP0058=" "NEW"
+append_line "-D CMAKE_POLICY_DEFAULT_CMP0011=" "NEW"
+append_line "-D CMAKE_POLICY_DEFAULT_CMP0076=" "NEW"
+append_line "-D CMAKE_POLICY_DEFAULT_CMP0114=" "NEW"
+
+append_line "-D CMAKE_ASM_COMPILER:FILEPATH="                     "$CC"
+# /working/toolchain/llvm/official/llvm/runtimes/CMakeLists.txt
+append_line "-D RT_C_FLAGS="   "${CMAKE_C_FLAGS}   --sysroot=${KISS_ROOT}"
+append_line "-D RT_CXX_FLAGS=" "${CMAKE_CXX_FLAGS} --sysroot=${KISS_ROOT}"
+append_line "-D RT_ASM_FLAGS=" "${CMAKE_ASM_FLAGS} --sysroot=${KISS_ROOT}"
+
+# /working/toolchain/llvm/official/runtimes/CMakeLists.txt
+append_line "-D CMAKE_REQUIRED_FLAGS=" "${CMAKE_REQUIRED_FLAGS} --sysroot=${KISS_ROOT}"
+
+# LIBUNWIND_TARGET_TRIPLE is deprecated, please use CMAKE_CXX_COMPILER_TARGET instead
+# append_line "-D LLVM_COMPILER_IS_GCC_COMPATIBLE=" "OFF"
+append_line "-D DEFAULT_SYSROOT="                                      "$SYS_ROOT"
+append_line "-D LLVM_INFERRED_HOST_TRIPLE="                            "$KISS_XHOST_TRIPLE"
+append_line "-D LLVM_HOST_TRIPLE="                                     "$KISS_XHOST_TRIPLE"
+append_line "-D COMPILER_RT_DEFAULT_TARGET_TRIPLE="                    "$KISS_XHOST_TRIPLE"
+append_line "-D CMAKE_CXX_COMPILER_TARGET="                            "$KISS_XHOST_TRIPLE"
+# append_line "-D LLVM_TARGET_ARCH="                          "host"
+append_line "-D LLVM_TARGET_ARCH="                                     "$TARGET_ARCH"
+# append_line "-D LLVM_NATIVE_ARCH="                          "host"
+append_line "-D LLVM_NATIVE_ARCH="                                     "$TARGET_ARCH"
+
+# append_line "-D LLVM_BINUTILS_INCDIR=" "${USR_ROOT}/include"
+append_line "-D CMAKE_INSTALL_OLDINCLUDEDIR="                          "${USR_ROOT}/include"
+
+append_line "-D CMAKE_INSTALL_PREFIX:PATH="                            "$USR_ROOT"
+append_line "-D CMAKE_MAKE_PROGRAM:FILEPATH="                          "$MAKE_PROGRAM"
+
+append_line "-D Backtrace_INCLUDE_DIR="                                "${USR_ROOT}/include"
+append_line "-D Backtrace_LIBRARY="                                    "${USR_ROOT}/lib/libexecinfo.so"
+append_line "-D ICONV_LIBRARY_PATH="                                   "${USR_ROOT}/lib/libc.so"
+
+append_line "-D LIBCXX_USE_COMPILER_RT="                               "ON"           # compiler-rt in libc++
+append_line "-D LIBCXXABI_USE_LLVM_UNWINDER="                          "ON"           # libunwind in libc++
+
+append_line "-D CMAKE_HAVE_LIBC_PTHREAD="                              "ON"
+append_line "-D CLANG_DEFAULT_CXX_STDLIB="                             "libc++"       # libc++ as std lib in clang by default
+append_line "-D CLANG_DEFAULT_RTLIB="                                  "compiler-rt"  # compiler-rt in clang by default
+
+append_line "-D LIBCXXABI_USE_COMPILER_RT="                            "ON"
+append_line "-D LIBUNWIND_USE_COMPILER_RT="                            "ON"
+# /working/toolchain/llvm/official/libunwind/CMakeLists.txt
+append_line "-D LIBUNWIND_COMPILE_FLAGS="                              "$ENV{KISS_LIBUNWIND_FLAGS}"
+append_line "-D LIBCXXABI_STATICALLY_LINK_UNWINDER_IN_SHARED_LIBRARY=" "ON"
+
+append_line "-D LLVM_ENABLE_EH="                                       "ON"
+# alpine sets ON
+append_line "-D LLVM_ENABLE_TERMINFO="                                 "OFF"
+append_line "-D LIBCXXABI_ENABLE_STATIC_UNWINDER="                     "ON"
+append_line "-D LIBCXXABI_ENABLE_SHARED="                              "OFF"
+append_line "-D LIBCXX_ENABLE_STATIC_ABI_LIBRARY="                     "ON"
+append_line "-D LIBCXX_STATICALLY_LINK_ABI_IN_SHARED_LIBRARY="         "ON"
+append_line "-D LIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY="         "ON"
+append_line "-D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL="                   "ON"
+
+append_line "-D BUILD_SHARED_LIBS:BOOL="                               "OFF"
+
+append_line "-D LLVM_BUILD_LLVM_DYLIB="                                "ON"
+append_line "-D LLVM_ENABLE_ASSERTIONS="                               "ON"
+append_line "-D LLVM_BUILD_TESTS="                                     "OFF"
+append_line "-D LLVM_ENABLE_LIBEDIT="                                  "OFF"
+append_line "-D LLVM_ENABLE_SPHINX:BOOL="                              "OFF"
+append_line "-D LLVM_ENABLE_SPHINX:BOOL="                              "OFF"
+append_line "-D LLVM_INCLUDE_GO_TESTS="                                "OFF"
+append_line "-D LLVM_INCLUDE_BENCHMARKS="                              "OFF"
+append_line "-D LLVM_ENABLE_LIBXML2="                                  "OFF"
+append_line "-D LLVM_INCLUDE_TESTS="                                   "OFF"
+append_line "-D LLVM_INCLUDE_DOCS="                                    "OFF"
+append_line "-D LLVM_INCLUDE_EXAMPLES="                                "OFF"
+
+# https://reviews.llvm.org/D60480
+append_line "-D LIBCXX_ENABLE_PARALLEL_ALGORITHMS="                    "ON"
+append_line "-D LIBUNWIND_ENABLE_SHARED="                              "OFF"
+
+append_line "-D LLVM_ENABLE_LLD="                                      "ON"
+append_line "-D LLVM_ENABLE_RTTI="                                     "ON"
+append_line "-D LLVM_ENABLE_THREADS:BOOL="                             "ON"
+append_line "-D LLVM_INSTALL_UTILS:BOOL="                              "ON"
+append_line "-D LLVM_ENABLE_LIBCXX:BOOL="                              "ON"
+append_line "-D LLVM_ENABLE_LLD="                                      "ON"
+append_line "-D LLVM_ENABLE_LIBCXXABI:BOOL="                           "ON"
+append_line "-D LLVM_HAVE_LIBXAR="                                     "OFF"
+append_line "-D LLVM_BUILD_DOCS:BOOL="                                 "ON"
+append_line "-D LLVM_BUILD_EXAMPLES="                                  "OFF"
+# /working/toolchain/llvm/official/llvm/runtimes/CMakeLists.txt
+append_line "-D LLVM_ENABLE_PER_TARGET_RUNTIME_DIR="                   "OFF"
+append_line "-D LLVM_ENABLE_FFI="                                      "ON"
+append_line "-D LLVM_ENABLE_PIC="                                      "ON"
+append_line "-D LLVM_ENABLE_ZLIB="                                     "ON"
+append_line "-D LLVM_APPEND_VC_REV="                                   "OFF"
+append_line "-D LLVM_TARGETS_TO_BUILD:STRING="                         "host;AMDGPU"
+append_line "-D LLVM_BUILTIN_TARGETS:STRING="                          "$KISS_XHOST_TRIPLE"
+append_line "-D LLVM_BUILD_EXTERNAL_COMPILER_RT="                      "ON"
+append_line "-D LLVM_INSTALL_BINUTILS_SYMLINKS="                       "ON"
+
+
+
+append_line "-D COMPILER_RT_BUILD_SANITIZERS="                         "OFF"
+append_line "-D COMPILER_RT_BUILD_XRAY="                               "OFF"
+append_line "-D COMPILER_RT_BUILD_PROFILE="                            "OFF"
+append_line "-D COMPILER_RT_BUILD_LIBFUZZER="                          "OFF"
+append_line "-D COMPILER_RT_USE_BUILTINS_LIBRARY="                     "ON"
+
+append_line "-D CMAKE_ASM_FLAGS_DEBUG:STRING="                         "-g"
+
+# append_line "-D CMAKE_BUILD_TYPE:STRING=" "Debug"
+# append_line "-D CMAKE_BUILD_TYPE:STRING=" "RelWithDebInfo"
+append_line "-D CMAKE_BUILD_TYPE:STRING="                              "Release"
+append_line "-D CMAKE_C_COMPILER:FILEPATH="                            "$CC"
+append_line "-D CMAKE_CXX_COMPILER:FILEPATH="                          "$CXX"
+append_line "-D CMAKE_ASM_COMPILER_WORKS:INTERNAL="                    "1"
+
+append_line "-D LLVM_HAS_ATOMICS="                                     "ON"
+# From toolchiain file?
+# append_line "-D LLVM_HAS_ATOMICS="                                "OFF"
+append_line "-D HAVE_CXX_ATOMICS_WITHOUT_LIB:INTERNAL="                "1"
+append_line "-D HAVE_CXX_ATOMICS64_WITHOUT_LIB:INTERNAL="              "1"
+append_line "-D LIBCXX_HAVE_CXX_ATOMICS_WITHOUT_LIB:INTERNAL="         "1"
+append_line "-D LIBCXX_HAVE_CXX_ATOMICS64_WITHOUT_LIB:INTERNAL="       "1"
+append_line "-D COMPILER_RT_EXCLUDE_ATOMIC_BUILTIN="                   "OFF"
+append_line "-D _LIBCPP_ATOMIC_ONLY_USE_BUILTINS="                     "ON"
+append_line "-D HAVE_CXX_ATOMICS_WITH_LIB="                            "OFF"
+
+append_line "-D LLVM_BUILD_GLOBAL_ISEL:BOOL="                          "OFF"
+append_line "-D LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING:BOOL="      "OFF"
+append_line "-D LLVM_TOOL_LLVM_MC_FUZZER_BUILD:BOOL="                  "ON"
+# append_line "-D POLLY_ENABLE_GPGPU_CODEGEN:BOOL="                 "OFF"
+append_line "-D POLLY_ENABLE_GPGPU_CODEGEN:BOOL="                      "ON"
+append_line "-D LLVM_POLLY_LINK_INTO_TOOLS:BOOL="                      "ON"
+
+append_line "-D CMAKE_MAKE_PROGRAM-ADVANCED:INTERNAL="                 "1"
+append_line "-D COMPILER_RT_HAS_FFREESTANDING_FLAG:INTERNAL="          "1"
+append_line "-D COMPILER_RT_HAS_XRAY_COMPILER_FLAG:INTERNAL="          "False"
+append_line "-D HAS_MAYBE_UNINITIALIZED:INTERNAL="                     "1"
+# /working/toolchain/llvm/official/libc/cmake/modules/LLVMLibCArchitectures.cmake:21
+# elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64)|(AMD64|amd64)|(^i.86$)")
+append_line "-D CMAKE_SYSTEM_PROCESSOR:STRING="                        "x86_64"
+
+# append_line "-D CXX_SUPPORTS_STDLIB:INTERNAL="                    "-stdlib=lib${LIBCXX_PREFIX}c++"
+append_line "-D CXX_SUPPORTS_STDLIB:BOOL="                             "YES"
+
+append_line "-D BOOTSTRAP_LLVM_ENABLE_LLD="                            "ON"
+# append_line "-D CMAKE_LINKER=" "lld"
+append_line "-D CMAKE_LINKER:FILEPATH="                                "${USR_ROOT}/bin/ld.lld"
+append_line "-D CMAKE_LINK_EXECUTABLE="                                "$(which ld.lld)"
+append_line "-D CMAKE_AR="                                             "$(which llvm-ar)"
+append_line "-D CMAKE_AS="                                             "$(which llvm-as)"
+append_line "-D CLANG_DEFAULT_LINKER="                                 "lld"
+append_line "-D CLANG_DEFAULT_RTLIB="                                  "compiler-rt"
+append_line "-D CLANG_DEFAULT_UNWINDLIB="                              "libunwind"
+append_line "-D CMAKE_SIZEOF_VOID_P="                                  "8"
+append_line "-D CMAKE_INSTALL_LIBDIR="                                 "lib"
+
+append_line "-D CLANG_ENABLE_BOOTSTRAP="                               "ON"
+
+append_line "-D LIBCXX_STANDARD_VER:STRING="                           "$CXX_STANDARD_VER"
+append_line "-D LIBCXX_USE_COMPILER_RT="                               "ON"
+append_line "-D LIBCXX_ENABLE_ASSERTIONS:BOOL="                        "ON"
+append_line "-D LIBCXX_ENABLE_EXCEPTIONS:BOOL="                        "ON"
+append_line "-D LIBCXX_ENABLE_RTTI:BOOL="                              "ON"
+append_line "-D LIBCXX_CXX_ABI="                                       "libcxxabi"
+
+append_line "-D LIBCXXABI_USE_COMPILER_RT="                            "ON"
+
+append_line "-D LIBUNWIND_USE_COMPILER_RT="                            "ON"
+# compiler-rt/lib/CMakeLists.txt
+append_line "-D COMPILER_RT_BUILD_CRT="                                "ON"
+append_line "-D CMAKE_SYSTEM_NAME="                                    "Linux"
+
+# TRUE for glibc?
+append_line "-D LIBOMP_USE_QUAD_PRECISION:BOOL="                       "FALSE"
+
+append_line "-D LLDB_DISABLE_LIBEDIT:BOOL="                            "ON"
+append_line "-D LLDB_DISABLE_PYTHON:BOOL="                             "ON"
+
+append_line "-D CMAKE_CXX_IMPLICIT_LINK_LIBRARIES:STRING="  "${LIBCXX_PREFIX}c++;m;c"
+append_line "-D CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES:PATHS=" "${USR_ROOT}/lib"
+
+# In stage file
+# https://github.com/llvm/llvm-project
+# LLVM_ENABLE_PROJECTS can include any of: clang, clang-tools-extra, cross-project-tests, flang, libc, libclc, lld, lldb, mlir, openmp, polly, or pstl.
+# LLVM_ENABLE_RUNTIMES can include any of libcxx, libcxxabi, libunwind, compiler-rt, libc or openmp.
+# append_line "-D LLVM_ENABLE_PROJECTS:STRING=" "clang;clang-tools-extra;lld;lldb;polly"
+# append_line "-D LLVM_ENABLE_PROJECTS:STRING=" "clang;clang-tools-extra;lld;lldb"
+# append_line "-D LLVM_ENABLE_PROJECTS:STRING=" "clang;clang-tools-extra;lld"
+# append_line "-D LLVM_ENABLE_PROJECTS:STRING=" "llvm;clang;clang-tools-extra;lld;polly"
+# append_line "-D LLVM_ENABLE_PROJECTS:STRING=" "all"
+# append_line "-D LLVM_ENABLE_PROJECTS:STRING=" "llvm;clang;clang-tools-extra;lld"
+
+# append_line "-D CMAKE_CXX_LINK_FLAGS:STRING=" "-l${LIBCXX_PREFIX}c++ -lc++abi -latomic -L${TOOL_LIB_ATOMIC_PATH} -L${USR_ROOT}/lib -Wl,-rpath=${USR_ROOT}/lib"
+# append_line "-D CMAKE_CXX_LINK_FLAGS:STRING=" "-l${LIBCXX_PREFIX}c++ -lc++abi -latomic -L${TOOL_LIB_ATOMIC_PATH} -L${USR_ROOT}/lib"
+# append_line "-D CMAKE_CXX_LINK_FLAGS:STRING=" "-l${LIBCXX_PREFIX}c++ -lc++abi -L${USR_ROOT}/lib -Wl,-rpath=${USR_ROOT}/lib"
+append_line "-D CMAKE_CXX_LINK_FLAGS:STRING=" "$LDF"
+# append_line "-D CMAKE_EXE_LINKER_FLAGS=" "-L${USR_ROOT}/lib -l${LIBCXX_PREFIX}c++"
+
+append_line "-D LIBOMP_CFLAGS:STRING=" "-I${USR_ROOT}/include"
+append_line "-D LIBOMP_ENABLE_SHARED=" "ON"
+
+# DOXYGEN_DOT_EXECUTABLE=     #/usr/bin/dot
+! command -v "${DOXYGEN_DOT_EXECUTABLE}" > /dev/null 2>&1 ||
+append_line "-D DOXYGEN_DOT_EXECUTABLE:FILEPATH=" "$DOXYGEN_DOT_EXECUTABLE"
+
+# DOXYGEN_EXECUTABLE=         #/usr/bin/doxygen
+! command -v "${DOXYGEN_EXECUTABLE}" > /dev/null 2>&1 ||
+append_line "-D DOXYGEN_EXECUTABLE:FILEPATH=" "$DOXYGEN_EXECUTABLE"
+
+append_line "-D LLDB_EXPORT_ALL_SYMBOLS:BOOL=" "ON"
+
+append_line "-D KISS_ROOT="       "$KISS_ROOT"
+append_line "-D FFI_INCLUDE_DIR=" "$ffi_include_dir"
+
+
+echo "Building for: $TARGET_ARCH"
+echo "Building runtimes: $runtimes"
+
+if [ "$bootstrap" = "1" ]; then
+    echo "Building stage 1 and stage 2..."
+
+    append_line "-D BOOTSTRAP_CMAKE_ASM_FLAGS="                   "$CF"
+    append_line "-D BOOTSTRAP_CMAKE_CXX_FLAGS="                   "$CXXF"
+    append_line "-D BOOTSTRAP_CMAKE_C_FLAGS="                     "$CF"
+    append_line "-D BOOTSTRAP_KISS_ROOT:PATH="                    "$KISS_ROOT"
+    append_line "-D BOOTSTRAP_LLVM_DEFAULT_TARGET_TRIPLE:STRING=" "$KISS_XHOST_TRIPLE"
+    append_line "-D BOOTSTRAP_LLVM_ENABLE_LTO:STRING="            "OFF"
+    append_line "-D BOOTSTRAP_LLVM_ENABLE_RUNTIMES:STRING="       "$runtimes"
+    append_line "-D BOOTSTRAP_LLVM_HOST_TRIPLE:STRING="           "$KISS_XHOST_TRIPLE"
+    append_line "-D BOOTSTRAP_LLVM_TARGET_ARCH:STRING="           "$TARGET_ARCH"
+    append_line "-D BOOTSTRAP_LLVM_TARGETS_TO_BUILD:STRING="      "host;AMDGPU"
+    append_line "$bstoolchain"
+    append_line "-D CMAKE_ASM_FLAGS=" "$CF"
+    append_line "-D CMAKE_CXX_FLAGS=" "-fPIC -O3 -gline-tables-only -DNDEBUG"
+    append_line "-D CMAKE_C_FLAGS="   "-fPIC -O3 -gline-tables-only -DNDEBUG"
+
+    append_line "-D BOOTSTRAP_DEFAULT_SYSROOT:STRING="      "$SYS_ROOT"
+    append_line "-D BOOTSTRAP_LLVM_BUILTIN_TARGETS:STRING=" "$KISS_XHOST_TRIPLE"
+
+    append_line "-D LLVM_LIBRARY_OUTPUT_INTDIR="       "OFF"
+    append_line "-D CMAKE_EXE_LINKER_FLAGS:STRING="    "$LDF"
+    append_line "-D CMAKE_MODULE_LINKER_FLAGS:STRING=" "$LDF"
+    append_line "-D CMAKE_SHARED_LINKER_FLAGS:STRING=" "$LDF"
+
+    # -DCMAKE_STATIC_LINKER_FLAGS:STRING="$LDF" \
+    # -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON \
+    # When LLVM_DEFAULT_TARGET_TRIPLE is x86_64-unknown-linux-musl,
+    # lib/clang/15.0.0/lib/libclang_rt.asan-x86_64.a
+    # is moved to
+    # lib/clang/15.0.0/lib/x86_64-unknown-linux-musl/libclang_rt.asan.a
+    # -DLIBCXX_COMPILE_FLAGS="$LIBCXX_COMPILE_FLAGS" \
+
+    BUILD_TARGET="stage2-install-distribution"
+
+    BUILD_LOCAL_PATH="$BUILD_PATH/tools/clang/stage2-bins"
+
+else
+    echo "Building stage 2 only..."
+
+    append_line "-D CMAKE_C_FLAGS:STRING="             "$CF"
+    append_line "-D CMAKE_CXX_FLAGS:STRING="           "$CXXF"
+    append_line "$toolchain"
+    append_line "-D LIBUNWIND_SYSROOT="                "$KISS_ROOT"
+    append_line "-D LLVM_ENABLE_LTO="                  "OFF"
+    append_line "-D LLVM_DEFAULT_TARGET_TRIPLE="       "$KISS_XHOST_TRIPLE"
+    append_line "-D LLVM_ENABLE_RUNTIMES="             "$runtimes"
+    append_line "-D LLVM_LINK_LLVM_DYLIB="             "ON"
+    append_line "-D CMAKE_EXE_LINKER_FLAGS:STRING="    "$LDF"
+    append_line "-D CMAKE_MODULE_LINKER_FLAGS:STRING=" "$LDF"
+    append_line "-D CMAKE_SHARED_LINKER_FLAGS:STRING=" "$LDF"
+
+    # -DCMAKE_STATIC_LINKER_FLAGS:STRING="$LDF" \
+    # -DLLVM_ENABLE_RUNTIMES=all
+    # -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON \
+    # -DLIBCXX_COMPILE_FLAGS="$LIBCXX_COMPILE_FLAGS" \
+    # -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;libclc;lld;lldb;mlir;polly;pstl" \
+
+    BUILD_TARGET="install-distribution"
+
+    BUILD_LOCAL_PATH="$BUILD_PATH"
+
+fi
+
+append_line "-Wno-dev"
+
+echo "-S \"$BUILD_PATH/llvm\""
+CMAKE_COMMAND=$CMAKE_COMMAND"-S \"$BUILD_PATH/llvm\""
+
+eval $CMAKE_COMMAND
+
+ninja -C ${BUILD_PATH} ${BUILD_TARGET} 2>&1 || kill 0
+
+# Clang: clang-tblgen, required for crossbuilding.
+cp ${BUILD_LOCAL_PATH}/bin/clang-tblgen  $PKG_DIR/usr/bin/clang-tblgen
+cp ${BUILD_LOCAL_PATH}/lib/libPollyISL.a $PKG_DIR/usr/lib/libPollyISL.a
+
+
+# LLD: Replace GNU binutils
+ln -s -f ld.lld "$PKG_DIR/usr/bin/ld"
+
+# Clang: Some legacy programs may require cc
+ln -s -f clang "$PKG_DIR/usr/bin/cc"
+
+# Clang: equivalent for c++
+ln -s -f clang++ "$PKG_DIR/usr/bin/c++"
+
+# Clang: equivalent for cpp
+ln -s -f clang-cpp "$PKG_DIR/usr/bin/cpp"
+
+# Clang: POSIX compliance
+cp c99 $PKG_DIR/usr/bin
+
+# For GCC compatibility
+cd $PKG_DIR/usr/bin/
+ln -s -f llvm-readobj  readelf
+ln -s -f llvm-objcopy  strip
+ln -s -f llvm-ar       ar
+ln -s -f llvm-nm       nm
+ln -s -f llvm-objcopy  objcopy
+ln -s -f llvm-objdump  objdump
+ln -s -f llvm-strings  strings
+ln -s -f llvm-objcopy  otool
+ln -s -f llvm-ranlib   ranlib
+ln -s -f llvm-as       as
+
+# This makes things like Rust easier:
+cd $PKG_DIR/usr/lib/clang
+ln -s -f $LLVM_VER_TARGET system
+cd $PKG_DIR/usr/lib
+ln -s -f clang/system/lib/linux/clang_rt.crtbegin-$libname.o    crtbegin.o
+ln -s -f clang/system/lib/linux/clang_rt.crtbegin-$libname.o    crtbeginS.o
+ln -s -f clang/system/lib/linux/clang_rt.crtend-$libname.o      crtend.o
+ln -s -f clang/system/lib/linux/clang_rt.crtend-$libname.o      crtendS.o
+ln -s -f clang/system/lib/linux/libclang_rt.builtins-$libname.a libatomic.a
+
+# $BUILD_PATH/compiler-rt/lib/builtins/arm/../fp_lib.h:77:20: warning: shift count >= width of type [-Wshift-count-overflow]
+#     return clzsi(a >> 32);
+
+#   llvm-config finding xray failed with status 1
+    # -DCOMPILER_RT_BUILD_XRAY=OFF
+    # -DCOMPILER_RT_HAS_XRAY_COMPILER_FLAG:INTERNAL=False
+
+#   error: unable to create target: 'No available targets are compatible with
+#   triple "riscv32-unknown-linux-musl"'
+#   error: unable to create target: 'No available targets are compatible with
+#   triple "powerpc64le-unknown-linux-musl"'
+
+    # -DBOOTSTRAP_LLVM_BUILTIN_TARGETS:STRING=$KISS_XHOST_TRIPLE \
+    # -DLLVM_BUILTIN_TARGETS=$KISS_XHOST_TRIPLE \
+    # -DLLVM_TARGETS_TO_BUILD="X86;AMDGPU" \
+
+# CMake Error at cmake/modules/CheckAtomic.cmake:56 (message):
+#   Host compiler must support std::atomic!
+# https://github.com/llvm/llvm-project/commit/21450545d14
+    # -D _LIBCPP_ATOMIC_ONLY_USE_BUILTINS
+    # -D LLVM_HAS_ATOMICS=ON \
+    # -D COMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=OFF \
+    # -D HAVE_CXX_ATOMICS_WITH_LIB=OFF \
+    # -D HAVE_CXX_ATOMICS_WITHOUT_LIB=1 \
+    # -D HAVE_CXX_ATOMICS64_WITHOUT_LIB=1 \
+    # -D LIBCXX_HAVE_CXX_ATOMICS_WITHOUT_LIB=1 \
+    # -D LIBCXX_HAVE_CXX_ATOMICS64_WITHOUT_LIB=1 \
+
+    # error: invalid value '' in '-std='
+    # note: use 'c++98' or 'c++03' for 'ISO C++ 1998 with amendments' standard
+    # note: use 'gnu++98' or 'gnu++03' for 'ISO C++ 1998 with amendments and GNU extensions' standard
+    # note: use 'c++11' for 'ISO C++ 2011 with amendments' standard
+    # note: use 'gnu++11' for 'ISO C++ 2011 with amendments and GNU extensions' standard
+    # note: use 'c++14' for 'ISO C++ 2014 with amendments' standard
+    # note: use 'gnu++14' for 'ISO C++ 2014 with amendments and GNU extensions' standard
+    # note: use 'c++17' for 'ISO C++ 2017 with amendments' standard
+    # note: use 'gnu++17' for 'ISO C++ 2017 with amendments and GNU extensions' standard
+    # note: use 'c++20' for 'ISO C++ 2020 DIS' standard
+    # note: use 'gnu++20' for 'ISO C++ 2020 DIS with GNU extensions' standard
+    # note: use 'c++2b' for 'Working draft for ISO C++ 2023 DIS' standard
+    # note: use 'gnu++2b' for 'Working draft for ISO C++ 2023 DIS with GNU extensions' standard
+    # ninja: subcommand failed
+
+# ld.lld: error: relocation R_X86_64_32 cannot be used against local symbol; recompile with -fPIC
+

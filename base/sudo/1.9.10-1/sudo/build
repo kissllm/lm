@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+
+./configure \
+    --prefix=/usr \
+    --build=$KISS_XBUILD_TRIPLE \
+    --host=$KISS_XHOST_TRIPLE \
+    --sbindir=/usr/bin \
+    --libexecdir=/usr/lib \
+    --disable-pam-session \
+    --disable-root-mailer \
+    --disable-nls \
+    --enable-pie \
+    --without-pam \
+    --without-sendmail \
+    --with-ignore-dot \
+    --with-insults=disabled \
+    --with-logfac=auth \
+    --with-passprompt="[sudo] password for %p: "
+
+make
+make \
+    install_uid="$(id -u)" \
+    install_gid="$(id -g)" \
+    install

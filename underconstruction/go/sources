@@ -1,0 +1,9 @@
+https://go.dev/dl/goVERSION.src.tar.gz
+patches/0004-cmd-link-prefer-musl-s-over-glibc-s-ld.so-during-dyn.patch
+patches/0003-cmd-link-always-check-for-__stack_chk_fail_local-ref.patch
+patches/0001-cmd-link-load-host-archive-libc_nonshared.a-for-fsta.patch
+patches/tests-unset-GCCGO.patch
+patches/tests-filter-overflow-gid.patch
+patches/0002-cmd-link-check-for-libssp_nonshared.a-instead-of-lib.patch
+patches/tests-unshare-enosys.patch
+patches/0005-misc-cgo-test-enable-Test9400-on-Alpine-Linux-again.patch

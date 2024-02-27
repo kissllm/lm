@@ -1,7 +1,42 @@
-#!/usr/bin/env sh
+#!/bin/sh -e
+
+sed -e '/libevdev/d' < sway/meson.build  > _
+mv -f _ sway/meson.build
+# search="wlroots_version = '\[''\''>=0.10.0'\'', '\''<0.11.0'\'''\]'"
+search="wlroots_version = ['>=0.10.0', '<0.11.0']"
+search=$(echo "${search}" | sed 's/[^^]/[&]/g; s/\^/\\^/g')
+replace="wlroots_version = ['>=0.10.0']"
+replace=$(echo "${replace}" | sed 's/[^^]/[&]/g; s/\^/\\^/g')
+# sed -e '/libevdev/d' \
+#     -e "s/${search}/${replace}/g" \
+#     < meson.build  > _
+# mv -f _ meson.build
+
+sed -e '/libevdev/d' < meson.build  > _
+mv -f _ meson.build
+
+awk "{sub(/wlroots_version = \[\'>=0.10.0\', \'<0.11.0\'\]/,\
+\"wlroots_version = \[\'>=0.10.0\'\]\")}1" < meson.build  > _
+mv -f _ meson.build
+
+replace_header() {
+    sed -e 's/#include <libevdev\/libevdev.h>/#include <linux\/input.h>/g' \
+        < "$1" > _
+    mv -f _ "$1"
+}
+
+for item in \
+        "sway/commands/bar/bind.c" \
+        "sway/commands/input/scroll_button.c" \
+        "sway/commands/bind.c" \
+        "sway/ipc-json.c" \
+        "sway/input/seatop_default.c" \
+        "sway/input/cursor.c"; do
+    replace_header "$item"
+done
 
 patch -p1 < no-evdev.patch
-patch -p1 < pcre2.patch
+# patch -p1 < pcre2.patch
 
 # Default background color.
 sed 's/0.25f, 0.25f, 0.25f/0.929, 0.870, 0.678/' \
@@ -17,8 +52,8 @@ mv -f _ ./config.in
 # # sed -i "s/void list_insert(list_t *list, int index, void *item);/inline void list_insert(list_t *list, int index, void *item);/g" include/list.h
 # sed -i "s/void list_insert(list_t *list, int index, void *item);/inline void sway_list_insert(list_t *list, int index, void *item);/g" include/list.h
 # sed -i "s/void list_insert(list_t *list, int index, void *item) {/void sway_list_insert(list_t *list, int index, void *item) {/g" common/list.c
-# 
-# 
+#
+#
 # # sed -i "s/sway_inc = include_directories('include')/sway_inc = include_directories('$1/include')/g" meson.build
 # # sed -i "s/include_directories: [sway_inc],/include_directories: sway_inc,/g" ./sway/meson.build
 # sed -i 's/#include "list.h"/#include "../include/list.h"/g' ./sway/config.c
@@ -32,7 +67,7 @@ list_operation=$(find . -type f -name "list.h")
 echo "list_operation: $list_operation"
 
 # Build fails with gcc 12 due to -Werror.
-export CFLAGS="$CFLAGS -Wno-error"
+export CFLAGS="$CFLAGS -UWLR_HAS_X11_BACKEND -Wno-error"
 export PKG_CONFIG_SYSROOT_DIR=
 
 kiss-meson-config > meson.config
@@ -62,15 +97,21 @@ list_folder=$(ls build/sway)
 for I in $list_folder; do
     printf "%-20s = %s\n" "ls build/sway" "$I"
 done
-
-install -m755 "build/sway/sway" "/usr/bin/sway"
+[ -d "$1/usr/bin" ] || mkdir -p "$1/usr/bin"
+install -m755 "build/sway/sway" "$1/usr/bin/sway"
 list_config_in=$(find . -type f -name "config.in")
 for I in $list_config_in; do
     printf "%-20s = %s\n" "config.in" "$I"
 done
 
-cp -f config.in "/etc/sway/config"
+[ -d "$1/etc/sway" ] || mkdir -p "$1/etc/sway"
+cp -f config.in "$1/etc/sway/config"
 
 ninja -C build install
 
-[ -f "/usr/lib/libwlroots.so.11" ] && ln -sf /usr/lib/libwlroots.so.11 /usr/lib/libwlroots.so.10
+[ -d "$1/usr/lib" ] || mkdir -p "$1/usr/lib"
+[ ! -f "/usr/lib/libwlroots.so.11" ] ||
+[ "$(readlink -f "$1/usr/lib/libwlroots.so.10")" == "/usr/lib/libwlroots.so.11" ] || {
+    rm -f "$1/usr/lib/libwlroots.so.10"
+    ln -sf "/usr/lib/libwlroots.so.11" "$1/usr/lib/libwlroots.so.10"
+}

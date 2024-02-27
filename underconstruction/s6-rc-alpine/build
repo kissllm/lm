@@ -1,0 +1,50 @@
+#! /bin/sh -e
+# Maintainer: Laurent Bercot <ska-devel@skarnet.org>
+# Contributor: Eivind Uggedal <eu@eju.no>
+# set -Eu
+# trap 'kill -9 "$SESSION_PID"' ERR
+pkgname=s6-rc
+pkgver=0.5.4.1
+pkgrel=2
+pkgdesc="Service manager for s6-based systems"
+url="http://skarnet.org/software/$pkgname/"
+arch="all"
+license="ISC"
+options="!check"
+makedepends="skalibs-dev>=2.13 execline-dev s6-dev>=2.11"
+subpackages="$pkgname-static $pkgname-dev $pkgname-doc"
+source="https://skarnet.org/software/s6-rc/s6-rc-$pkgver.tar.gz"
+// log '$$' "$$"
+// log '$SESSION_PID' "$SESSION_PID"
+# kill -9 "$SESSION_PID"
+{
+	./configure \
+		--enable-shared \
+		--enable-static \
+		--disable-allstatic \
+		--libdir=/usr/lib \
+		--libexecdir="/lib/$pkgname" \
+		--with-dynlib=/lib
+	make
+}
+# build
+{
+	# make DESTDIR="$pkgdir" install || kill 0
+	make DESTDIR="$pkgdir" install
+}
+# package
+{
+	default_doc
+	mkdir -p "$subpkgdir/usr/share/doc"
+	cp -a "$builddir/doc" "$subpkgdir/usr/share/doc/$pkgname"
+}
+# doc
+{
+	default_static
+	# rmdir -p "$pkgdir"/usr/lib || :
+	\rm -rf "$pkgdir"/usr || :
+}
+# static
+sha512sums="
+6b61df9fa1d9bd24430bab4c11bfba009ca79c62a32dd2db3b79a1057645da9f92db4058c66c35bb068d805d958bfdf024399d240559dfdee62f9a6a30cf2086  s6-rc-0.5.4.1.tar.gz
+"

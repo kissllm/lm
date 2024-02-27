@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+make
+make DESTDIR="$1" install

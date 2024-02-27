@@ -1,0 +1,22 @@
+diff --git a/meson.build  b/meson.build
+--- a/meson.build
++++ b/meson.build
+@@ -103,7 +103,7 @@
+ libudev = dependency('libudev', required: get_option('libudev'))
+ libevdev = dependency('libevdev', required: get_option('libevdev'))
+ libmpdclient = dependency('libmpdclient', required: get_option('mpd'))
+-xkbregistry = dependency('xkbregistry')
++xkbcommon = dependency('xkbregistry', required: true)
+ libjack = dependency('jack', required: get_option('jack'))
+ libwireplumber = dependency('wireplumber-0.4', required: get_option('wireplumber'))
+
+@@ -356,7 +356,7 @@
+         gtk_layer_shell,
+         libsndio,
+         tz_dep,
+-		xkbregistry
++        xkbcommon
+     ],
+     include_directories: [include_directories('include')],
+     install: true,
+

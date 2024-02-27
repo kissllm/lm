@@ -1,0 +1,15 @@
+# https://github.com/llvm/llvm-project/releases/download/llvmorg-VERSION/llvm-VERSION.src.tar.xz
+git+https://github.com/llvm/llvm-project@main
+https://git.savannah.gnu.org/cgit/config.git/plain/config.guess files
+files/c99                                                       files
+files/distribution.cmake                                        files
+files/distribution-stage2.cmake                                 files
+files/runtimes.cmake                                            files
+patches/main.patch                                              patches
+patches/musl.patch                                              patches
+patches/cmake.patch                                             patches
+patches/hardcoded.patch                                         patches
+patches/install-prefix.patch                                    patches
+patches/aarch64.patch                                           patches
+patches/llvm-stack-size.patch                                   patches
+# patches/rust-feature-tables.patch                               patches

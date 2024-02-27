@@ -1,0 +1,13 @@
+diff --git a/cpan/Time-Piece/t/02core_dst.t b/cpan/Time-Piece/t/02core_dst.t
+index 3f54fff..4b1faa8 100644
+--- a/cpan/Time-Piece/t/02core_dst.t
++++ b/cpan/Time-Piece/t/02core_dst.t
+@@ -124,7 +124,7 @@
+ 
+ 
+ SKIP: {
+-	skip "Extra tests for Linux, BSD only.", 8 unless $is_linux or $is_mac or $is_bsd;
++	skip "Extra tests for Linux, BSD only.", 8 unless $is_mac or $is_bsd;
+ 
+     local $ENV{TZ} = "EST5EDT4,M3.2.0/2,M11.1.0/2";
+     Time::Piece::_tzset();

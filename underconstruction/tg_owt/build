@@ -1,0 +1,117 @@
+#!/bin/sh -e
+# Contributor: Newbyte <newbie13xd@gmail.com>
+# Contributor: Nulo <alpine@nulo.in>
+# Contributor: psykose <alice@ayaya.dev>
+# Maintainer: Nulo <alpine@nulo.in>
+pkgname=tg_owt
+pkgver=20230314
+pkgrel=0
+_commit="1a18da2ed4d5ce134e984d1586b915738e0da257"
+_libyuv_commit="00950840d1c9bcbb3eb6ebc5aac5793e71166c8b"
+_crc32c_commit="21fc8ef30415a635e7351ffa0e5d5367943d4a94"
+pkgdesc="Telegram Desktop's fork of Google's WebRTC"
+url="https://github.com/desktop-app/tg_owt"
+
+# s390x: due to alleged issues on Big Endian platforms
+# ppc64le: undefined sse2 optimizations
+arch="all !ppc64le !s390x"
+
+license="BSD-3-Clause"
+
+# Sorted according to
+# https://github.com/telegramdesktop/tdesktop/wiki/The-Packaged-Building-Mode
+# https://github.com/desktop-app/tg_owt/pull/55#discussion_r599718405
+# openh264 bundled because packaged is in testing
+# Not specified in the wiki page (see
+# https://github.com/desktop-app/tg_owt/pull/55):
+# pffft bundled because there's no stable ABI and patched
+# rnnoise bundled because "all remaining files are custom"
+# libsrtp bundled because tg_owt uses private APIs
+# libyuv bundled because there's no stable ABI and has many breaking updates
+# crc32c bundled because it isn't packaged and it is unclear if it will work
+# packaged
+depends_dev="
+    abseil-cpp-dev
+    libdrm-dev
+    libepoxy-dev
+    ffmpeg-dev
+    mesa-dev
+    glib-dev
+    jpeg-dev
+    openssl-dev>3
+    opus-dev
+    pipewire-dev
+    libvpx-dev
+    libx11-dev
+    libxcomposite-dev
+    libxdamage-dev
+    libxext-dev
+    libxfixes-dev
+    libxrender-dev
+    libxrandr-dev
+    libxtst-dev
+    "
+makedepends="
+    $depends_dev
+    cmake
+    yasm
+    samurai
+    "
+
+subpackages="$pkgname-dev"
+source="
+    $pkgname-$_commit.tar.gz::https://github.com/desktop-app/tg_owt/archive/$_commit.tar.gz
+    libyuv-$_libyuv_commit.tar.gz::https://github.com/klemensn/libyuv/archive/$_libyuv_commit.tar.gz
+    crc32c-$_crc32c_commit.tar.gz::https://github.com/google/crc32c/archive/$_crc32c_commit.tar.gz
+    abseil.patch
+    cstdint.patch
+    gcc12.patch
+    "
+# builddir="$srcdir/$pkgname-$_commit"
+builddir="$PWD"
+pkgdir="$1"
+prepare() {
+    for item in *.patch; do
+        echo "Applying $item"
+        patch -p1 < "$item"
+    done
+    # default_prepare
+    mv libyuv/* src/third_party/libyuv
+    mv crc32c/* src/third_party/crc32c/src
+}
+prepare
+build() {
+    case "$CARCH" in
+    arm*)
+        # our armv7 baseline has no neon
+        export CXXFLAGS="$CXXFLAGS -DLIBYUV_DISABLE_NEON"
+        ;;
+    esac
+    # dynamic version has broken linking
+    cmake -B build -G Ninja \
+        -DTG_OWT_PACKAGED_BUILD=True \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_BUILD_TYPE=MinSizeRel
+
+    cmake --build build
+}
+build
+check() {
+    cd build
+    CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+}
+check
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}
+package
+# sha512sums="
+# 21791df4f2c5de88042e7d66d226020bf4edb5b1de4f319ed47d91688aa215e4b730ba874fe127d882896557e987d4d2490e9251e8128f224c34db70f0d6e4d5  tg_owt-1a18da2ed4d5ce134e984d1586b915738e0da257.tar.gz
+# 9f455c4e21cd168daa66f41f486a2b73d298dd1ce74e30856a2623eb9b77058318468177cee6b98b882baec1d2585336817fe8f765018fdf0430870c231d4ec2  libyuv-00950840d1c9bcbb3eb6ebc5aac5793e71166c8b.tar.gz
+# 80dc12463c95d87a25eac49249ea303d6e4734bcf9a849dbcc564c70df1b1b5f70e7f7e4db96f4c1c66bb3d4eeca87aeef9f2312a8162ade885f09b049fd7417  crc32c-21fc8ef30415a635e7351ffa0e5d5367943d4a94.tar.gz
+# b1d609500ad24bb015b3ab7ad3775f2667d674155abb12dd35d8e10b83c5e91c69fd8e415fd6543a45608b3dfd7fa72eb4ce9ec960e5742fb04cafaa20f6f206  abseil.patch
+# b530508390370ca1ed0728e4429920a7d3132293f3d8a2a3f3220efd2c00ceb7a40ee58184f595b1101389133570257900e4a44e7611d4064f7220b67c33b93b  cstdint.patch
+# 2eb235583c952b07f19e455f79a0d464b77f7fce99b5434bff54f7cea2770c117261409c70d7963c78c55822b45c6da467e966df1bcadda70048673b73ed3a95  gcc12.patch
+# "

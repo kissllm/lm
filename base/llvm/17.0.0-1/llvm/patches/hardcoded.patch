@@ -1,0 +1,1607 @@
+diff --git a/llvm/cmake/modules/AddLLVM.cmake b/llvm/cmake/modules/AddLLVM.cmake
+index 9eef4eb7e35d..aa4d022fdfb1 100644
+--- a/llvm/cmake/modules/AddLLVM.cmake
++++ b/llvm/cmake/modules/AddLLVM.cmake
+@@ -1,3 +1,6 @@
++# Set to an arbitrary directory to silence GNUInstallDirs warnings
++# regarding being unable to determine libdir.
++set(CMAKE_INSTALL_LIBDIR "lib")
+ include(GNUInstallDirs)
+ include(LLVMDistributionSupport)
+ include(LLVMProcessSources)
+
+
+diff --git a/clang/lib/Basic/Targets/PPC.h b/clang/lib/Basic/Targets/PPC.h
+index ac52eb219..8cf7f8f77 100644
+--- a/clang/lib/Basic/Targets/PPC.h
++++ b/clang/lib/Basic/Targets/PPC.h
+@@ -424,11 +424,10 @@ public:
+       LongDoubleFormat = &llvm::APFloat::IEEEdouble();
+     } else if ((Triple.getArch() == llvm::Triple::ppc64le)) {
+       DataLayout = "e-m:e-i64:64-n32:64";
+-      ABI = "elfv2";
+     } else {
+       DataLayout = "E-m:e-i64:64-n32:64";
+-      ABI = "elfv1";
+     }
++    ABI = "elfv2";
+
+     if (Triple.isOSFreeBSD() || Triple.isOSOpenBSD() || Triple.isMusl()) {
+       LongDoubleWidth = LongDoubleAlign = 64;
+# diff --git a/clang/lib/CodeGen/TargetInfo.cpp b/clang/lib/CodeGen/TargetInfo.cpp
+# index 9af3004eb..2b71c282c 100644
+# --- a/clang/lib/CodeGen/TargetInfo.cpp
+# +++ b/clang/lib/CodeGen/TargetInfo.cpp
+# @@ -11342,9 +11342,9 @@ const TargetCodeGenInfo &CodeGenModule::getTargetCodeGenInfo() {
+#        return SetCGInfo(new AIXTargetCodeGenInfo(Types, /*Is64Bit*/ true));
+# 
+#      if (Triple.isOSBinFormatELF()) {
+# -      PPC64_SVR4_ABIInfo::ABIKind Kind = PPC64_SVR4_ABIInfo::ELFv1;
+# -      if (getTarget().getABI() == "elfv2")
+# -        Kind = PPC64_SVR4_ABIInfo::ELFv2;
+# +      PPC64_SVR4_ABIInfo::ABIKind Kind = PPC64_SVR4_ABIInfo::ELFv2;
+# +      if (getTarget().getABI() == "elfv1")
+# +        Kind = PPC64_SVR4_ABIInfo::ELFv1;
+#        bool IsSoftFloat = CodeGenOpts.FloatABI == "soft";
+# 
+#        return SetCGInfo(
+diff --git a/clang/lib/Driver/ToolChains/Clang.cpp b/clang/lib/Driver/ToolChains/Clang.cpp
+index e7ba91240..d81f652cb 100644
+--- a/clang/lib/Driver/ToolChains/Clang.cpp
++++ b/clang/lib/Driver/ToolChains/Clang.cpp
+@@ -2006,11 +2006,11 @@ void Clang::AddPPCTargetArgs(const ArgList &Args,
+   if (T.isOSBinFormatELF()) {
+     switch (getToolChain().getArch()) {
+     case llvm::Triple::ppc64: {
+-      if ((T.isOSFreeBSD() && T.getOSMajorVersion() >= 13) ||
+-          T.isOSOpenBSD() || T.isMusl())
++      //if ((T.isOSFreeBSD() && T.getOSMajorVersion() >= 13) ||
++      //    T.isOSOpenBSD() || T.isMusl())
+         ABIName = "elfv2";
+-      else
+-        ABIName = "elfv1";
++      // else
++      //   ABIName = "elfv1";
+       break;
+     }
+     case llvm::Triple::ppc64le:
+
+
+diff --git a/compiler-rt/cmake/Modules/AllSupportedArchDefs.cmake b/compiler-rt/cmake/Modules/AllSupportedArchDefs.cmake
+index 3e86cf63c..0b3f17d50 100644
+--- a/compiler-rt/cmake/Modules/AllSupportedArchDefs.cmake
++++ b/compiler-rt/cmake/Modules/AllSupportedArchDefs.cmake
+@@ -1,12 +1,12 @@
+-set(ARM64 aarch64)
+-set(ARM32 arm armhf)
++set(ARM64 aarch64 aarch64_be)
++set(ARM32 arm armhf armv6m)
+ set(HEXAGON hexagon)
+ set(X86 i386)
+ set(X86_64 x86_64)
+ set(LOONGARCH64 loongarch64)
+ set(MIPS32 mips mipsel)
+ set(MIPS64 mips64 mips64el)
+-set(PPC32 powerpc powerpcspe)
++set(PPC32 powerpc powerpcspe powerpcle)
+ set(PPC64 powerpc64 powerpc64le)
+ set(RISCV32 riscv32)
+ set(RISCV64 riscv64)
+@@ -75,7 +75,7 @@ if(APPLE)
+ set(ALL_XRAY_SUPPORTED_ARCH ${X86_64})
+ else()
+ set(ALL_XRAY_SUPPORTED_ARCH ${X86_64} ${ARM32} ${ARM64} ${MIPS32} ${MIPS64}
+-		powerpc64le ${HEXAGON})
++		${PPC64} ${HEXAGON})
+ endif()
+ set(ALL_SHADOWCALLSTACK_SUPPORTED_ARCH ${ARM64})
+
+diff --git a/compiler-rt/cmake/Modules/CompilerRTUtils.cmake b/compiler-rt/cmake/Modules/CompilerRTUtils.cmake
+index 052095801..62bad4ff8 100644
+--- a/compiler-rt/cmake/Modules/CompilerRTUtils.cmake
++++ b/compiler-rt/cmake/Modules/CompilerRTUtils.cmake
+@@ -168,7 +168,11 @@ macro(detect_target_arch)
+   elseif(__AVR)
+     add_default_target_arch(avr)
+   elseif(__AARCH64)
+-    add_default_target_arch(aarch64)
++    if(__AARCH_BIG_ENDIAN)
++        add_default_target_arch(aarch64_be)
++    else()
++        add_default_target_arch(aarch64)
++    endif()
+   elseif(__X86_64)
+     if(CMAKE_SIZEOF_VOID_P EQUAL "4")
+       add_default_target_arch(x32)
+diff --git a/compiler-rt/cmake/base-config-ix.cmake b/compiler-rt/cmake/base-config-ix.cmake
+index 0ad95d57f..8af4a0ff4 100644
+--- a/compiler-rt/cmake/base-config-ix.cmake
++++ b/compiler-rt/cmake/base-config-ix.cmake
+@@ -210,8 +210,10 @@ macro(test_targets)
+     elseif("${COMPILER_RT_DEFAULT_TARGET_ARCH}" MATCHES "powerpc64le|ppc64le")
+       test_target_arch(powerpc64le "" "-m64")
+     elseif("${COMPILER_RT_DEFAULT_TARGET_ARCH}" MATCHES "powerpc")
+-      test_target_arch(powerpc "" "-m32")
++      test_target_arch(powerpc "" "-m32" "-mbig-endian" )
+       test_target_arch(powerpc64 "" "-m64")
++    elseif("${COMPILER_RT_DEFAULT_TARGET_ARCH}" MATCHES "powerpcle|ppcle")
++      test_target_arch(powerpcle "" "-m32" "-mlittle-endian" )
+     elseif("${COMPILER_RT_DEFAULT_TARGET_ARCH}" MATCHES "s390x")
+       test_target_arch(s390x "" "")
+     elseif("${COMPILER_RT_DEFAULT_TARGET_ARCH}" MATCHES "sparc")
+@@ -247,6 +249,8 @@ macro(test_targets)
+       test_target_arch(aarch32 "" "-march=armv8-a")
+     elseif("${COMPILER_RT_DEFAULT_TARGET_ARCH}" MATCHES "aarch64")
+       test_target_arch(aarch64 "" "-march=armv8-a")
++    elseif("${COMPILER_RT_DEFAULT_TARGET_ARCH}" MATCHES "aarch64_be")
++      test_target_arch(aarch64_be "" "-march=armv8-a" "-mbig-endian" )
+     elseif("${COMPILER_RT_DEFAULT_TARGET_ARCH}" MATCHES "riscv32")
+       test_target_arch(riscv32 "" "")
+     elseif("${COMPILER_RT_DEFAULT_TARGET_ARCH}" MATCHES "riscv64")
+
+diff --git a/compiler-rt/cmake/builtin-config-ix.cmake b/compiler-rt/cmake/builtin-config-ix.cmake
+index c422ad45e..8aa50fc19 100644
+--- a/compiler-rt/cmake/builtin-config-ix.cmake
++++ b/compiler-rt/cmake/builtin-config-ix.cmake
+@@ -44,7 +44,7 @@
+ asm(\"cas w0, w1, [x2]\");
+ ")
+
+-set(ARM64 aarch64)
++set(ARM64 aarch64 aarch64_be)
+ set(ARM32 arm armhf armv4t armv5te armv6 armv6m armv7m armv7em armv7 armv7s armv7k armv8m.main armv8.1m.main)
+ set(AVR avr)
+ set(HEXAGON hexagon)
+@@ -53,7 +53,7 @@
+ set(LOONGARCH64 loongarch64)
+ set(MIPS32 mips mipsel)
+ set(MIPS64 mips64 mips64el)
+-set(PPC32 powerpc powerpcspe)
++set(PPC32 powerpc powerpcspe powerpcle)
+ set(PPC64 powerpc64 powerpc64le)
+ set(RISCV32 riscv32)
+ set(RISCV64 riscv64)
+
+diff --git a/compiler-rt/cmake/crt-config-ix.cmake b/compiler-rt/cmake/crt-config-ix.cmake
+index 066a0edbc..7dcb71ead 100644
+--- a/compiler-rt/cmake/crt-config-ix.cmake
++++ b/compiler-rt/cmake/crt-config-ix.cmake
+@@ -18,13 +18,13 @@ else()
+   set(OS_NAME "${CMAKE_SYSTEM_NAME}")
+ endif()
+
+-set(ARM64 aarch64)
++set(ARM64 aarch64 aarch64_be)
+ set(ARM32 arm armhf)
+ set(HEXAGON hexagon)
+ set(X86 i386)
+ set(X86_64 x86_64)
+ set(LOONGARCH64 loongarch64)
+-set(PPC32 powerpc powerpcspe)
++set(PPC32 powerpc powerpcspe powerpcle)
+ set(PPC64 powerpc64 powerpc64le)
+ set(RISCV32 riscv32)
+ set(RISCV64 riscv64)
+
+diff --git a/compiler-rt/cmake/config-ix.cmake b/compiler-rt/cmake/config-ix.cmake
+index fc62d5ecc..3f46d08a9 100644
+--- a/compiler-rt/cmake/config-ix.cmake
++++ b/compiler-rt/cmake/config-ix.cmake
+@@ -151,7 +151,7 @@ check_library_exists(dl dlopen "" COMPILER_RT_HAS_LIBDL)
+ check_library_exists(rt shm_open "" COMPILER_RT_HAS_LIBRT)
+ check_library_exists(m pow "" COMPILER_RT_HAS_LIBM)
+ check_library_exists(pthread pthread_create "" COMPILER_RT_HAS_LIBPTHREAD)
+-check_library_exists(execinfo backtrace "" COMPILER_RT_HAS_LIBEXECINFO)
++# check_library_exists(execinfo backtrace "" COMPILER_RT_HAS_LIBEXECINFO)
+
+ # Look for terminfo library, used in unittests that depend on LLVMSupport.
+ if(LLVM_ENABLE_TERMINFO STREQUAL FORCE_ON)
+@@ -695,7 +695,7 @@ if (SANITIZER_COMMON_SUPPORTED_ARCH AND NOT LLVM_USE_SANITIZER AND
+     (OS_NAME MATCHES "Android|Darwin|Linux|FreeBSD|NetBSD|Fuchsia|SunOS" OR
+     (OS_NAME MATCHES "Windows" AND NOT CYGWIN AND
+         (NOT MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))))
+-  set(COMPILER_RT_HAS_SANITIZER_COMMON TRUE)
++  set(COMPILER_RT_HAS_SANITIZER_COMMON FALSE)
+ else()
+   set(COMPILER_RT_HAS_SANITIZER_COMMON FALSE)
+ endif()
+@@ -719,7 +719,9 @@  set(COMPILER_RT_ASAN_HAS_STATIC_RUNTIME FALSE)
+ endif()
+
+ # TODO: Add builtins support.
+-
++
++set(COMPILER_RT_HAS_CRT TRUE)
++
+ if (COMPILER_RT_HAS_SANITIZER_COMMON AND DFSAN_SUPPORTED_ARCH AND
+     OS_NAME MATCHES "Linux")
+   set(COMPILER_RT_HAS_DFSAN TRUE)
+diff --git a/compiler-rt/lib/CMakeLists.txt b/compiler-rt/lib/CMakeLists.txt
+index 1437e37b8..6cf957e48 100644
+--- a/compiler-rt/lib/CMakeLists.txt
++++ b/compiler-rt/lib/CMakeLists.txt
+@@ -17,9 +17,9 @@ if(COMPILER_RT_BUILD_BUILTINS)
+   add_subdirectory(builtins)
+ endif()
+
+-if(COMPILER_RT_BUILD_CRT)
++#if(COMPILER_RT_BUILD_CRT)
+   add_subdirectory(crt)
+-endif()
++#endif()
+
+ function(compiler_rt_build_runtime runtime)
+   string(TOUPPER ${runtime} runtime_uppercase)
+diff --git a/compiler-rt/lib/builtins/CMakeLists.txt b/compiler-rt/lib/builtins/CMakeLists.txt
+index ea5ad9cdb..886ff1afd 100644
+--- a/compiler-rt/lib/builtins/CMakeLists.txt
++++ b/compiler-rt/lib/builtins/CMakeLists.txt
+@@ -223,7 +223,7 @@
+
+ option(COMPILER_RT_EXCLUDE_ATOMIC_BUILTIN
+   "Skip the atomic builtin (these should normally be provided by a shared library)"
+-  On)
++  OFF)
+
+ if(NOT FUCHSIA AND NOT COMPILER_RT_BAREMETAL_BUILD)
+   set(GENERIC_SOURCES
+@@ -568,6 +568,7 @@
+ set(arm64_SOURCES ${aarch64_SOURCES})
+ set(arm64e_SOURCES ${aarch64_SOURCES})
+ set(arm64_32_SOURCES ${aarch64_SOURCES})
++set(aarch64_be_SOURCES ${aarch64_SOURCES})
+
+ # macho_embedded archs
+ set(armv6m_SOURCES ${thumb1_SOURCES})
+@@ -628,6 +629,7 @@
+ set(mips64el_SOURCES ${GENERIC_TF_SOURCES}
+                      ${mips_SOURCES})
+
++set(powerpcle_SOURCES ${GENERIC_SOURCES})
+ set(powerpc_SOURCES ${GENERIC_SOURCES})
+
+ set(powerpcspe_SOURCES ${GENERIC_SOURCES})
+@@ -775,6 +777,16 @@
+         )
+
+         set(deps_aarch64 lse_builtin_symlinks)
++      endif()
++
++      if(arch STREQUAL "aarch64_be")
++        add_custom_target(
++          lse_builtin_symlinks
++          BYPRODUCTS ${lse_builtins}
++          ${arm64_lse_commands}
++        )
++
++        set(deps_aarch64_be lse_builtin_symlinks)
+       endif()
+
+       add_compiler_rt_runtime(clang_rt.builtins
+diff --git a/compiler-rt/lib/builtins/clear_cache.c b/compiler-rt/lib/builtins/clear_cache.c
+index 8993761eb3d4..783edf766936 100644
+--- a/compiler-rt/lib/builtins/clear_cache.c
++++ b/compiler-rt/lib/builtins/clear_cache.c
+@@ -183,7 +183,7 @@ void __clear_cache(void *start, void *end) {
+   const register void *end_reg __asm("a1") = end;
+   // "0" means that we clear cache for all threads (SYS_RISCV_FLUSH_ICACHE_ALL)
+   const register long flags __asm("a2") = 0;
+-  const register long syscall_nr __asm("a7") = __NR_riscv_flush_icache;
++  const register long syscall_nr __asm("a7") = 259; // JD
+   __asm __volatile("ecall"
+                    : "=r"(start_reg)
+                    : "r"(start_reg), "r"(end_reg), "r"(flags), "r"(syscall_nr));
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp b/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp
+index 2e4d57d87..094ba7a73 100644
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp
+@@ -74,6 +74,10 @@
+ #include <sys/utsname.h>
+ #endif
+
++#if SANITIZER_LINUX && defined(__powerpc__)
++#include <asm/ptrace.h>
++#endif
++
+ #if SANITIZER_LINUX && !SANITIZER_ANDROID
+ #include <sys/personality.h>
+ #endif
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp b/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
+index 32b8f47ed..e56d1c877 100644
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
+@@ -94,7 +94,7 @@
+ # include <utime.h>
+ # include <sys/ptrace.h>
+ #    if defined(__mips64) || defined(__aarch64__) || defined(__arm__) || \
+-        defined(__hexagon__) || defined(__loongarch__) ||SANITIZER_RISCV64
++        defined(__hexagon__) || defined(__powerpc__) || defined(__loongarch__) || SANITIZER_RISCV64
+ #      include <asm/ptrace.h>
+ #      ifdef __arm__
+ typedef struct user_fpregs elf_fpregset_t;
+
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_stoptheworld_linux_libcdep.cpp b/compiler-rt/lib/sanitizer_common/sanitizer_stoptheworld_linux_libcdep.cpp
+index 403bda117..b8f454e2f 100644
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_stoptheworld_linux_libcdep.cpp
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_stoptheworld_linux_libcdep.cpp
+@@ -31,7 +31,7 @@
+ #include <sys/types.h> // for pid_t
+ #include <sys/uio.h> // for iovec
+ #include <elf.h> // for NT_PRSTATUS
+-#if (defined(__aarch64__) || SANITIZER_RISCV64 || SANITIZER_LOONGARCH64) && \
++#if (defined(__aarch64__) || defined(__powerpc__) || SANITIZER_RISCV64 || SANITIZER_LOONGARCH64) && \
+      !SANITIZER_ANDROID
+ // GLIBC 2.20+ sys/user does not include asm/ptrace.h
+ # include <asm/ptrace.h>
+
+diff --git a/compiler-rt/lib/xray/xray_powerpc64.inc b/compiler-rt/lib/xray/xray_powerpc64.inc
+index 7e872b5b4..0fc24c203 100644
+--- a/compiler-rt/lib/xray/xray_powerpc64.inc
++++ b/compiler-rt/lib/xray/xray_powerpc64.inc
+@@ -13,7 +13,7 @@
+ #include <cstdint>
+ #include <mutex>
+ #ifdef __linux__
+-#include <sys/platform/ppc.h>
++// #include <sys/platform/ppc.h>
+ #elif defined(__FreeBSD__)
+ #include <sys/types.h>
+ #include <sys/sysctl.h>
+
+# diff --git a/compiler-rt/lib/xray/xray_powerpc64.inc b/compiler-rt/lib/xray/xray_powerpc64.inc
+# index e4e16d5b2..c9590e1fe 100644
+# --- a/compiler-rt/lib/xray/xray_powerpc64.inc
+# +++ b/compiler-rt/lib/xray/xray_powerpc64.inc
+# @@ -12,22 +12,26 @@
+# 
+#  #include <cstdint>
+#  #include <mutex>
+# -#ifdef __linux__
+# +#ifdef __GLIBC__
+#  #include <sys/platform/ppc.h>
+#  #elif defined(__FreeBSD__)
+#  #include <sys/types.h>
+#  #include <sys/sysctl.h>
+# 
+#  #define __ppc_get_timebase __builtin_ppc_get_timebase
+# 
+#  uint64_t __ppc_get_timebase_freq (void)
+#  {
+#    uint64_t tb_freq = 0;
+#    size_t length = sizeof(tb_freq);
+#    sysctlbyname("kern.timecounter.tc.timebase.frequency", &tb_freq, &length, nullptr, 0);
+#    return tb_freq;
+#  }
+# +#else
+# +#include <cctype>
+# +#include <cstring>
+# +#include <cstdlib>
+#  #endif
+# 
+#  #include "xray_defs.h"
+# 
+# @@ -35,13 +39,45 @@ namespace __xray {
+# 
+#  ALWAYS_INLINE uint64_t readTSC(uint8_t &CPU) XRAY_NEVER_INSTRUMENT {
+#    CPU = 0;
+# +#ifdef __GLIBC__
+#    return __ppc_get_timebase();
+# +#else
+# +  return __builtin_ppc_get_timebase();
+# +#endif
+#  }
+# 
+#  inline uint64_t getTSCFrequency() XRAY_NEVER_INSTRUMENT {
+#    static std::mutex M;
+#    std::lock_guard<std::mutex> Guard(M);
+# +#ifdef __GLIBC__
+#    return __ppc_get_timebase_freq();
+# +#else
+# +  /* FIXME: a less dirty implementation? */
+# +  static uint64_t base;
+# +  if (!base) {
+# +    FILE *f = fopen("/proc/cpuinfo", "rb");
+# +    if (f) {
+# +      ssize_t nr;
+# +      /* virtually always big enough to hold the line */
+# +      char buf[512];
+# +      while (fgets(buf, sizeof(buf), f)) {
+# +        char *ret = strstr(buf, "timebase");
+# +        if (!ret) {
+# +          continue;
+# +        }
+# +        ret += sizeof("timebase") - 1;
+# +        ret = strchr(ret, ':');
+# +        if (!ret) {
+# +          continue;
+# +        }
+# +        base = strtoul(ret + 1, nullptr, 10);
+# +        break;
+# +      }
+# +      fclose(f);
+# +    }
+# +  }
+# +  return base;
+# +#endif
+#  }
+# 
+#  inline bool probeRequiredCPUFeatures() XRAY_NEVER_INSTRUMENT {
+diff --git a/libcxx/include/limits b/libcxx/include/limits
+index 245c84eea..9fbbffb72 100644
+--- a/libcxx/include/limits
++++ b/libcxx/include/limits
+@@ -430,8 +430,14 @@
+     _LIBCPP_INLINE_VISIBILITY static _LIBCPP_CONSTEXPR type signaling_NaN() _NOEXCEPT {return __builtin_nansl("");}
+     _LIBCPP_INLINE_VISIBILITY static _LIBCPP_CONSTEXPR type denorm_min() _NOEXCEPT {return __LDBL_DENORM_MIN__;}
+
+-#if defined(__powerpc__) && defined(__LONG_DOUBLE_IBM128__)
++#if (defined(__powerpc__) || defined(__powerpc64__)) && defined(__LONG_DOUBLE_IBM128__)
++#if (__LDBL_MAX_EXP__ > __DBL_MAX_EXP__) || (__LDBL_MANT_DIG__ == __DBL_MANT_DIG__)
++    /* IEEE 754 quadruple or double precision */
++    static _LIBCPP_CONSTEXPR const bool is_iec559 = true;
++#else
++    /* 128-bit IBM double-double */
+     static _LIBCPP_CONSTEXPR const bool is_iec559 = false;
++#endif
+ #else
+     static _LIBCPP_CONSTEXPR const bool is_iec559 = true;
+ #endif
+
+# diff --git a/libcxx/include/locale b/libcxx/include/locale
+# index 7c2d2361f..1d6811b6f 100644
+# --- a/libcxx/include/locale
+# +++ b/libcxx/include/locale
+# @@ -758,7 +758,7 @@
+#          __libcpp_remove_reference_t<decltype(errno)> __save_errno = errno;
+#          errno = 0;
+#          char *__p2;
+# -        long long __ll = strtoll_l(__a, &__p2, __base, _LIBCPP_GET_C_LOCALE);
+# +        long long __ll = strtoll_l(__a, &__p2, __base);
+#          __libcpp_remove_reference_t<decltype(errno)> __current_errno = errno;
+#          if (__current_errno == 0)
+#              errno = __save_errno;
+# @@ -798,7 +798,7 @@
+#          __libcpp_remove_reference_t<decltype(errno)> __save_errno = errno;
+#          errno = 0;
+#          char *__p2;
+# -        unsigned long long __ll = strtoull_l(__a, &__p2, __base, _LIBCPP_GET_C_LOCALE);
+# +        unsigned long long __ll = strtoull_l(__a, &__p2, __base);
+#          __libcpp_remove_reference_t<decltype(errno)> __current_errno = errno;
+#          if (__current_errno == 0)
+#              errno = __save_errno;
+
+# diff --git a/libunwind/CMakeLists.txt b/libunwind/CMakeLists.txt
+# index 660bbadb2..82d9f02f2 100644
+# --- a/libunwind/CMakeLists.txt
+# +++ b/libunwind/CMakeLists.txt
+# @@ -182,7 +182,7 @@ set(CMAKE_RUNTIME_OUTPUT_FOLDERECTORY ${LIBUNWIND_LIBRARY_DIR})
+# 
+#  set(LIBUNWIND_C_FLAGS "")
+#  set(LIBUNWIND_CXX_FLAGS "")
+# -set(LIBUNWIND_COMPILE_FLAGS "")
+# +set(LIBUNWIND_COMPILE_FLAGS "$ENV{KISS_LIBUNWIND_FLAGS}")
+#  set(LIBUNWIND_LINK_FLAGS "")
+# 
+#  # Include macros for adding and removing libunwind flags.
+
+
+diff --git a/llvm/lib/Target/PowerPC/PPCTargetMachine.cpp b/llvm/lib/Target/PowerPC/PPCTargetMachine.cpp
+index b1de8d00f..988bf275b 100644
+--- a/llvm/lib/Target/PowerPC/PPCTargetMachine.cpp
++++ b/llvm/lib/Target/PowerPC/PPCTargetMachine.cpp
+@@ -225,9 +225,7 @@ static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
+
+ static PPCTargetMachine::PPCABI computeTargetABI(const Triple &TT,
+                                                  const TargetOptions &Options) {
+-  if (Options.MCOptions.getABIName().startswith("elfv1"))
+-    return PPCTargetMachine::PPC_ABI_ELFv1;
+-  else if (Options.MCOptions.getABIName().startswith("elfv2"))
++  if (Options.MCOptions.getABIName().startswith("elfv2"))
+     return PPCTargetMachine::PPC_ABI_ELFv2;
+
+   assert(Options.MCOptions.getABIName().empty() &&
+@@ -237,7 +235,7 @@ static PPCTargetMachine::PPCABI computeTargetABI(const Triple &TT,
+   case Triple::ppc64le:
+     return PPCTargetMachine::PPC_ABI_ELFv2;
+   case Triple::ppc64:
+-    return PPCTargetMachine::PPC_ABI_ELFv1;
++    return PPCTargetMachine::PPC_ABI_ELFv2;
+   default:
+     return PPCTargetMachine::PPC_ABI_UNKNOWN;
+   }
+
+# Ignore it temporarily
+# diff --git a/llvm/runtimes/CMakeLists.txt b/llvm/runtimes/CMakeLists.txt
+# index 195dba9d2..770b3bfbb 100644
+# --- a/llvm/runtimes/CMakeLists.txt
+# +++ b/llvm/runtimes/CMakeLists.txt
+# @@ -64,7 +64,7 @@ macro(set_enable_per_target_runtime_dir)
+#    # May have been set by llvm/CMakeLists.txt.
+#    if (NOT DEFINED LLVM_ENABLE_PER_TARGET_RUNTIME_DIR)
+#      # AIX should fold 32-bit & 64-bit arch libraries into a single archive.
+# -    if (LLVM_TARGET_TRIPLE MATCHES "aix")
+# +    if (LLVM_TARGET_TRIPLE MATCHES "aix" OR LLVM_TARGET_TRIPLE MATCHES "$ENV{KISS_XHOST_TRIPLE}")
+#        set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR OFF)
+#      else()
+#        set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR ON)
+# @@ -86,6 +86,16 @@ function(builtin_default_target compiler_rt_path)
+#                                        -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=${LLVM_ENABLE_PER_TARGET_RUNTIME_DIR}
+#                                        -DCMAKE_C_COMPILER_WORKS=ON
+#                                        -DCMAKE_ASM_COMPILER_WORKS=ON
+# +                                      -DCOMPILER_RT_BUILD_CRT=ON
+# +                                      -DCOMPILER_RT_BUILD_BUILTINS=ON
+# +                                      -DCOMPILER_RT_BUILD_SANITIZERS=OFF
+# +                                      -DCOMPILER_RT_BUILD_XRAY=OFF
+# +                                      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
+# +                                      -DCOMPILER_RT_BUILD_PROFILE=OFF
+# +                                      -DCOMPILER_RT_BUILD_MEMPROF=OFF
+# +                                      -DCOMPILER_RT_BUILD_ORC=OFF
+# +                                      -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
+# +                                      -DCOMPILER_RT_ENABLE_CET=OFF
+#                                        ${COMMON_CMAKE_ARGS}
+#                                        ${BUILTINS_CMAKE_ARGS}
+#                             PASSTHROUGH_PREFIXES COMPILER_RT
+# @@ -113,14 +123,28 @@ function(builtin_register_target compiler_rt_path target)
+# 
+#    llvm_ExternalProject_Add(builtins-${target}
+#                             ${compiler_rt_path}/lib/builtins
+# +                           ${compiler_rt_path}
+#                             DEPENDS ${ARG_DEPENDS}
+#                             CMAKE_ARGS -DLLVM_LIBRARY_OUTPUT_INTDIR=${LLVM_LIBRARY_DIR}
+#                                        -DLLVM_RUNTIME_OUTPUT_INTDIR=${LLVM_TOOLS_BINARY_DIR}
+#                                        -DLLVM_DEFAULT_TARGET_TRIPLE=${target}
+# -                                      -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
+# +                                      -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=OFF
+#                                        -DCMAKE_C_COMPILER_WORKS=ON
+#                                        -DCMAKE_ASM_COMPILER_WORKS=ON
+#                                        -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
+# +                                      -DCMAKE_CXX_COMPILER_WORKS=ON
+# +                                      -DCMAKE_C_FLAGS=-nostdlib
+# +                                      -DCMAKE_CXX_FLAGS=-nostdlib
+# +                                      -DCOMPILER_RT_BUILD_CRT=ON
+# +                                      -DCOMPILER_RT_BUILD_BUILTINS=ON
+# +                                      -DCOMPILER_RT_BUILD_SANITIZERS=OFF
+# +                                      -DCOMPILER_RT_BUILD_XRAY=OFF
+# +                                      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
+# +                                      -DCOMPILER_RT_BUILD_PROFILE=OFF
+# +                                      -DCOMPILER_RT_BUILD_MEMPROF=OFF
+# +                                      -DCOMPILER_RT_BUILD_ORC=OFF
+# +                                      -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
+# +                                      -DCOMPILER_RT_ENABLE_CET=OFF
+#                                        ${COMMON_CMAKE_ARGS}
+#                                        ${${target}_extra_args}
+#                             USE_TOOLCHAIN
+# @@ -218,6 +242,11 @@ function(runtime_default_target)
+#      set_property(GLOBAL APPEND PROPERTY LLVM_ALL_LIT_TESTSUITES "@${LLVM_BINARY_DIR}/runtimes/runtimes-bins/lit.tests")
+#      list(APPEND test_targets runtimes-test-depends check-runtimes)
+#    endif()
+# +  set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
+# +
+# +  set(RT_C_FLAGS "${CMAKE_C_FLAGS} --sysroot=${KISS_ROOT}")
+# +  set(RT_CXX_FLAGS "${CMAKE_CXX_FLAGS} --sysroot=${KISS_ROOT}")
+# +  set(RT_ASM_FLAGS "${CMAKE_ASM_FLAGS} --sysroot=${KISS_ROOT}")
+# 
+#    set_enable_per_target_runtime_dir()
+# 
+# @@ -234,6 +263,17 @@ function(runtime_default_target)
+#                                        -DCMAKE_C_COMPILER_WORKS=ON
+#                                        -DCMAKE_CXX_COMPILER_WORKS=ON
+#                                        -DCMAKE_ASM_COMPILER_WORKS=ON
+# +                                      -DCMAKE_C_FLAGS=${RT_C_FLAGS}
+# +                                      -DCMAKE_CXX_FLAGS=${RT_CXX_FLAGS}
+# +                                      -DCMAKE_ASM_FLAGS=${RT_ASM_FLAGS}
+# +                                      -DCOMPILER_RT_BUILD_SANITIZERS=OFF
+# +                                      -DCOMPILER_RT_BUILD_XRAY=OFF
+# +                                      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
+# +                                      -DCOMPILER_RT_BUILD_PROFILE=OFF
+# +                                      -DCOMPILER_RT_BUILD_MEMPROF=OFF
+# +                                      -DCOMPILER_RT_BUILD_ORC=OFF
+# +                                      -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
+# +                                      -DCOMPILER_RT_ENABLE_CET=OFF
+#                                        ${COMMON_CMAKE_ARGS}
+#                                        ${RUNTIMES_CMAKE_ARGS}
+#                                        ${ARG_CMAKE_ARGS}
+# @@ -362,6 +402,16 @@ function(runtime_register_target name target)
+#                                        -DCMAKE_CXX_COMPILER_WORKS=ON
+#                                        -DCMAKE_ASM_COMPILER_WORKS=ON
+#                                        -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
+# +                                      -DCOMPILER_RT_BUILD_CRT=ON
+# +                                      -DCOMPILER_RT_BUILD_BUILTINS=ON
+# +                                      -DCOMPILER_RT_BUILD_SANITIZERS=OFF
+# +                                      -DCOMPILER_RT_BUILD_XRAY=OFF
+# +                                      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
+# +                                      -DCOMPILER_RT_BUILD_PROFILE=OFF
+# +                                      -DCOMPILER_RT_BUILD_MEMPROF=OFF
+# +                                      -DCOMPILER_RT_BUILD_ORC=OFF
+# +                                      -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
+# +                                      -DCOMPILER_RT_ENABLE_CET=OFF
+#                                        -DLLVM_RUNTIMES_TARGET=${name}
+#                                        ${COMMON_CMAKE_ARGS}
+#                                        ${${name}_extra_args}
+# 
+
+diff --git a/compiler-rt/lib/builtins/CMakeLists.txt b/compiler-rt/lib/builtins/CMakeLists.txt
+index 5e2274d52256..e66ce23701e1 100644
+--- a/compiler-rt/lib/builtins/CMakeLists.txt
++++ b/compiler-rt/lib/builtins/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-# This directory contains a large amount of C code which provides
++# This
+ # generic implementations of the core runtime library along with optimized
+ # architecture-specific code in various subdirectories.
+
+diff --git a/llvm/runtimes/CMakeLists.txt b/llvm/runtimes/CMakeLists.txt
+index 694f346ee8e9..f47fc2cebd03 100644
+--- a/llvm/runtimes/CMakeLists.txt
++++ b/llvm/runtimes/CMakeLists.txt
+@@ -65,7 +65,7 @@ function(builtin_default_target compiler_rt_path)
+
+   set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default ON)
+   # AIX should fold 32-bit & 64-bit arch libraries into a single archive.
+-  if (LLVM_TARGET_TRIPLE MATCHES "aix")
++  if (LLVM_TARGET_TRIPLE MATCHES "aix" OR LLVM_TARGET_TRIPLE MATCHES "$ENV{KISS_XHOST_TRIPLE}")
+     set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
+   endif()
+
+@@ -78,6 +78,16 @@ function(builtin_default_target compiler_rt_path)
+                                       -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=${LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default}
+                                       -DCMAKE_C_COMPILER_WORKS=ON
+                                       -DCMAKE_ASM_COMPILER_WORKS=ON
++                                      -DCOMPILER_RT_BUILD_CRT=ON
++                                      -DCOMPILER_RT_BUILD_BUILTINS=ON
++                                      -DCOMPILER_RT_BUILD_SANITIZERS=OFF
++                                      -DCOMPILER_RT_BUILD_XRAY=OFF
++                                      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
++                                      -DCOMPILER_RT_BUILD_PROFILE=OFF
++                                      -DCOMPILER_RT_BUILD_MEMPROF=OFF
++                                      -DCOMPILER_RT_BUILD_ORC=OFF
++                                      -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
++                                      -DCOMPILER_RT_ENABLE_CET=OFF
+                                       ${COMMON_CMAKE_ARGS}
+                                       ${BUILTINS_CMAKE_ARGS}
+                            PASSTHROUGH_PREFIXES COMPILER_RT
+@@ -105,14 +115,28 @@ function(builtin_register_target compiler_rt_path target)
+
+   llvm_ExternalProject_Add(builtins-${target}
+                            ${compiler_rt_path}/lib/builtins
++                           ${compiler_rt_path}
+                            DEPENDS ${ARG_DEPENDS}
+                            CMAKE_ARGS -DLLVM_LIBRARY_OUTPUT_INTDIR=${LLVM_LIBRARY_DIR}
+                                       -DLLVM_RUNTIME_OUTPUT_INTDIR=${LLVM_TOOLS_BINARY_DIR}
+                                       -DLLVM_DEFAULT_TARGET_TRIPLE=${target}
+-                                      -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
++                                      -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=${LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default}
+                                       -DCMAKE_C_COMPILER_WORKS=ON
+                                       -DCMAKE_ASM_COMPILER_WORKS=ON
+                                       -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
++                                      -DCMAKE_CXX_COMPILER_WORKS=ON
++                                      -DCMAKE_C_FLAGS=-nostdlib
++                                      -DCMAKE_CXX_FLAGS=-nostdlib
++                                      -DCOMPILER_RT_BUILD_CRT=ON
++                                      -DCOMPILER_RT_BUILD_BUILTINS=ON
++                                      -DCOMPILER_RT_BUILD_SANITIZERS=OFF
++                                      -DCOMPILER_RT_BUILD_XRAY=OFF
++                                      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
++                                      -DCOMPILER_RT_BUILD_PROFILE=OFF
++                                      -DCOMPILER_RT_BUILD_MEMPROF=OFF
++                                      -DCOMPILER_RT_BUILD_ORC=OFF
++                                      -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
++                                      -DCOMPILER_RT_ENABLE_CET=OFF
+                                       ${COMMON_CMAKE_ARGS}
+                                       ${${target}_extra_args}
+                            USE_TOOLCHAIN
+@@ -219,10 +243,14 @@ function(runtime_default_target)
+
+   set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default ON)
+   # AIX should fold 32-bit & 64-bit arch libraries into a single archive.
+-  if (LLVM_TARGET_TRIPLE MATCHES "aix")
++  if (LLVM_TARGET_TRIPLE MATCHES "aix" OR LLVM_TARGET_TRIPLE MATCHES "$ENV{KISS_XHOST_TRIPLE}")
+     set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default OFF)
+   endif()
+
++  set(RT_C_FLAGS "${CMAKE_C_FLAGS} --sysroot=${KISS_ROOT}")
++  set(RT_CXX_FLAGS "${CMAKE_CXX_FLAGS} --sysroot=${KISS_ROOT}")
++  set(RT_ASM_FLAGS "${CMAKE_ASM_FLAGS} --sysroot=${KISS_ROOT}")
++
+   llvm_ExternalProject_Add(runtimes
+                            ${CMAKE_CURRENT_SOURCE_DIR}/../../runtimes
+                            DEPENDS ${ARG_DEPENDS}
+@@ -236,6 +264,17 @@ function(runtime_default_target)
+                                       -DCMAKE_C_COMPILER_WORKS=ON
+                                       -DCMAKE_CXX_COMPILER_WORKS=ON
+                                       -DCMAKE_ASM_COMPILER_WORKS=ON
++                                      -DCMAKE_C_FLAGS=${RT_C_FLAGS}
++                                      -DCMAKE_CXX_FLAGS=${RT_CXX_FLAGS}
++                                      -DCMAKE_ASM_FLAGS=${RT_ASM_FLAGS}
++                                      -DCOMPILER_RT_BUILD_SANITIZERS=OFF
++                                      -DCOMPILER_RT_BUILD_XRAY=OFF
++                                      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
++                                      -DCOMPILER_RT_BUILD_PROFILE=OFF
++                                      -DCOMPILER_RT_BUILD_MEMPROF=OFF
++                                      -DCOMPILER_RT_BUILD_ORC=OFF
++                                      -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
++                                      -DCOMPILER_RT_ENABLE_CET=OFF
+                                       ${COMMON_CMAKE_ARGS}
+                                       ${RUNTIMES_CMAKE_ARGS}
+                            PASSTHROUGH_PREFIXES LLVM_ENABLE_RUNTIMES
+@@ -356,11 +395,21 @@ function(runtime_register_target name target)
+                                       -DLLVM_INCLUDE_TESTS=${LLVM_INCLUDE_TESTS}
+                                       -DLLVM_DEFAULT_TARGET_TRIPLE=${target}
+                                       -DLLVM_ENABLE_PROJECTS_USED=${LLVM_ENABLE_PROJECTS_USED}
+-                                      -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
++                                      -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=${LLVM_ENABLE_PER_TARGET_RUNTIME_DIR_default}
+                                       -DCMAKE_C_COMPILER_WORKS=ON
+                                       -DCMAKE_CXX_COMPILER_WORKS=ON
+                                       -DCMAKE_ASM_COMPILER_WORKS=ON
+                                       -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
++                                      -DCOMPILER_RT_BUILD_CRT=ON
++                                      -DCOMPILER_RT_BUILD_BUILTINS=ON
++                                      -DCOMPILER_RT_BUILD_SANITIZERS=OFF
++                                      -DCOMPILER_RT_BUILD_XRAY=OFF
++                                      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
++                                      -DCOMPILER_RT_BUILD_PROFILE=OFF
++                                      -DCOMPILER_RT_BUILD_MEMPROF=OFF
++                                      -DCOMPILER_RT_BUILD_ORC=OFF
++                                      -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
++                                      -DCOMPILER_RT_ENABLE_CET=OFF
+                                       -DLLVM_RUNTIMES_TARGET=${name}
+                                       ${COMMON_CMAKE_ARGS}
+                                       ${${name}_extra_args}
+
+
+
+diff --git a/llvm/test/CodeGen/PowerPC/ppc64-elf-abi.ll b/llvm/test/CodeGen/PowerPC/ppc64-elf-abi.ll
+index 8b1cf6b58..296a2afa6 100644
+--- a/llvm/test/CodeGen/PowerPC/ppc64-elf-abi.ll
++++ b/llvm/test/CodeGen/PowerPC/ppc64-elf-abi.ll
+@@ -1,4 +1,5 @@
+-; RUN: llc -verify-machineinstrs -mtriple=powerpc64-unknown-linux-gnu < %s | FileCheck %s -check-prefix=CHECK-ELFv1
++; RUN: llc -verify-machineinstrs -mtriple=powerpc64-unknown-linux-gnu < %s | FileCheck %s -check-prefix=CHECK-ELFv2
++; RUN: llc -verify-machineinstrs -mtriple=powerpc64-unknown-linux-musl < %s | FileCheck %s -check-prefix=CHECK-ELFv2
+ ; RUN: llc -verify-machineinstrs -mtriple=powerpc64-unknown-linux-gnu -target-abi elfv1 < %s | FileCheck %s -check-prefix=CHECK-ELFv1
+ ; RUN: llc -verify-machineinstrs -mtriple=powerpc64-unknown-linux-gnu -target-abi elfv2 < %s | FileCheck %s -check-prefix=CHECK-ELFv2
+ ; RUN: llc -verify-machineinstrs -mtriple=powerpc64le-unknown-linux-gnu < %s | FileCheck %s -check-prefix=CHECK-ELFv2
+# diff --git a/llvm/cmake/modules/LLVMInstallSymlink.cmake b/llvm/cmake/modules/LLVMInstallSymlink.cmake
+# index 1400233b7..0a7b38737 100644
+# --- a/llvm/cmake/modules/LLVMInstallSymlink.cmake
+# +++ b/llvm/cmake/modules/LLVMInstallSymlink.cmake
+# @@ -2,6 +2,9 @@
+#  # DESTDIR environment variable may be unset at configuration time.
+#  # See PR8397.
+# 
+# +# Set to an arbitrary directory to silence GNUInstallDirs warnings
+# +# regarding being unable to determine libdir.
+# +set(CMAKE_INSTALL_LIBDIR "lib")
+#  include(GNUInstallDirs)
+# 
+#  function(install_symlink name target outdir)
+diff --git a/libcxx/CMakeLists.txt b/libcxx/CMakeLists.txt
+index 1400233b7..0a7b38737 100644
+--- a/libcxx/CMakeLists.txt
++++ b/libcxx/CMakeLists.txt
+@@ -201,7 +201,7 @@
+
+ set(LIBCXX_ABI_DEFINES "" CACHE STRING "A semicolon separated list of ABI macros to define in the site config header.")
+ option(LIBCXX_EXTRA_SITE_DEFINES "Extra defines to add into __config_site")
+-option(LIBCXX_USE_COMPILER_RT "Use compiler-rt instead of libgcc" OFF)
++option(LIBCXX_USE_COMPILER_RT "Use compiler-rt instead of libgcc" ON)
+
+ option(LIBCXX_ENABLE_BACKWARDS_COMPATIBILITY_DEBUG_MODE_SYMBOLS
+   "Whether to include the old Debug mode symbols in the compiled library. This
+@@ -261,7 +261,7 @@
+    libc++abi. Doing otherwise is an ODR violation." OFF)
+ # Build libc++abi with libunwind. We need this option to determine whether to
+ # link with libunwind or libgcc_s while running the test cases.
+-option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." OFF)
++option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." ON)
+
+ # Target options --------------------------------------------------------------
+ option(LIBCXX_BUILD_32_BITS "Build 32 bit multilib libc++. This option is not supported anymore when building the runtimes. Please specify a full triple instead." ${LLVM_BUILD_32_BITS})
+@@ -269,6 +269,10 @@
+   message(FATAL_ERROR "LIBCXX_BUILD_32_BITS is not supported anymore when building the runtimes, please specify a full triple instead.")
+ endif()
+
++set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nostdlib++")
++# set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nostdinc++")
++set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} --sysroot=${KISS_ROOT}")
++
+ # Feature options -------------------------------------------------------------
+ option(LIBCXX_ENABLE_EXCEPTIONS "Use exceptions." ON)
+ option(LIBCXX_ENABLE_RTTI "Use run time type information." ON)
+@@ -276,7 +280,7 @@
+ option(LIBCXX_ENABLE_MONOTONIC_CLOCK
+   "Build libc++ with support for a monotonic clock.
+    This option may only be set to OFF when LIBCXX_ENABLE_THREADS=OFF." ON)
+-option(LIBCXX_HAS_MUSL_LIBC "Build libc++ with support for the Musl C library" OFF)
++option(LIBCXX_HAS_MUSL_LIBC "Build libc++ with support for the Musl C library" ON)
+ option(LIBCXX_HAS_PTHREAD_API "Ignore auto-detection and force use of pthread API" OFF)
+ option(LIBCXX_HAS_WIN32_THREAD_API "Ignore auto-detection and force use of win32 thread API" OFF)
+ option(LIBCXX_HAS_EXTERNAL_THREAD_API
+@@ -448,6 +452,15 @@
+ # LIBCXX_LINK_FLAGS: Linker only flags.
+ # LIBCXX_LIBRARIES: libraries libc++ is linked to.
+ set(LIBCXX_COMPILE_FLAGS "")
++set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
++-isystem $ENV{MAKEDIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
++-isystem $ENV{MAKEDIR}/$ENV{OUTPUT_FOLDER}/runtimes/runtimes-bins/pstl/generated_headers \
++-isystem $ENV{MAKEDIR}/pstl/include \
++-isystem $ENV{MAKEDIR}/libcxx/include \
++${CMAKE_CXX_FLAGS}")
++message(STATUS "\${CMAKE_CXX_FLAGS} = ${CMAKE_CXX_FLAGS}")
++message(STATUS "\${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
++message(STATUS "\${LIBCXX_COMPILE_FLAGS} = ${LIBCXX_COMPILE_FLAGS}")
+ set(LIBCXX_LINK_FLAGS "")
+ set(LIBCXX_LIBRARIES "")
+ set(LIBCXX_ADDITIONAL_COMPILE_FLAGS "" CACHE STRING
+
+# @@ -454,7 +458,8 @@
+#  # LIBCXX_COMPILE_FLAGS: Compile only flags.
+#  # LIBCXX_LINK_FLAGS: Linker only flags.
+#  # LIBCXX_LIBRARIES: libraries libc++ is linked to.
+# -set(LIBCXX_COMPILE_FLAGS "")
+# +set(LIBCXX_COMPILE_FLAGS "-isystem /usr/include/c++/v1 ${CMAKE_CXX_FLAGS}")
+# +set(CMAKE_CXX_FLAGS "${LIBCXX_COMPILE_FLAGS}")
+#  set(LIBCXX_LINK_FLAGS "")
+#  set(LIBCXX_LIBRARIES "")
+
+# diff --git a/runtimes/CMakeLists.txt b/runtimes/CMakeLists.txt
+# index 1400233b7..0a7b38737 100644
+# --- a/runtimes/CMakeLists.txt
+# +++ b/runtimes/CMakeLists.txt
+# @@ -23,7 +23,7 @@
+#  # We order libraries to mirror roughly how they are layered, except that compiler-rt can depend
+#  # on libc++, so we put it after.
+#  set(LLVM_DEFAULT_RUNTIMES "libc;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp")
+# -set(LLVM_SUPPORTED_RUNTIMES "${LLVM_DEFAULT_RUNTIMES};llvm-libgcc")
+# +# set(LLVM_SUPPORTED_RUNTIMES "${LLVM_DEFAULT_RUNTIMES};llvm-libgcc")
+#  set(LLVM_ENABLE_RUNTIMES "" CACHE STRING
+#    "Semicolon-separated list of runtimes to build, or \"all\" (${LLVM_DEFAULT_RUNTIMES}). Supported runtimes are ${LLVM_SUPPORTED_RUNTIMES}.")
+#  if(LLVM_ENABLE_RUNTIMES STREQUAL "all" )
+# @@ -149,6 +149,8 @@
+#    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nostdinc++")
+#  endif()
+# 
+# +set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} --sysroot=${KISS_ROOT}")
+# +
+#  # Avoid checking whether the compiler is working.
+#  set(LLVM_COMPILER_CHECKED ON)
+# 
+# @@ -164,8 +166,8 @@
+#  set(LLVM_DEFAULT_TARGET_TRIPLE "${LLVM_HOST_TRIPLE}" CACHE STRING
+#    "Default target for which the runtimes will be built.")
+# 
+# -option(LLVM_INCLUDE_TESTS "Generate build targets for the runtimes unit tests." ON)
+# -option(LLVM_INCLUDE_DOCS "Generate build targets for the runtimes documentation." ON)
+# +option(LLVM_INCLUDE_TESTS "Generate build targets for the runtimes unit tests." OFF)
+# +option(LLVM_INCLUDE_DOCS "Generate build targets for the runtimes documentation." OFF)
+#  option(LLVM_ENABLE_SPHINX "Use Sphinx to generate the runtimes documentation." OFF)
+# 
+#  # Use libtool instead of ar if you are both on an Apple host, and targeting Apple.
+# 
+--- ./compiler-rt/cmake/Modules/AddCompilerRT.cmake
++++ ./compiler-rt/cmake/Modules/AddCompilerRT.cmake
+@@ -1,6 +1,7 @@
+ include(ExternalProject)
+ include(CompilerRTUtils)
+ include(HandleCompilerRT)
++include(CompilerRTCompile)
+
+ # CMP0114: ExternalProject step targets fully adopt their steps.
+ # New in CMake 3.19: https://cmake.org/cmake/help/latest/policy/CMP0114.html
+
+--- ./llvm/cmake/modules/HandleLLVMOptions.cmake
++++ ./llvm/cmake/modules/HandleLLVMOptions.cmake
+@@ -313,12 +313,51 @@
+ endif()
+
+ if( LLVM_USE_LINKER )
+-  append("-fuse-ld=${LLVM_USE_LINKER}"
+-    CMAKE_EXE_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS)
+-  check_cxx_source_compiles("int main() { return 0; }" CXX_SUPPORTS_CUSTOM_LINKER)
+-  if ( NOT CXX_SUPPORTS_CUSTOM_LINKER )
+-    message(FATAL_ERROR "Host compiler does not support '-fuse-ld=${LLVM_USE_LINKER}'")
+-  endif()
++    message(STATUS "llvm/cmake/modules/HandleLLVMOptions.cmake \${CMAKE_C_COMPILER} = ${CMAKE_C_COMPILER}")
++    message(STATUS "llvm/cmake/modules/HandleLLVMOptions.cmake \${CMAKE_CXX_COMPILER} = ${CMAKE_CXX_COMPILER}")
++    set(cl_cache "${CMAKE_C_LINKER_FLAGS}")
++    set(cxxl_cache "${CMAKE_CXX_LINKER_FLAGS}")
++    set(el_cache "${CMAKE_EXE_LINKER_FLAGS}")
++    set(ml_cache "${CMAKE_MODULE_LINKER_FLAGS}")
++    set(sl_cache "${CMAKE_SHARED_LINKER_FLAGS}")
++    message(STATUS "llvm/cmake/modules/HandleLLVMOptions.cmake \${CMAKE_EXE_LINKER_FLAGS} = ${CMAKE_EXE_LINKER_FLAGS}")
++    message(STATUS "llvm/cmake/modules/HandleLLVMOptions.cmake \${CMAKE_C_LINKER_FLAGS} = ${CMAKE_C_LINKER_FLAGS}")
++    message(STATUS "llvm/cmake/modules/HandleLLVMOptions.cmake \${CMAKE_CXX_LINKER_FLAGS} = ${CMAKE_CXX_LINKER_FLAGS}")
++    message(STATUS "llvm/cmake/modules/HandleLLVMOptions.cmake \${CMAKE_MODULE_LINKER_FLAGS} = ${CMAKE_MODULE_LINKER_FLAGS}")
++    message(STATUS "llvm/cmake/modules/HandleLLVMOptions.cmake \${CMAKE_SHARED_LINKER_FLAGS} = ${CMAKE_SHARED_LINKER_FLAGS}")
++    set(CMAKE_C_LINKER_FLAGS "")
++    set(CMAKE_CXX_LINKER_FLAGS "")
++    set(CMAKE_EXE_LINKER_FLAGS "")
++    set(CMAKE_MODULE_LINKER_FLAGS "")
++    set(CMAKE_SHARED_LINKER_FLAGS "")
++    append("-fuse-ld=${LLVM_USE_LINKER}"
++        CMAKE_EXE_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS CMAKE_SHARED_LINKER_FLAGS)
++
++    set(CMAKE_LINKER "$ENV{ORIGIN}/lld" CACHE FILEPATH "")
++    set(CMAKE_LINK_EXECUTABLE "$ENV{ORIGIN}/lld" CACHE FILEPATH "")
++    message(STATUS "\${CMAKE_CXX_FLAGS} = ${CMAKE_CXX_FLAGS}")
++    message(STATUS "\${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
++    set(cxx_cache "${CMAKE_CXX_FLAGS}")
++    set(c_cache "${CMAKE_C_FLAGS}")
++    set(CMAKE_CXX_FLAGS "")
++    check_cxx_source_compiles("int main() { return 0; }" CXX_SUPPORTS_CUSTOM_LINKER)
++    set(CMAKE_CXX_FLAGS "${cxx_cache}")
++    unset(cxx_cache CACHE)
++    set(CMAKE_C_FLAGS "${c_cache}")
++    unset(c_cache CACHE)
++    set(CMAKE_C_LINKER_FLAGS "${cl_cache}")
++    unset(cl_cache CACHE)
++    set(CMAKE_CXX_LINKER_FLAGS "${cxxl_cache}")
++    unset(cxxl_cache CACHE)
++    set(CMAKE_EXE_LINKER_FLAGS "${el_cache}")
++    unset(el_cache CACHE)
++    set(CMAKE_MODULE_LINKER_FLAGS "${ml_cache}")
++    unset(ml_cache CACHE)
++    set(CMAKE_SHARED_LINKER_FLAGS "${sl_cache}")
++    unset(sl_cache CACHE)
++    if ( NOT CXX_SUPPORTS_CUSTOM_LINKER )
++        message(FATAL_ERROR "Host compiler does not support '-fuse-ld=${LLVM_USE_LINKER}'")
++    endif()
+ endif()
+
+ if( LLVM_ENABLE_PIC )
+
+# @@ -69,6 +69,8 @@
+#  # This variable is used by individual runtimes to locate LLVM files.
+#  set(LLVM_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../llvm)
+# 
+# +set(CMAKE_CXX_FLAGS "-isystem /usr/include/c++/v1 ${CMAKE_CXX_FLAGS}")
+# +
+#  include(CheckLibraryExists)
+#  include(LLVMCheckCompilerLinkerFlag)
+#  include(CheckCCompilerFlag)
+# @@ -132,15 +134,17 @@
+#  # Check for -nostdlib++ first; if there's no C++ standard library yet,
+#  # all check_cxx_compiler_flag commands will fail until we add -nostdlib++
+#  # (or -nodefaultlibs).
+# -llvm_check_compiler_linker_flag(C "-nostdlib++" CXX_SUPPORTS_NOSTDLIBXX_FLAG)
+# -if (CXX_SUPPORTS_NOSTDLIBXX_FLAG)
+# +# llvm_check_compiler_linker_flag(C "-nostdlib++" CXX_SUPPORTS_NOSTDLIBXX_FLAG)
+# +# if (CXX_SUPPORTS_NOSTDLIBXX_FLAG)
+#    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nostdlib++")
+# -endif()
+# -check_cxx_compiler_flag(-nostdinc++ CXX_SUPPORTS_NOSTDINCXX_FLAG)
+# -if (CXX_SUPPORTS_NOSTDINCXX_FLAG)
+# -  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nostdinc++")
+# -endif()
+# +# endif()
+# +# check_cxx_compiler_flag(-nostdinc++ CXX_SUPPORTS_NOSTDINCXX_FLAG)
+# +# if (CXX_SUPPORTS_NOSTDINCXX_FLAG)
+# +#  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nostdinc++")
+# +# endif()
+# 
+# +set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} --sysroot=${KISS_ROOT}")
+# +
+#  # Avoid checking whether the compiler is working.
+#  set(LLVM_COMPILER_CHECKED ON)
+# 
+# @@ -156,8 +160,8 @@
+#  set(LLVM_DEFAULT_TARGET_TRIPLE "${LLVM_HOST_TRIPLE}" CACHE STRING
+#    "Default target for which the runtimes will be built.")
+# 
+# -option(LLVM_INCLUDE_TESTS "Generate build targets for the runtimes unit tests." ON)
+# -option(LLVM_INCLUDE_DOCS "Generate build targets for the runtimes documentation." ON)
+# +option(LLVM_INCLUDE_TESTS "Generate build targets for the runtimes unit tests." OFF)
+# +option(LLVM_INCLUDE_DOCS "Generate build targets for the runtimes documentation." OFF)
+#  option(LLVM_ENABLE_SPHINX "Use Sphinx to generate the runtimes documentation." OFF)
+# 
+#  # Use libtool instead of ar if you are both on an Apple host, and targeting Apple.
+
+# --- ./lldb/utils/TableGen/CMakeLists.txt
+# +++ ./lldb/utils/TableGen/CMakeLists.txt
+# @@ -1,6 +1,9 @@
+#  # tablegen targets get exported via llvm for LLVMConfig.cmake. So standalone
+#  # builds of lldb can potentially import this via LLVMConfig and also attempt to
+#  # build it in tree. So only build it if it doesn't exist.
+# +
+# +set(CMAKE_CXX_FLAGS "-isystem /usr/include/c++/v1 ${CMAKE_CXX_FLAGS}")
+# +
+#  if (NOT DEFINED LLDB_TABLEGEN_EXE)
+#    if (TARGET lldb-tblgen)
+#      set(LLDB_TABLEGEN_EXE $<TARGET_FILE:lldb-tblgen> CACHE STRING "")
+
+# # diff --git a/libcxxabi/CMakeLists.txt b/libcxxabi/CMakeLists.txt
+# # index 1400233b7..0a7b38737 100644
+# --- a/libcxxabi/CMakeLists.txt
+# +++ b/libcxxabi/CMakeLists.txt
+# @@ -47,7 +47,7 @@
+#  option(LIBCXXABI_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
+# -option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." OFF)
+# +option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." ON)
+#  option(LIBCXXABI_ENABLE_STATIC_UNWINDER "Statically link the LLVM unwinder." OFF)
+# -option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" OFF)
+# +option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" ON)
+#  option(LIBCXXABI_ENABLE_THREADS "Build with threads enabled" ON)
+#  option(LIBCXXABI_HAS_PTHREAD_API "Ignore auto-detection and force use of pthread API" OFF)
+#  option(LIBCXXABI_HAS_WIN32_THREAD_API "Ignore auto-detection and force use of win32 thread API" OFF)
+# @@ -465,6 +465,11 @@
+# 
+#  string(REPLACE ";" " " LIBCXXABI_CXX_FLAGS "${LIBCXXABI_CXX_FLAGS}")
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LIBCXXABI_CXX_FLAGS}")
+# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -isystem /usr/include \
+# +-isystem $ENV{MAKEDIR}/libcxx/include \
+# +-isystem $ENV{MAKEDIR}/pstl/include \
+# +-isystem $ENV{MAKEDIR}/$ENV{OUTPUT_FOLDER}/runtimes/runtimes-bins/pstl/generated_headers \
+# +${CMAKE_CXX_FLAGS}")
+#  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBCXXABI_C_FLAGS}")
+# 
+#  # On AIX, avoid picking up VMX extensions(i.e. vec_malloc) which would change
+# 
+# # @@ -224,7 +224,7 @@
+# #  # LIBCXXABI_LIBRARIES: libraries libc++abi is linked to.
+# # 
+# #  set(LIBCXXABI_C_FLAGS "")
+# # -set(LIBCXXABI_CXX_FLAGS "")
+# # +set(LIBCXXABI_CXX_FLAGS "-isystem /usr/include/c++/v1 ${CMAKE_CXX_FLAGS}")
+# #  set(LIBCXXABI_COMPILE_FLAGS "")
+# #  set(LIBCXXABI_LINK_FLAGS "")
+# #  set(LIBCXXABI_LIBRARIES "")
+# # @@ -455,7 +455,7 @@
+# #  endif()
+# # 
+# #  string(REPLACE ";" " " LIBCXXABI_CXX_FLAGS "${LIBCXXABI_CXX_FLAGS}")
+# # -set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LIBCXXABI_CXX_FLAGS}")
+# # +set(CMAKE_CXX_FLAGS "${LIBCXXABI_CXX_FLAGS}")
+# #  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBCXXABI_C_FLAGS}")
+# # 
+# #  # On AIX, avoid picking up VMX extensions(i.e. vec_malloc) which would change
+
+diff --git a/libcxxabi/CMakeLists.txt b/libcxxabi/CMakeLists.txt
+index 8f48d402bc22..9c117f4ed12c 100644
+--- a/libcxxabi/CMakeLists.txt
++++ b/libcxxabi/CMakeLists.txt
+@@ -45,9 +45,9 @@ option(LIBCXXABI_ENABLE_EXCEPTIONS
+ option(LIBCXXABI_ENABLE_ASSERTIONS "Enable assertions independent of build mode." ON)
+ option(LIBCXXABI_ENABLE_PEDANTIC "Compile with pedantic enabled." ON)
+ option(LIBCXXABI_ENABLE_WERROR "Fail and stop if a warning is triggered." OFF)
+-option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." OFF)
++option(LIBCXXABI_USE_LLVM_UNWINDER "Build and use the LLVM unwinder." ON)
+ option(LIBCXXABI_ENABLE_STATIC_UNWINDER "Statically link the LLVM unwinder." OFF)
+-option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" OFF)
++option(LIBCXXABI_USE_COMPILER_RT "Use compiler-rt instead of libgcc" ON)
+ option(LIBCXXABI_ENABLE_THREADS "Build with threads enabled" ON)
+ option(LIBCXXABI_HAS_PTHREAD_API "Ignore auto-detection and force use of pthread API" OFF)
+ option(LIBCXXABI_HAS_WIN32_THREAD_API "Ignore auto-detection and force use of win32 thread API" OFF)
+@@ -229,7 +229,15 @@ endif()
+ set(LIBCXXABI_C_FLAGS "")
+ set(LIBCXXABI_CXX_FLAGS "")
+ set(LIBCXXABI_COMPILE_FLAGS "")
+-set(LIBCXXABI_LINK_FLAGS "")
++set(LIBCXXABI_LINK_FLAGS "-nostdlib -lc -lc++ -lexecinfo -lrt -ldl -lz -lm \
++-fuse-ld=lld -stdlib=libc++ -rtlib=compiler-rt --unwindlib=none \
++-dynamic-linker -rdynamic -lc++experimental -lpthread \
++-Wl,-z,relro \
++-Wl,--build-id \
++-Wl,--undefined-version \
++Scrt1.o crti.o crtn.o \
++libclang_rt.builtins-x86_64.a clang_rt.crtbegin-x86_64.o clang_rt.crtend-x86_64.o \
++")
+ set(LIBCXXABI_LIBRARIES "")
+ set(LIBCXXABI_ADDITIONAL_COMPILE_FLAGS "" CACHE STRING
+     "Additional Compile only flags which can be provided in cache")
+@@ -464,7 +472,13 @@ if (C_SUPPORTS_COMMENT_LIB_PRAGMA)
+ endif()
+
+ string(REPLACE ";" " " LIBCXXABI_CXX_FLAGS "${LIBCXXABI_CXX_FLAGS}")
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LIBCXXABI_CXX_FLAGS}")
++set(CMAKE_CXX_FLAGS "-D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} \
++-isystem /usr/include -isystem $ENV{MAKEDIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
++-isystem $ENV{MAKEDIR}/$ENV{OUTPUT_FOLDER}/runtimes/runtimes-bins/pstl/generated_headers \
++-isystem $ENV{MAKEDIR}/pstl/include \
++-isystem $ENV{MAKEDIR}/libcxx/include \
++${CMAKE_CXX_FLAGS} ${LIBCXXABI_CXX_FLAGS}")
++string(REPLACE "-Wsuggest-override" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBCXXABI_C_FLAGS}")
+
+ # On AIX, avoid picking up VMX extensions(i.e. vec_malloc) which would change
+
+
+
+diff a/libunwind/CMakeLists.txt b/libunwind/CMakeLists.txt
+--- a/libunwind/CMakeLists.txt
++++ b/libunwind/CMakeLists.txt
+@@ -43,7 +43,7 @@
+ option(LIBUNWIND_ENABLE_ARM_WMMX "Enable unwinding support for ARM WMMX registers." OFF)
+ option(LIBUNWIND_ENABLE_THREADS "Build libunwind with threading support." ON)
+ option(LIBUNWIND_WEAK_PTHREAD_LIB "Use weak references to refer to pthread functions." OFF)
+-option(LIBUNWIND_USE_COMPILER_RT "Use compiler-rt instead of libgcc" OFF)
++option(LIBUNWIND_USE_COMPILER_RT "Use compiler-rt instead of libgcc" ON)
+ option(LIBUNWIND_INCLUDE_DOCS "Build the libunwind documentation." ${LLVM_INCLUDE_DOCS})
+ option(LIBUNWIND_INCLUDE_TESTS "Build the libunwind tests." ${LLVM_INCLUDE_TESTS})
+ option(LIBUNWIND_IS_BAREMETAL "Build libunwind for baremetal targets." OFF)
+
+diff a/compiler-rt/CMakeLists.txt b/compiler-rt/CMakeLists.txt
+--- a/compiler-rt/CMakeLists.txt
++++ b/compiler-rt/CMakeLists.txt
+@@ -293,7 +293,7 @@
+   "Statically link the C++ library." OFF
+   "COMPILER_RT_CXX_LIBRARY" OFF)
+
+-set(DEFAULT_COMPILER_RT_USE_BUILTINS_LIBRARY OFF)
++set(DEFAULT_COMPILER_RT_USE_BUILTINS_LIBRARY ON)
+ if (FUCHSIA)
+   set(DEFAULT_COMPILER_RT_USE_BUILTINS_LIBRARY ON)
+ endif()
+
+# diff a/polly/lib/External/CMakeLists.txt b/polly/lib/External/CMakeLists.txt
+# --- a/polly/lib/External/CMakeLists.txt
+# +++ b/polly/lib/External/CMakeLists.txt
+# @@ -12,6 +12,20 @@
+#    set(DISABLE_WARNING_FLAGS "-w")
+#  endif ()
+# 
+# +set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
+# +-isystem $ENV{MAKEDIR}/clang/lib/Headers \
+# +-isystem $ENV{MAKEDIR}/$ENV{OUTPUT_FOLDER}/runtimes/runtimes-bins/pstl/generated_headers \
+# +-isystem $ENV{MAKEDIR}/pstl/include \
+# +-isystem $ENV{MAKEDIR}/libcxx/include \
+# +${CMAKE_C_FLAGS}")
+# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
+# +-isystem $ENV{MAKEDIR}/clang/lib/Headers \
+# +-isystem $ENV{MAKEDIR}/$ENV{OUTPUT_FOLDER}/runtimes/runtimes-bins/pstl/generated_headers \
+# +-isystem $ENV{MAKEDIR}/pstl/include \
+# +-isystem $ENV{MAKEDIR}/libcxx/include \
+# +${CMAKE_CXX_FLAGS}")
+# +message(STATUS "\${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
+# +message(STATUS "\${CMAKE_CXX_FLAGS} = ${CMAKE_CXX_FLAGS}")
+# 
+#  # External: Integer Set Library
+#  if (POLLY_BUNDLED_ISL)
+
+diff --git a/polly/lib/External/CMakeLists.txt b/polly/lib/External/CMakeLists.txt
+index c0a5b32e283f..26bd1befdd8e 100644
+--- a/polly/lib/External/CMakeLists.txt
++++ b/polly/lib/External/CMakeLists.txt
+@@ -12,6 +12,22 @@ else ()
+   set(DISABLE_WARNING_FLAGS "-w")
+ endif ()
+
++set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
++-isystem $ENV{MAKEDIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
++-isystem $ENV{MAKEDIR}/$ENV{OUTPUT_FOLDER}/runtimes/runtimes-bins/pstl/generated_headers \
++-isystem $ENV{MAKEDIR}/pstl/include \
++-isystem $ENV{MAKEDIR}/libcxx/include \
++${CMAKE_C_FLAGS}")
++set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
++-isystem $ENV{MAKEDIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
++-isystem $ENV{MAKEDIR}/$ENV{OUTPUT_FOLDER}/runtimes/runtimes-bins/pstl/generated_headers \
++-isystem $ENV{MAKEDIR}/pstl/include \
++-isystem $ENV{MAKEDIR}/libcxx/include \
++${CMAKE_CXX_FLAGS}")
++message(STATUS "polly/lib/External/CMakeLists.txt \${CMAKE_C_COMPILER} = ${CMAKE_C_COMPILER}")
++message(STATUS "polly/lib/External/CMakeLists.txt \${CMAKE_CXX_COMPILER} = ${CMAKE_CXX_COMPILER}")
++message(STATUS "polly/lib/External/CMakeLists.txt \${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
++message(STATUS "polly/lib/External/CMakeLists.txt \${CMAKE_CXX_FLAGS} = ${CMAKE_CXX_FLAGS}")
+
+ # External: Integer Set Library
+ if (POLLY_BUNDLED_ISL)
+@@ -308,6 +324,8 @@ if (POLLY_BUNDLED_ISL)
+
+   # ISL requires at least C99 to compile. gcc < 5.0 use -std=gnu89 as default.
+   set_property(TARGET PollyISL polly-isl-test PROPERTY C_STANDARD 99)
++  set_property(TARGET PollyISL APPEND PROPERTY COMPILE_OPTIONS "-fPIC")
++  add_compile_options (-fPIC)
+
+   target_compile_options(PollyISL PRIVATE ${DISABLE_WARNING_FLAGS})
+   target_compile_options(polly-isl-test PRIVATE ${DISABLE_WARNING_FLAGS})
+
+
+diff --git a/llvm/lib/Support/CMakeLists.txt b/llvm/lib/Support/CMakeLists.txt
+index 4cbc3b79f3bb..126ce4332f7e 100644
+--- a/llvm/lib/Support/CMakeLists.txt
++++ b/llvm/lib/Support/CMakeLists.txt
+@@ -318,6 +318,20 @@ endif()
+
+ set_property(TARGET LLVMSupport PROPERTY LLVM_SYSTEM_LIBS "${llvm_system_libs}")
+
++set_property(TARGET LLVMSupport APPEND PROPERTY COMPILE_OPTIONS "-fPIC")
++set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
++add_compile_options (-fPIC)
++remove_definitions( -DHAVE_LSEEK64=1 )
++add_definitions( -UHAVE_LSEEK64 )
++set_property(TARGET LLVMSupport PROPERTY HAVE_LSEEK64 0)
++add_compile_options (-UHAVE_LSEEK64)
++target_compile_options(LLVMSupport PRIVATE -UHAVE_LSEEK64)
++get_target_property(defs LLVMSupport DEFINITIONS)
++list(FILTER defs EXCLUDE REGEX [[^HAVE_LSEEK64=.*$]])
++set_property(TARGET LLVMSupport PROPERTY DEFINITIONS ${defs})
++target_include_directories(LLVMSupport PUBLIC
++$ENV{MAKEDIR}/utils/bazel/llvm-project-overlay/llvm/include
++$ENV{MAKEDIR}/utils/bazel/llvm-project-overlay/clang/include)
+
+ if(LLVM_INTEGRATED_CRT_ALLOC)
+   if(LLVM_INTEGRATED_CRT_ALLOC MATCHES "snmalloc$")
+
+
+
+# diff --git a/llvm/lib/Support/BLAKE3/CMakeLists.txt b/llvm/lib/Support/BLAKE3/CMakeLists.txt
+# index 85fe4f6f4206..8f745a2784a5 100644
+# --- a/llvm/lib/Support/BLAKE3/CMakeLists.txt
+# +++ b/llvm/lib/Support/BLAKE3/CMakeLists.txt
+# @@ -79,4 +79,7 @@ else()
+#  endif()
+# 
+#  add_library(LLVMSupportBlake3 OBJECT EXCLUDE_FROM_ALL ${LLVM_BLAKE3_FILES})
+# +set_property(TARGET LLVMSupportBlake3 APPEND PROPERTY COMPILE_OPTIONS "-fPIC")
+# +set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+# +add_compile_options (-fPIC)
+#  llvm_update_compile_flags(LLVMSupportBlake3)
+
+
+diff --git a/utils/bazel/llvm-project-overlay/llvm/config.bzl b/utils/bazel/llvm-project-overlay/llvm/config.bzl
+index 5507f80efa0b..b15ec9e1bb39 100644
+--- a/utils/bazel/llvm-project-overlay/llvm/config.bzl
++++ b/utils/bazel/llvm-project-overlay/llvm/config.bzl
+@@ -48,7 +48,7 @@ posix_defines = [
+ linux_defines = posix_defines + [
+     "_GNU_SOURCE",
+     "HAVE_LINK_H=1",
+-    "HAVE_LSEEK64=1",
++    "HAVE_LSEEK64=0",
+     "HAVE_MALLINFO=1",
+     "HAVE_SBRK=1",
+     "HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC=1",
+
+
+diff --git a/utils/bazel/llvm-project-overlay/llvm/include/llvm/Config/config.h b/utils/bazel/llvm-project-overlay/llvm/include/llvm/Config/config.h
+index 8a30957b6120..43698cb46974 100644
+--- a/utils/bazel/llvm-project-overlay/llvm/include/llvm/Config/config.h
++++ b/utils/bazel/llvm-project-overlay/llvm/include/llvm/Config/config.h
+@@ -146,6 +146,9 @@
+
+ /* Define to 1 if you have the `lseek64' function. */
+ /* HAVE_LSEEK64 defined in Bazel */
++#if defined HAVE_LSEEK64
++#undef HAVE_LSEEK64
++#endif
+
+ /* Define to 1 if you have the <mach/mach.h> header file. */
+ /* HAVE_MACH_MACH_H defined in Bazel */
+
+
+diff --git a/llvm/lib/Support/raw_ostream.cpp b/llvm/lib/Support/raw_ostream.cpp
+index 92b15f14c62f..3e76c8a624dd 100644
+--- a/llvm/lib/Support/raw_ostream.cpp
++++ b/llvm/lib/Support/raw_ostream.cpp
+@@ -59,6 +59,10 @@
+ #include "llvm/Support/Windows/WindowsSupport.h"
+ #endif
+
++#if defined HAVE_LSEEK64
++#undef HAVE_LSEEK64
++#endif
++
+ using namespace llvm;
+
+ constexpr raw_ostream::Colors raw_ostream::BLACK;
+
+
+
+
+
+# diff --git a/clang/lib/Headers/CMakeLists.txt b/clang/lib/Headers/CMakeLists.txt
+# index bb9a11eabbef..342c4789b581 100644
+# --- a/clang/lib/Headers/CMakeLists.txt
+# +++ b/clang/lib/Headers/CMakeLists.txt
+# @@ -283,7 +283,7 @@ set(openmp_wrapper_files
+#    openmp_wrappers/new
+#  )
+#  
+# -set(output_dir ${LLVM_LIBRARY_OUTPUT_INTDIR}/clang/${CLANG_VERSION_MAJOR}/include)
+# +set(output_dir ${LLVM_LIBRARY_OUTPUT_INTDIR}/clang/${CLANG_VERSION}/include)
+#  set(out_files)
+#  set(generated_files)
+#  
+# @@ -437,7 +437,7 @@ add_header_target("openmp-resource-headers" ${openmp_wrapper_files})
+#  add_header_target("windows-resource-headers" ${windows_only_files})
+#  add_header_target("utility-resource-headers" ${utility_files})
+#  
+# -set(header_install_dir lib${LLVM_LIBDIR_SUFFIX}/clang/${CLANG_VERSION_MAJOR}/include)
+# +set(header_install_dir lib${LLVM_LIBDIR_SUFFIX}/clang/${CLANG_VERSION}/include)
+#  
+#  #############################################################
+#  # Install rules for the catch-all clang-resource-headers target
+# diff --git a/clang/lib/Tooling/CMakeLists.txt b/clang/lib/Tooling/CMakeLists.txt
+# index e4ce43762d6b..58877218e453 100644
+# --- a/clang/lib/Tooling/CMakeLists.txt
+# +++ b/clang/lib/Tooling/CMakeLists.txt
+# @@ -61,7 +61,7 @@ else()
+#        $<TARGET_FILE:clang-ast-dump>
+#          # Skip this in debug mode because parsing AST.h is too slow
+#          --skip-processing=${skip_expensive_processing}
+# -        -I ${LLVM_BINARY_DIR}/lib/clang/${CLANG_VERSION_MAJOR}/include
+# +        -I ${LLVM_BINARY_DIR}/lib/clang/${CLANG_VERSION}/include
+#          -I ${CLANG_SOURCE_DIR}/include
+#          -I ${LLVM_BINARY_DIR}/tools/clang/include
+#          -I ${LLVM_BINARY_DIR}/include
+# diff --git a/clang/runtime/CMakeLists.txt b/clang/runtime/CMakeLists.txt
+# index 0cccf730e417..9f4633bc85b1 100644
+# --- a/clang/runtime/CMakeLists.txt
+# +++ b/clang/runtime/CMakeLists.txt
+# @@ -82,9 +82,9 @@ if(LLVM_BUILD_EXTERNAL_COMPILER_RT AND EXISTS ${COMPILER_RT_SRC_ROOT}/)
+#                 -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}
+#                 -DLLVM_CONFIG_PATH=${LLVM_RUNTIME_OUTPUT_INTDIR}/llvm-config
+#                 -DLLVM_LIT_ARGS=${LLVM_LIT_ARGS}
+# -               -DCOMPILER_RT_OUTPUT_DIR=${LLVM_LIBRARY_OUTPUT_INTDIR}/clang/${CLANG_VERSION_MAJOR}
+# +               -DCOMPILER_RT_OUTPUT_DIR=${LLVM_LIBRARY_OUTPUT_INTDIR}/clang/${CLANG_VERSION}
+#                 -DCOMPILER_RT_EXEC_OUTPUT_DIR=${LLVM_RUNTIME_OUTPUT_INTDIR}
+# -               -DCOMPILER_RT_INSTALL_PATH:PATH=lib${LLVM_LIBDIR_SUFFIX}/clang/${CLANG_VERSION_MAJOR}
+# +               -DCOMPILER_RT_INSTALL_PATH:PATH=lib${LLVM_LIBDIR_SUFFIX}/clang/${CLANG_VERSION}
+#                 -DCOMPILER_RT_INCLUDE_TESTS=${LLVM_INCLUDE_TESTS}
+#                 -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+#                 -DLLVM_LIBDIR_SUFFIX=${LLVM_LIBDIR_SUFFIX}
+# diff --git a/compiler-rt/cmake/base-config-ix.cmake b/compiler-rt/cmake/base-config-ix.cmake
+# index 0ad95d57fa74..f50f2a764d45 100644
+# --- a/compiler-rt/cmake/base-config-ix.cmake
+# +++ b/compiler-rt/cmake/base-config-ix.cmake
+# @@ -43,9 +43,9 @@ if (LLVM_TREE_AVAILABLE)
+#    string(REGEX MATCH "^[0-9]+" CLANG_VERSION_MAJOR
+#           ${PACKAGE_VERSION})
+#    # Setup the paths where compiler-rt runtimes and headers should be stored.
+# -  set(COMPILER_RT_OUTPUT_DIR ${LLVM_LIBRARY_OUTPUT_INTDIR}/clang/${CLANG_VERSION_MAJOR})
+# +  set(COMPILER_RT_OUTPUT_DIR ${LLVM_LIBRARY_OUTPUT_INTDIR}/clang/${CLANG_VERSION})
+#    set(COMPILER_RT_EXEC_OUTPUT_DIR ${LLVM_RUNTIME_OUTPUT_INTDIR})
+# -  set(COMPILER_RT_INSTALL_PATH lib${LLVM_LIBDIR_SUFFIX}/clang/${CLANG_VERSION_MAJOR})
+# +  set(COMPILER_RT_INSTALL_PATH lib${LLVM_LIBDIR_SUFFIX}/clang/${CLANG_VERSION})
+#    option(COMPILER_RT_INCLUDE_TESTS "Generate and build compiler-rt unit tests."
+#           ${LLVM_INCLUDE_TESTS})
+#    option(COMPILER_RT_ENABLE_WERROR "Fail and stop if warning is triggered"
+
+# diff --git a/llvm/cmake/modules/LLVMExternalProjectUtils.cmake b/llvm/cmake/modules/LLVMExternalProjectUtils.cmake
+# index d760eee07958..c268d326585f 100644
+# --- a/llvm/cmake/modules/LLVMExternalProjectUtils.cmake
+# +++ b/llvm/cmake/modules/LLVMExternalProjectUtils.cmake
+# @@ -256,7 +256,7 @@ function(llvm_ExternalProject_Add name source_dir)
+#      if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+#        string(REGEX MATCH "^[0-9]+" CLANG_VERSION_MAJOR
+#               ${PACKAGE_VERSION})
+# -      set(resource_dir "${LLVM_LIBRARY_DIR}/clang/${CLANG_VERSION_MAJOR}")
+# +      set(resource_dir "${LLVM_LIBRARY_DIR}/clang/${CLANG_VERSION}")
+#        set(flag_types ASM C CXX MODULE_LINKER SHARED_LINKER EXE_LINKER)
+#        foreach(type ${flag_types})
+#          set(${type}_flag -DCMAKE_${type}_FLAGS=-resource-dir=${resource_dir})
+
+# diff --git a/llvm/cmake/modules/LLVMExternalProjectUtils.cmake b/llvm/cmake/modules/LLVMExternalProjectUtils.cmake
+# index f99a50df2..08438f03a 100644
+# --- a/llvm/cmake/modules/LLVMExternalProjectUtils.cmake
+# +++ b/llvm/cmake/modules/LLVMExternalProjectUtils.cmake
+# @@ -258,7 +258,7 @@
+#      if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+#        string(REGEX MATCH "^[0-9]+" CLANG_VERSION_MAJOR
+#               ${PACKAGE_VERSION})
+# -      set(resource_dir "${LLVM_LIBRARY_DIR}/clang/${CLANG_VERSION_MAJOR}")
+# +      set(resource_dir "${LLVM_LIBRARY_DIR}/clang/${CLANG_VERSION}/${target}")
+#        set(flag_types ASM C CXX MODULE_LINKER SHARED_LINKER EXE_LINKER)
+#        foreach(type ${flag_types})
+#          set(${type}_flag -DCMAKE_${type}_FLAGS=-resource-dir=${resource_dir})
+# 
+
+
+#   Could NOT find Threads (missing: Threads_FOUND)
+diff --git a/openmp/runtime/cmake/config-ix.cmake b/openmp/runtime/cmake/config-ix.cmake
+index 8e76e66066a9..ccb6f1a652bc 100644
+--- a/openmp/runtime/cmake/config-ix.cmake
++++ b/openmp/runtime/cmake/config-ix.cmake
+@@ -155,6 +155,11 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Intel" OR CMAKE_C_COMPILER_ID STREQUAL "IntelLL
+   check_library_exists(irc_pic _intel_fast_memcpy "" LIBOMP_HAVE_IRC_PIC_LIBRARY)
+ endif()
+
++set (CMAKE_THREAD_LIBS_INIT         "-lpthread")
++set (CMAKE_HAVE_THREADS_LIBRARY     1)
++set (CMAKE_USE_WIN32_THREADS_INIT   0)
++set (CMAKE_USE_PTHREADS_INIT        1)
++set (THREADS_PREFER_PTHREAD_FLAG    ON) # set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+ # Checking Threading requirements
+ find_package(Threads REQUIRED)
+ if(WIN32)
+
+
+diff --git a/openmp/CMakeLists.txt b/openmp/CMakeLists.txt
+index a87ea2fb57c5..64cd7c085609 100644
+--- a/openmp/CMakeLists.txt
++++ b/openmp/CMakeLists.txt
+@@ -21,6 +21,25 @@ if (OPENMP_STANDALONE_BUILD OR "${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_S
+   endif()
+ endif()
+
++set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
++-isystem $ENV{MAKEDIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
++-isystem $ENV{MAKEDIR}/$ENV{OUTPUT_FOLDER}/runtimes/runtimes-bins/pstl/generated_headers \
++-isystem $ENV{MAKEDIR}/pstl/include \
++-isystem $ENV{MAKEDIR}/libcxx/include \
++${CMAKE_C_FLAGS}")
++set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
++-isystem $ENV{MAKEDIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
++-isystem $ENV{MAKEDIR}/$ENV{OUTPUT_FOLDER}/runtimes/runtimes-bins/pstl/generated_headers \
++-isystem $ENV{MAKEDIR}/pstl/include \
++-isystem $ENV{MAKEDIR}/libcxx/include \
++${CMAKE_CXX_FLAGS}")
++message(STATUS "openmp/CMakeLists.txt \${CMAKE_C_COMPILER} = ${CMAKE_C_COMPILER}")
++message(STATUS "openmp/CMakeLists.txt \${CMAKE_CXX_COMPILER} = ${CMAKE_CXX_COMPILER}")
++message(STATUS "openmp/CMakeLists.txt \${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
++message(STATUS "openmp/CMakeLists.txt \${CMAKE_CXX_FLAGS} = ${CMAKE_CXX_FLAGS}")
++
++add_compile_options (-fPIC)
++
+ # Must go below project(..)
+ include(GNUInstallDirs)
+
+@@ -58,6 +77,9 @@ else()
+   endif()
+ endif()
+
++set (LLVM_CXX_STD "c++20")
++set (LLVM_REQUIRED_CXX_STANDARD 20)
++set (CMAKE_SIZEOF_VOID_P "8")
+ # Check and set up common compiler flags.
+ include(config-ix)
+ include(HandleOpenMPOptions)
+@@ -75,7 +97,7 @@ set(ENABLE_LIBOMPTARGET ON)
+ # Since the device plugins are only supported on Linux anyway,
+ # there is no point in trying to compile libomptarget on other OSes.
+ # 32-bit systems are not supported either.
+-if (APPLE OR WIN32 OR NOT OPENMP_HAVE_STD_CPP17_FLAG OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
++if (APPLE OR WIN32 OR NOT OPENMP_HAS_STD_CPP_FLAG OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+   set(ENABLE_LIBOMPTARGET OFF)
+ endif()
+
+@@ -99,7 +121,7 @@ if (OPENMP_ENABLE_LIBOMPTARGET)
+   # Check that the library can actually be built.
+   if (APPLE OR WIN32)
+     message(FATAL_ERROR "libomptarget cannot be built on Windows and MacOS X!")
+-  elseif (NOT OPENMP_HAVE_STD_CPP17_FLAG)
++  elseif (NOT OPENMP_HAS_STD_CPP_FLAG)
+     message(FATAL_ERROR "Host compiler must support C++17 to build libomptarget!")
+   elseif (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+     message(FATAL_ERROR "libomptarget on 32-bit systems are not supported!")
+
+
+
+diff --git a/openmp/cmake/config-ix.cmake b/openmp/cmake/config-ix.cmake
+index 857cfe5da8d6..a2fd13b7e2f4 100644
+--- a/openmp/cmake/config-ix.cmake
++++ b/openmp/cmake/config-ix.cmake
+@@ -37,4 +37,5 @@ check_cxx_compiler_flag(-Wextra OPENMP_HAVE_WEXTRA_FLAG)
+ check_cxx_compiler_flag(-Wpedantic OPENMP_HAVE_WPEDANTIC_FLAG)
+ check_cxx_compiler_flag(-Wmaybe-uninitialized OPENMP_HAVE_WMAYBE_UNINITIALIZED_FLAG)
+
+-check_cxx_compiler_flag(-std=c++17 OPENMP_HAVE_STD_CPP17_FLAG)
++check_cxx_compiler_flag(-std=c++20 OPENMP_HAS_STD_CPP_FLAG)
++set (OPENMP_HAS_STD_CPP_FLAG "ON")
+
+diff --git a/openmp/cmake/HandleOpenMPOptions.cmake b/openmp/cmake/HandleOpenMPOptions.cmake
+index 53a2d053e424..43afc180fc51 100644
+--- a/openmp/cmake/HandleOpenMPOptions.cmake
++++ b/openmp/cmake/HandleOpenMPOptions.cmake
+@@ -36,4 +36,4 @@ append_if(OPENMP_HAVE_WEXTRA_FLAG "-Wno-extra" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+ append_if(OPENMP_HAVE_WPEDANTIC_FLAG "-Wno-pedantic" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+ append_if(OPENMP_HAVE_WMAYBE_UNINITIALIZED_FLAG "-Wno-maybe-uninitialized" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+
+-append_if(OPENMP_HAVE_STD_CPP17_FLAG "-std=c++17" CMAKE_CXX_FLAGS)
++append_if(OPENMP_HAS_STD_CPP_FLAG "-std=c++20" CMAKE_CXX_FLAGS)
+
+
+diff --git a/openmp/libomptarget/CMakeLists.txt b/openmp/libomptarget/CMakeLists.txt
+index bc6e615cd584..c4a299e88e75 100644
+--- a/openmp/libomptarget/CMakeLists.txt
++++ b/openmp/libomptarget/CMakeLists.txt
+@@ -48,6 +48,8 @@ set (LIBOMPTARGET_ALL_TARGETS "${LIBOMPTARGET_ALL_TARGETS} powerpc64-ibm-linux-g
+ set (LIBOMPTARGET_ALL_TARGETS "${LIBOMPTARGET_ALL_TARGETS} powerpc64-ibm-linux-gnu-LTO")
+ set (LIBOMPTARGET_ALL_TARGETS "${LIBOMPTARGET_ALL_TARGETS} x86_64-pc-linux-gnu")
+ set (LIBOMPTARGET_ALL_TARGETS "${LIBOMPTARGET_ALL_TARGETS} x86_64-pc-linux-gnu-LTO")
++set (LIBOMPTARGET_ALL_TARGETS "${LIBOMPTARGET_ALL_TARGETS} x86_64-linux-musl")
++set (LIBOMPTARGET_ALL_TARGETS "${LIBOMPTARGET_ALL_TARGETS} x86_64-linux-musl-LTO")
+ set (LIBOMPTARGET_ALL_TARGETS "${LIBOMPTARGET_ALL_TARGETS} nvptx64-nvidia-cuda")
+ set (LIBOMPTARGET_ALL_TARGETS "${LIBOMPTARGET_ALL_TARGETS} nvptx64-nvidia-cuda-LTO")
+ set (LIBOMPTARGET_ALL_TARGETS "${LIBOMPTARGET_ALL_TARGETS} nvptx64-nvidia-cuda-JIT-LTO")
+
+diff --git a/llvm/lib/Support/Unix/Signals.inc b/llvm/lib/Support/Unix/Signals.inc
+index 05a7335216f4..0589a38025bf 100644
+--- a/llvm/lib/Support/Unix/Signals.inc
++++ b/llvm/lib/Support/Unix/Signals.inc
+@@ -85,12 +85,12 @@ static void InfoSignalHandler(int Sig); // defined below.
+ using SignalHandlerFunctionType = void (*)();
+ /// The function to call if ctrl-c is pressed.
+ static std::atomic<SignalHandlerFunctionType> InterruptFunction =
+-    ATOMIC_VAR_INIT(nullptr);
++    (nullptr);
+ static std::atomic<SignalHandlerFunctionType> InfoSignalFunction =
+-    ATOMIC_VAR_INIT(nullptr);
++    (nullptr);
+ /// The function to call on SIGPIPE (one-time use only).
+ static std::atomic<SignalHandlerFunctionType> OneShotPipeSignalFunction =
+-    ATOMIC_VAR_INIT(nullptr);
++    (nullptr);
+
+ namespace {
+ /// Signal-safe removal of files.
+@@ -98,8 +98,8 @@ namespace {
+ /// themselves is signal-safe. Memory is freed when the head is freed, deletion
+ /// is therefore not signal-safe either.
+ class FileToRemoveList {
+-  std::atomic<char *> Filename = ATOMIC_VAR_INIT(nullptr);
+-  std::atomic<FileToRemoveList *> Next = ATOMIC_VAR_INIT(nullptr);
++  std::atomic<char *> Filename = (nullptr);
++  std::atomic<FileToRemoveList *> Next = (nullptr);
+
+   FileToRemoveList() = default;
+   // Not signal-safe.
+@@ -188,7 +188,7 @@ public:
+     Head.exchange(OldHead);
+   }
+ };
+-static std::atomic<FileToRemoveList *> FilesToRemove = ATOMIC_VAR_INIT(nullptr);
++static std::atomic<FileToRemoveList *> FilesToRemove = (nullptr);
+
+ /// Clean up the list in a signal-friendly manner.
+ /// Recall that signals can fire during llvm_shutdown. If this occurs we should
+@@ -248,7 +248,7 @@ static const int InfoSigs[] = {SIGUSR1
+ static const size_t NumSigs = std::size(IntSigs) + std::size(KillSigs) +
+                               std::size(InfoSigs) + 1 /* SIGPIPE */;
+
+-static std::atomic<unsigned> NumRegisteredSignals = ATOMIC_VAR_INIT(0);
++static std::atomic<unsigned> NumRegisteredSignals = (0);
+ static struct {
+   struct sigaction SA;
+   int SigNo;
+
+# diff --git a/polly/lib/CMakeLists.txt b/polly/lib/CMakeLists.txt
+# index 5b58d0ba8d2d..fc2962ef97de 100644
+# --- a/polly/lib/CMakeLists.txt
+# +++ b/polly/lib/CMakeLists.txt
+# @@ -108,6 +108,8 @@ add_llvm_pass_plugin(Polly
+#    )
+#  set_target_properties(obj.Polly PROPERTIES FOLDER "Polly")
+#  set_target_properties(Polly PROPERTIES FOLDER "Polly")
+# +set_property(TARGET Polly APPEND PROPERTY COMPILE_OPTIONS "-fPIC")
+# +add_compile_options (-fPIC)
+# 
+#  if (MSVC_IDE OR XCODE)
+#    # Configure source groups for Polly source files. By default, in the IDE there
+
+# diff --git a/llvm/utils/count/CMakeLists.txt b/llvm/utils/count/CMakeLists.txt
+# index 4e0d371334e4..e52a2f229582 100644
+# --- a/llvm/utils/count/CMakeLists.txt
+# +++ b/llvm/utils/count/CMakeLists.txt
+# @@ -1,3 +1,5 @@
+#  add_llvm_utility(count
+#    count.c
+#    )
+# +set_property(TARGET count APPEND PROPERTY COMPILE_OPTIONS "-fPIC")
+# +add_compile_options (-fPIC)
+
+diff --git a/llvm/lib/Support/PrettyStackTrace.cpp b/llvm/lib/Support/PrettyStackTrace.cpp
+--- a/llvm/lib/Support/PrettyStackTrace.cpp
++++ b/llvm/lib/Support/PrettyStackTrace.cpp
+@@ -65,7 +65,7 @@
+ // SIGINFO requests, it's possible that some threads will stop responding to it,
+ // but the program won't crash.
+ static volatile std::atomic<unsigned> GlobalSigInfoGenerationCounter =
+-    ATOMIC_VAR_INIT(1);
++    (1);
+ static LLVM_THREAD_LOCAL unsigned ThreadLocalSigInfoGenerationCounter = 0;
+
+ namespace llvm {
+
+diff --git a/clang/lib/Headers/__stddef_max_align_t.h b/clang/lib/Headers/__stddef_max_align_t.h
+index e3b439285d0f..f8a377309dce 100644
+--- a/clang/lib/Headers/__stddef_max_align_t.h
++++ b/clang/lib/Headers/__stddef_max_align_t.h
+@@ -22,6 +22,7 @@ typedef struct {
+   long double __clang_max_align_nonce2
+       __attribute__((__aligned__(__alignof__(long double))));
+ } max_align_t;
++#define __DEFINED_max_align_t
+ #endif
+
+ #endif
+

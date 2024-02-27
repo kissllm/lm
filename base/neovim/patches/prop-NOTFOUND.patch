@@ -1,0 +1,38 @@
+# diff --git a/src/nvim/CMakeLists.txt b/src/nvim/CMakeLists.txt
+# --- a/src/nvim/CMakeLists.txt
+# +++ b/src/nvim/CMakeLists.txt
+# @@ -415,9 +415,17 @@
+#  get_directory_property(targets BUILDSYSTEM_TARGETS)
+#  foreach(target ${targets})
+#    get_target_property(prop ${target} INTERFACE_INCLUDE_DIRECTORIES)
+# -  foreach(gen_include ${prop})
+# -    list(APPEND gen_cflags "-I${gen_include}")
+# -  endforeach()
+# +  if("${prop}" STREQUAL "prop-NOTFOUND")
+# +    message(WARNING "INTERFACE_INCLUDE_DIRECTORIES include-what-you-use is not found! \${prop} = ${prop} \${target} = ${target} \${targets} = ${targets}")
+# +  else()
+# +    foreach(gen_include ${prop})
+# +      if("${gen_include}" STREQUAL "prop-NOTFOUND")
+# +        message(WARNING "INTERFACE_INCLUDE_DIRECTORIES include-what-you-use is not found! \${gen_include} = ${gen_include} \${prop} = ${prop} \${target} = ${target} \${targets} = ${targets}")
+# +      else()
+# +        list(APPEND gen_cflags "-I${gen_include}")
+# +      endif()
+# +    endforeach()
+# +  endif()
+#  endforeach()
+# 
+#  if(APPLE AND CMAKE_OSX_SYSROOT)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -212,7 +212,7 @@
+       endif()
+     endforeach()
+   elseif(LUA_PRG MATCHES "luajit")
+-    check_lua_module(${LUA_PRG} "jit.bcsave" LUAJIT_HAS_JIT_BCSAVE)
++    check_lua_module(${LUA_PRG} "bcsave" LUAJIT_HAS_JIT_BCSAVE)
+     if(LUAJIT_HAS_JIT_BCSAVE)
+       set(LUAC_PRG "${LUA_PRG} -b -s %s -" CACHE STRING "Format for compiling to Lua bytecode")
+     endif()
+

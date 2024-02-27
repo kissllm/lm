@@ -1,0 +1,73 @@
+#!/bin/sh -e
+# Contributor: Valery Kartel <valery.kartel@gmail.com>
+# Contributor: Carlo Landmeter <clandmeter@alpinelinux.org>
+# Maintainer: Natanael Copa <ncopa@alpinelinux.org>
+pkgname=ntfs-3g
+_pkgreal=ntfs-3g_ntfsprogs
+pkgver=2022.10.3
+pkgrel=0
+pkgdesc="Stable, full-featured, read-write NTFS"
+url="https://www.tuxera.com/company/open-source/"
+arch="all"
+license="GPL-2.0-or-later AND LGPL-2.0-or-later"
+options="!check" # No test suite
+makedepends="attr-dev util-linux-dev linux-headers"
+subpackages="
+    $pkgname-static
+    $pkgname-doc
+    $pkgname-dev
+    $pkgname-libs
+    $pkgname-progs
+    "
+source="https://tuxera.com/opensource/ntfs-3g_ntfsprogs-$pkgver.tgz
+    "
+# builddir="$srcdir/$_pkgreal-$pkgver"
+builddir="$PWD"
+pkgdir="$1"
+subpkgdir="$1"
+
+# secfixes:
+#   2022.10.3-r0:
+#     - CVE-2022-40284
+#   2022.5.17-r0:
+#     - CVE-2021-46790
+#     - CVE-2022-30783
+#     - CVE-2022-30784
+#     - CVE-2022-30785
+#     - CVE-2022-30786
+#     - CVE-2022-30787
+#     - CVE-2022-30788
+#     - CVE-2022-30789
+#   2017.3.23-r2:
+#     - CVE-2019-9755
+
+build() {
+    ./configure \
+        --build=$CBUILD \
+        --host=$CHOST \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --mandir=/usr/share/man \
+        --infodir=/usr/share/info
+    make
+}
+build
+package() {
+    pkgdesc="$pkgdesc (driver)"
+
+    mkdir -p "$pkgdir"/lib
+    make -j1 DESTDIR="$pkgdir" LDCONFIG=: install
+    ln -s /bin/ntfs-3g "$pkgdir"/sbin/mount.ntfs
+}
+package
+progs() {
+    pkgdesc="$pkgdesc (utilities)"
+
+    mkdir -p "$subpkgdir"/sbin
+    mv "$pkgdir"/usr "$pkgdir"/lib "$subpkgdir"/
+    rm -fr "$subpkgdir"/lib "$subpkgdir"/usr/lib
+}
+progs
+sha512sums="
+891589483954423b19bef6e8a174fb4311ad92b6397a0db80f77c72b746bf18c2fa12457a571947f92755637a6bc784188920d4f017ae12a420819ab0d74af59  ntfs-3g_ntfsprogs-2022.10.3.tgz
+"

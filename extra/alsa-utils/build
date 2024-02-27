@@ -1,4 +1,19 @@
-#!/usr/bin/env sh
+#!/bin/sh
+
+file_list="aplay/aplay.c
+axfer/container.h
+axfer/container.c
+axfer/container-voc.c
+axfer/test/mapper-test.c
+axfer/test/container-test.c"
+
+for item in $file_list; do
+    echo "Replace off64_t with off_t in $item"
+    sed -e 's/off64_t/off_t/g' "$item" > _
+    mv -f _ "$item"
+done
+sed -e 's/lseek64/lseek/g' "aplay/aplay.c" > _
+mv -f _ "aplay/aplay.c"
 
 ./configure \
     --prefix=/usr \

@@ -1,0 +1,22 @@
+#! /bin/sh -e
+
+./configure \
+	--prefix=${KISS_ROOT}/ \
+	--with-sysdeps=${KISS_ROOT}/lib/skalibs/sysdeps \
+	--with-lib=${KISS_ROOT}/lib/skalibs \
+	--with-lib=${KISS_ROOT}/lib/execline \
+	--with-lib=${KISS_ROOT}/lib/oblibs \
+	--with-lib=${KISS_ROOT}/lib/s6 \
+	--with-lib=${KISS_ROOT}/lib/s6-rc \
+	--with-lib=${KISS_ROOT}/lib \
+	--with-s6-log-timestamp=iso
+
+	# Default value: root
+	# --with-s6-log-user=s6log \
+	# Default value: /var/lib/66. But void-packages sets it to below?
+	# --with-system-dir=/etc/66/lib
+
+make PREFIX=/
+
+make DESTDIR=$1 install
+

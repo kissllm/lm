@@ -1,0 +1,23 @@
+#!/bin/sh -e
+
+./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --mandir=/usr/share/man \
+    --with-threads \
+    --without-modules \
+    --with-magick-plus-plus \
+    --with-bzlib \
+    --with-zlib \
+    --with-fontconfig \
+    --with-freetype \
+    --with-jpeg \
+    --without-jxl \
+    --with-pango \
+    --with-png \
+    --with-webp \
+    --with-xml \
+    --without-perl \
+
+make
+make DESTDIR="$1" install

@@ -1,0 +1,26 @@
+#!/bin/sh -e
+# Contributor: Will Sinatra <wpsinatra@gmail.com>
+# Maintainer: Will Sinatra <wpsinatra@gmail.com>
+pkgname=fbgrab
+pkgver=1.5
+pkgrel=2
+pkgdesc="Framebuffer screenshot program"
+url="https://github.com/GunnarMonell/fbgrab"
+arch="all"
+license="GPL-2.0-only"
+makedepends="zlib-dev libpng-dev gzip linux-headers"
+subpackages="$pkgname-doc"
+source="fbgrab-$pkgver.tar.gz::https://github.com/GunnarMonell/fbgrab/archive/$pkgver.tar.gz"
+options="!check" #No testsuite
+pkgdir="$1"
+build() {
+    make
+}
+build
+package() {
+    make DESTDIR="$pkgdir" install
+}
+package
+sha512sums="
+475d377480b9e67f618e19967d4bae5890a78aa00236583914b4ac81f468d8282e1767d85009101f6b03ddc091da8416dcbae451b191a79013e1632d91155c23  fbgrab-1.5.tar.gz
+"

@@ -1,0 +1,15 @@
+#! /bin/sh -e
+
+./configure \
+	--prefix=/ \
+	--with-sysdeps=${KISS_ROOT}/lib/skalibs/sysdeps \
+	--with-lib=${KISS_ROOT}/lib/skalibs \
+	--with-lib=${KISS_ROOT}/lib/execline \
+	--with-lib=${KISS_ROOT}/lib/oblibs \
+	--with-lib=${KISS_ROOT}/lib \
+	--with-s6-log-timestamp=iso
+
+make PREFIX=/
+
+make DESTDIR=$1 install
+

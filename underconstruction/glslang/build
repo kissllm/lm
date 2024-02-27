@@ -1,0 +1,11 @@
+#!/bin/sh
+
+cmake \
+    -G Ninja \
+    -B objects \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX="/usr" \
+    -S .
+
+cmake --build objects --target all --parallel
+cmake --build objects --target install

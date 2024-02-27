@@ -1,0 +1,15 @@
+#!/bin/sh -e
+
+# The configuration dumping support is not
+# requested, so it's disabled with -Djson=disabled.
+
+meson build \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --buildtype=release \
+    --backend=ninja \
+    -Djson=disabled \
+    -Ddocs=disabled \
+    -Dtests=disabled 
+
+DESTDIR="$1" ninja -C build install

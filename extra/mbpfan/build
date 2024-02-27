@@ -1,0 +1,11 @@
+#!/bin/sh -e
+make
+make install
+
+# Please run the tests now with the command
+#    sudo make tests
+
+# ./bin/mbpfan-tests
+# ./bin/mbpfan-tests needs applesmc support. Please either load it or build it into the kernel. Exiting.
+
+# make tests

@@ -1,0 +1,85 @@
+#!/bin/sh -i
+# Contributor: Shiz <hi@shiz.me>
+# Maintainer: Shiz <hi@shiz.me>
+pkgname=mailutils
+pkgver=3.16
+pkgrel=0
+pkgdesc="GNU swiss army knife of electronic mail handling"
+url="https://mailutils.org/"
+arch="all !s390x"
+license="GPL-3.0-or-later"
+replaces="mailx"
+depends_dev="$pkgname-libs=$pkgver-r$pkgrel"
+makedepends="
+    libunistring-dev
+    libtool
+    gnutls-dev
+    readline-dev
+    "
+checkdepends="autoconf netcat-openbsd"
+subpackages="$pkgname-dev $pkgname-doc $pkgname-libs $pkgname-servers $pkgname-mh"
+source="https://ftp.gnu.org/gnu/mailutils/mailutils-$pkgver.tar.xz
+    disable-koi8-r-test.patch
+    "
+[ -n "${abuild_test:+x}" ] || { echo "Load kiss-abuild error"; exit 1; }
+echo "\$abuild_test = $abuild_test"
+# they pretty much all pass, but the test suite takes an hour
+options="!check"
+pkgdir="$1"
+
+for item in *.patch; do
+    patch -p1 < $item
+done
+
+build() {
+    ./configure \
+        --build=$CBUILD \
+        --host=$CHOST \
+        --prefix=/usr
+    make
+}
+build
+check() {
+    # Exclude imap4d tests as they require chdir("/root") which won't work.
+    sed -i 's/$(IMAP4D_DIR)/# $(IMAP4D_DIR)/g' Makefile
+    make check
+}
+# check
+package() {
+    # re-enable imap4d subdirectory for install
+    sed -i 's/# $(IMAP4D_DIR)/$(IMAP4D_DIR)/g' Makefile
+    make DESTDIR="$pkgdir" install
+
+    cd "$pkgdir"
+    # rm usr/lib/charset.alias
+    # No need for these to be suid/sgid root.
+    chmod u-s usr/sbin/mda
+    chmod g-s usr/bin/dotlock
+}
+package
+libs() {
+    pkgdesc="$pkgdesc (libraries)"
+
+    amove usr/lib
+}
+libs
+servers() {
+    pkgdesc="$pkgdesc (servers)"
+
+    amove \
+        usr/sbin/pop3d \
+        usr/sbin/imap4d \
+        usr/sbin/comsatd
+}
+servers
+mh() {
+    pkgdesc="$pkgdesc (MH compatibility)"
+
+    amove usr/bin/mu-mh \
+        usr/share/mailutils/mh
+}
+mh
+sha512sums="
+c75015b431ca87fb19668a8c2f4da1a02be897d7bcd89cbc6a821b73c8599e51778e37c7dda4bb8a9c9aa0af521fc0bcf5f6d00383d3dd43e87ed6b9878e16ac  mailutils-3.16.tar.xz
+fd628287a8b70b84e4fe477f3fed157308f1a0e803dfd65390d90a7ad40023155559b284e29ceb95dd3c854fce4e3a22a651d8de99b49db7c9d4b3682003cf2c  disable-koi8-r-test.patch
+"

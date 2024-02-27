@@ -1,0 +1,52 @@
+#!/bin/sh -e
+
+export PKG_CONFIG_SYSROOT_DIR=
+export HOST_CC=clang
+export HOST_CXX=clang++
+# Makefile:116: *** Unknown TARGET "netsurf", Must be one of riscos gtk2 gtk3 beos amiga amigaos3 framebuffer windows atari monkey.  Stop.
+export TARGET=gtk3
+export PREFIX=/usr
+export LIBDIR=lib
+export INCLUDEDIR=include
+export BUILD="$KISS_XBUILD_TRIPLE"
+export HOST="$KISS_XHOST_TRIPLE"
+
+for p in *.patch; do
+    patch -p1 < "$p"
+done
+
+rm -Rf netsurf
+rm -Rf libcss
+mv -f visurf netsurf
+mv -f libcss-new libcss
+
+out=$PWD/out
+mkdir -p out
+
+for p in html-parser html-tagset; do (
+    cd "$p"
+
+    perl Makefile.PL INSTALLDIRS=vendor
+
+    make
+    make DESTDIR="$out" install
+) done
+
+cd "$out"/usr/lib/perl*/vendor_perl/*/x86_64-linux-thread-multi
+export PERLLIB="$PWD"
+cd -
+
+make \
+    LIBDIR=lib \
+    INCLUDEDIR=include \
+    PREFIX=/usr \
+    TARGET=gtk3 \
+    USE_VOLUME_MOUNT=YES \
+    V=1
+
+make \
+    LIBDIR=lib \
+    INCLUDEDIR=include \
+    PREFIX=/usr \
+    TARGET=gtk3 \
+    install

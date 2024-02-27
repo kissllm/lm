@@ -1,0 +1,151 @@
+#!/bin/sh -e
+
+[ ! -z "${CC+x}" ]  || CC="/usr/bin/clang"
+[ ! -z "${CXX+x}" ] || CXX="/usr/bin/clang++"
+echo "\$CC = $CC"
+
+[ ! -z "${SYS_ROOT+x}" ] || export SYS_ROOT=/
+echo "\$SYS_ROOT = $SYS_ROOT"
+export COMPILER_RESOURCE_DIR=$("$CC" --print-resource-dir)
+echo "\$COMPILER_RESOURCE_DIR = $COMPILER_RESOURCE_DIR"
+export USR_ROOT="${SYS_ROOT}usr"
+echo "\$USR_ROOT = $USR_ROOT"
+export HOST_LLVM_VERSION=$(llvm-config --version)
+[ ! -z "${CXX_STANDARD_VER+x}" ] ||
+export CXX_STANDARD_VER="c++20"
+export LLVM_BIN_DIR="${LLVM_BIN_DIR:=$(${USR_ROOT}/bin/llvm-config --bindir)}"
+echo "\$LLVM_BIN_DIR = $LLVM_BIN_DIR"
+export OUTPUT_DIR="objects"
+
+[ ! -z "${BUILD_PATH+x}" ] ||
+export BUILD_PATH=${KISS_TMPDIR:=/tmp$HOME/kiss}/proc/make/clang
+echo "\$BUILD_PATH = $BUILD_PATH"
+
+[ -d "$BUILD_PATH/$OUTPUT_DIR/include/c++/v1" ] || \mkdir -p "$BUILD_PATH/$OUTPUT_DIR/include/c++/v1"
+[ -d "$BUILD_PATH/include/c++/v1" ]  || \mkdir -p "$BUILD_PATH/include/c++/v1"
+[ -d "$BUILD_PATH/$OUTPUT_DIR/lib" ] || \mkdir -p "$BUILD_PATH/$OUTPUT_DIR/lib"
+[ -d "$BUILD_PATH/$OUTPUT_DIR/bin" ] || \mkdir -p "$BUILD_PATH/$OUTPUT_DIR/bin"
+export ORIGIN="$BUILD_PATH/$OUTPUT_DIR/bin"
+
+# \cp -r /usr/include/c++/v1/* $BUILD_PATH/include/c++/v1/
+# \cp -r /usr/include/* $BUILD_PATH/include/
+
+CF="$CF \
+--sysroot=$SYS_ROOT \
+-resource-dir=${COMPILER_RESOURCE_DIR} -B${LLVM_BIN_DIR} \
+-isystem $BUILD_PATH/lib/Headers \
+-isystem $BUILD_PATH/include \
+-Wno-bitwise-op-parentheses \
+"
+# -nostdinc -nostdlib \
+# -nostdinc++ -nostdlib++ \
+
+CXXF="$CXXF \
+--sysroot=$SYS_ROOT \
+-resource-dir=${COMPILER_RESOURCE_DIR} -B${LLVM_BIN_DIR} \
+-D_LIBCPP_BUILDING_LIBRARY=1 \
+-D_LIBCPP_HAS_NO_VENDOR_AVAILABILITY_ANNOTATIONS=1 \
+-std=$CXX_STANDARD_VER \
+-Wno-bitwise-op-parentheses \
+"
+# -nostdinc -nostdlib \
+# -nostdinc++ -nostdlib++ \
+# -isystem $BUILD_PATH/lib/Headers \
+# -isystem $BUILD_PATH/include \
+# -isystem $BUILD_PATH/llvm/include \
+# -isystem $BUILD_PATH/include/c++/v1 \
+# -isystem $BUILD_PATH/libcxx/include \
+# -isystem $BUILD_PATH/clang/test/Modules/Inputs/no-undeclared-includes-builtins/libcxx \
+# -isystem $BUILD_PATH/clang/test/Modules/Inputs/libc-libcxx/sysroot/usr/include/c++/v1 \
+# -isystem $BUILD_PATH/clang/test/Modules/Inputs/libc-libcxx/sysroot/usr/include \
+# -isystem $BUILD_PATH/libcxx/include/experimental \
+
+LDF="$LDF \
+--sysroot=$SYS_ROOT \
+-fuse-ld=lld \
+-rtlib=compiler-rt \
+--unwindlib=none \
+-Wl,-rpath=${ORIGIN}/../lib \
+-L$COMPILER_RESOURCE_DIR/lib/linux \
+-L${USR_ROOT}/lib \
+-lc \
+-lc++ \
+-lexecinfo \
+-lrt -ldl -lz -lm \
+-rdynamic -lc++experimental -lpthread -v \
+-nodefaultlibs \
+-nostartfiles \
+/usr/lib/crtn.o \
+"
+
+# -stdlib=libc++ \
+
+SCRIPT=$(readlink -f "$0")
+[ "${SCRIPT%/*}" = "$BUILD_PATH" ] ||
+\ln -sf "$SCRIPT" ./
+
+[ -d "cmake/Modules/" ] || \mkdir -p "cmake/Modules/"
+[ ! -d "Modules" ] || for file in $(\ls -1 "Modules"); do \mv -f "Modules/$file" "cmake/Modules/"; done
+
+[ -z "$1" ] || [ -z "$2" ] ||
+patch -p1 < umbrella_lit_testsuite_begin.patch
+
+cmake -B objects \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DLLVM_ENABLE_RTTI=ON \
+    -DLLVM_ENABLE_EH=ON \
+    -DLLVM_ENABLE_LIBXML2=OFF \
+    -DCLANG_BUILD_EXAMPLES=OFF \
+    -DCLANG_INCLUDE_DOCS=OFF \
+    -DCLANG_INCLUDE_TESTS=OFF \
+    -DLIBCLANG_BUILD_STATIC=ON \
+    -DCMAKE_C_COMPILER="$CC" \
+    -DCMAKE_ASM_COMPILER="$CC" \
+    -DCMAKE_CXX_COMPILER="$CXX" \
+    -DLLVM_HOST_TRIPLE="$KISS_XHOST_TRIPLE" \
+    -DLLVM_TARGET_ARCH="host" \
+    -DLLVM_TARGETS_TO_BUILD:STRING="host;AMDGPU" \
+    -DLLVM_BUILTIN_TARGETS:STRING=$KISS_XHOST_TRIPLE \
+    -DLLVM_ENABLE_LIBCXX=ON \
+    -DLIBCXX_HAS_MUSL_LIBC=ON \
+    -DDEFAULT_SYSROOT:STRING="$SYS_ROOT" \
+    -DCMAKE_ASM_FLAGS:STRING="$CF" \
+    -DCMAKE_C_FLAGS:STRING="$CF" \
+    -DCMAKE_CXX_FLAGS:STRING="$CXXF" \
+    -DCMAKE_EXE_LINKER_FLAGS:STRING="$LDF" \
+    -DCMAKE_MODULE_LINKER_FLAGS:STRING="$LDF" \
+    -DCMAKE_SHARED_LINKER_FLAGS:STRING="$LDF" \
+    -DCMAKE_STATIC_LINKER_FLAGS:STRING="$LDF" \
+    -DLLVM_HAS_ATOMICS=ON \
+    -DHAVE_CXX_ATOMICS_WITHOUT_LIB=ON \
+    -DHAVE_CXX_ATOMICS64_WITHOUT_LIB=ON \
+    -DLIBCXX_HAVE_CXX_ATOMICS_WITHOUT_LIB=ON \
+    -DLIBCXX_HAVE_CXX_ATOMICS64_WITHOUT_LIB=ON \
+    -DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=OFF \
+    -D_LIBCPP_ATOMIC_ONLY_USE_BUILTINS=ON \
+    -Wno-dev
+
+    # -DLLVM_HOST_TRIPLE="$(cc -dumpmachine)" \
+cmake --build   objects
+cmake --install objects
+
+# Fix up libexec location. This can't be done during
+# the configure stage of the build as it is hardcoded.
+{
+    mv -f \
+        "$1/usr/libexec/"*analyze* \
+        "$1/usr/libexec/"*intercept* \
+        "$1/usr/lib/clang"
+
+    rmdir "$1/usr/libexec"
+
+    sed 's|libexec|lib/clang|' "$1/usr/bin/scan-build" > _
+    mv -f _ "$1/usr/bin/scan-build"
+    chmod +x "$1/usr/bin/scan-build"
+}
+# /tmp/root/kiss/proc/clang/build/libcxx/include/__verbose_abort:42:1: error: unknown type name '_LIBCPP_BEGIN_NAMESPACE_STD'
+# /tmp/root/kiss/proc/clang/build/libcxx/include/__config
+# #  define _LIBCPP_BEGIN_NAMESPACE_STD namespace std { inline namespace _LIBCPP_ABI_NAMESPACE {
+# /usr/include/c++/v1/__config
+# #define _LIBCPP_BEGIN_NAMESPACE_STD namespace std {inline namespace _LIBCPP_NAMESPACE {

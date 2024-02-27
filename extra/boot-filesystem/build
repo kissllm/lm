@@ -1,0 +1,4 @@
+#! /bin/sh -e
+
+[ -d "$1/usr/share/66/service" ] || \mkdir -p "$1/usr/share/66/service"
+# rsync -aqz trunk/tty@ $1/usr/share/66/service/

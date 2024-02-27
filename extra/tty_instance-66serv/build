@@ -1,0 +1,6 @@
+#! /bin/sh -e
+#
+# https://sysdfree.wordpress.com/2019/12/15/291/
+#
+
+rsync -aqz --relative "/usr/share/66/service" trunk/tty@ $1

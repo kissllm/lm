@@ -13,3 +13,4 @@ python make
 wayland
 wayland-protocols make
 zlib
+glslang make

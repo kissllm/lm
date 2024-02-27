@@ -1,0 +1,317 @@
+#!/bin/sh -e
+
+: "${DESTDIR:="$1"}"
+export DESTDIR
+OUTPUT_FOLDER="objects"
+export OUTPUT_FOLDER
+echo "\$OUTPUT_FOLDER = $OUTPUT_FOLDER"
+MAKEDIR="$PWD"
+export MAKEDIR
+echo "\$MAKEDIR = $MAKEDIR"
+ORIGIN="$MAKEDIR/$OUTPUT_FOLDER/bin"
+export ORIGIN
+echo "\$ORIGIN = $ORIGIN"
+
+HOST_RESOURCE_DIR=$($CC --print-resource-dir)
+export HOST_RESOURCE_DIR
+echo "\$HOST_RESOURCE_DIR = $HOST_RESOURCE_DIR"
+prefix_host="usr"
+echo "\$prefix_host = $prefix_host"
+BINDIR_HOST="${BINDIR_HOST:=$(/${prefix_host}/bin/llvm-config --bindir)}"
+export BINDIR_HOST
+echo "\$BINDIR_HOST = $BINDIR_HOST"
+
+jobs="$(($(nproc) + 1))"
+
+# Clang: POSIX compliance
+[ -d "$DESTDIR/usr/bin" ] || mkdir -p "$DESTDIR/usr/bin"
+cp c99 "$DESTDIR/usr/bin/" || kill 0
+
+[ ! -d "Modules" ] ||
+mv Modules/* cmake/modules/
+[ ! -d "cmake/modules" ] || {
+    rsync -aqz cmake/modules/. runtime/cmake/
+    rsync -aqz cmake/modules/. libomptarget/cmake/Modules/
+}
+[ ! -d "cmake/modules" ] || {
+    rsync -aqz clang/cmake/modules/. cmake/modules/
+    rsync -aqz clang/cmake/modules/. tools/Modules/
+    rsync -aqz clang/cmake/modules/. clang-apply-replacements/Modules/
+}
+
+for item in $(\ls -1 *.patch); do
+    # patch -p1 < glasnost.patch
+    echo "Applying patch file $item"
+    patch -p1 < $item || kill 0
+done
+
+version_target_major="$(grep "set(LLVM_VERSION_MAJOR" llvm/CMakeLists.txt | awk "{print \$2}" | tr -d ')')"
+version_target_minor="$(grep "set(LLVM_VERSION_MINOR" llvm/CMakeLists.txt | awk "{print \$2}" | tr -d ')')"
+version_target_patch="$(grep "set(LLVM_VERSION_PATCH" llvm/CMakeLists.txt | awk "{print \$2}" | tr -d ')')"
+version_target_suffix="$(grep "set(LLVM_VERSION_SUFFIX" llvm/CMakeLists.txt | awk "{print \$2}" | tr -d ')')"
+version_target="$version_target_major.$version_target_minor.$version_target_patch"
+export version_target
+
+# Don't set the compiler here, interferes with 2-stage build
+kiss-cmake-config | sed '/CMAKE_C_COMPILER/d;' | sed '/CMAKE_CXX_COMPILER/d;' \
+    > cmake.config || kill 0
+
+# sed -i 's/set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")/set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")/g' \
+#     "llvm/CMakeLists.txt"
+# Moved to main.patch
+# sed -i 's/set(LLVM_REQUIRED_CXX_STANDARD 17)/set(LLVM_REQUIRED_CXX_STANDARD 20)/g' \
+#     "llvm/CMakeLists.txt"
+
+LLVM_TOOLCHAIN_TOOLS="dsymutil;llc;lli;llvm-addr2line;llvm-ar;llvm-as;llvm-config;llvm-cov;llvm-cxxfilt;llvm-cxxmap;llvm-diff;llvm-dis;llvm-dwarfdump;llvm-extract;llvm-lib;llvm-link;llvm-lipo;llvm-lto;llvm-lto2;llvm-mca;llvm-nm;llvm-objcopy;llvm-objdump;llvm-otool;llvm-profdata;llvm-ranlib;llvm-readobj;llvm-size;llvm-stress;llvm-strings;llvm-strip;llvm-symbolizer;llvm-tblgen;llvm-xray;opt;opt-viewer"
+
+# clear runtimes will get easier building
+runtimes="pstl;libcxx;libcxxabi"
+LLVM_DISTRIBUTION_COMPONENTS="cmake-exports;clang-cmake-exports;clang;clangd;clang-cpp;clang-format;clang-headers;clang-resource-headers;libclang;libclang-headers;lld;llvm-libraries;llvm-headers;LTO;Polly;${LLVM_TOOLCHAIN_TOOLS}"
+
+build() {
+    cmake -B objects -S llvm -G Ninja \
+        -D CMAKE_BUILD_TYPE=Release \
+        -D CMAKE_TOOLCHAIN_FILE="$(realpath cmake.config)" \
+        -C distribution-stage2.cmake \
+        -D CMAKE_C_FLAGS="-Wno-unused-command-line-argument \
+-resource-dir=${HOST_RESOURCE_DIR} -B${BINDIR_HOST} -Os -fPIC \
+-pthread \
+-pipe \
+-fno-pie \
+-fPIC \
+-fstack-protector-strong \
+--sysroot=$KISS_ROOT $CMAKE_C_FLAGS" \
+        -D CMAKE_CXX_FLAGS="$CXXFLAGS -Wno-unused-command-line-argument \
+-resource-dir=${HOST_RESOURCE_DIR} -B${BINDIR_HOST} -Os -fPIC \
+-pthread \
+-pipe \
+-fno-pie \
+-fPIC \
+-D_LARGEFILE64_SOURCE \
+-fstack-protector-strong \
+-DLIBCXX_HAS_MUSL_LIBC -D_LIBCPP_HAS_MUSL_LIBC \
+-D_LIBCPP_STD_VER=23 \
+-DLLVM_CXX_STD=20 \
+-UHAVE_CXX_ATOMICS_WITH_LIB -DLLVM_HAS_ATOMICS \
+-std=c++20 \
+--sysroot=$KISS_ROOT $CMAKE_CXX_FLAGS" \
+-D CMAKE_EXE_LINKER_FLAGS=" \
+-resource-dir=${HOST_RESOURCE_DIR} -B${BINDIR_HOST} -Os -fPIC \
+" \
+-D CMAKE_MODULE_LINKER_FLAGS=" \
+-resource-dir=${HOST_RESOURCE_DIR} -B${BINDIR_HOST} -Os -fPIC \
+" \
+-D CMAKE_SHARED_LINKER_FLAGS=" \
+-resource-dir=${HOST_RESOURCE_DIR} -B${BINDIR_HOST} -Os -fPIC \
+" \
+        -D CMAKE_SYSTEM_NAME="Linux" \
+        -D LLVM_REQUIRED_CXX_STANDARD=20 \
+        -D LLVM_CXX_STD:STRING=20 \
+        -D _LIBCPP_STD_VER=23 \
+        -D LLVM_BUILD_LLVM_DYLIB=ON \
+        -D LLVM_LINK_LLVM_DYLIB=ON \
+        -D LLVM_TARGETS_TO_BUILD="host;AMDGPU" \
+        -D LLVM_ENABLE_RTTI=ON \
+        -D LLVM_HOST_TRIPLE="$KISS_XHOST_TRIPLE" \
+        -D LLVM_INCLUDE_BENCHMARKS=OFF \
+        -D LLVM_INCLUDE_EXAMPLES=OFF \
+        -D LLVM_INCLUDE_DOCS=OFF \
+        -D LLVM_INCLUDE_TESTS=ON \
+        -D LLVM_ENABLE_TERMINFO=OFF \
+        -D LLVM_ENABLE_LIBXML2=OFF \
+        -D LLVM_ENABLE_RUNTIMES="$runtimes" \
+        -D LIBCXX_ENABLE_PARALLEL_ALGORITHMS=ON \
+        -D LLVM_ENABLE_PROJECTS="lld;clang;clang-tools-extra;polly" \
+        -D LIBUNWIND_USE_COMPILER_RT=ON \
+        -D LIBUNWIND_INSTALL_LIBRARY=ON \
+        -D CMAKE_THREAD_LIBS_INIT="-lpthread" \
+        -D CMAKE_HAVE_THREADS_LIBRARY=1 \
+        -D CMAKE_USE_PTHREADS_INIT=1 \
+        -D CMAKE_USE_WIN32_THREADS_INIT=0 \
+        -D THREADS_PREFER_PTHREAD_FLAG=ON \
+        -D CMAKE_HAVE_LIBC_PTHREAD=ON \
+        -D LLVM_ENABLE_THREADS=ON \
+        -D LIBCXXABI_ENABLE_THREADS=ON \
+        -D COMPILER_RT_BUILD_STANDALONE_LIBATOMIC=OFF \
+        -D LLVM_HAS_ATOMICS=ON \
+        -D _LIBCPP_ATOMIC_ONLY_USE_BUILTINS=ON \
+        -D HAVE_CXX_ATOMICS_WITHOUT_LIB:INTERNAL=1 \
+        -D HAVE_CXX_ATOMICS64_WITHOUT_LIB:INTERNAL=1 \
+        -D LIBCXX_HAVE_CXX_ATOMICS_WITHOUT_LIB:INTERNAL=1 \
+        -D LIBCXX_HAVE_CXX_ATOMICS64_WITHOUT_LIB:INTERNAL=1 \
+        -D COMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=OFF \
+        -D HAVE_CXX_ATOMICS_WITH_LIB=OFF \
+        -D CXX_SUPPORTS_FNO_EXCEPTIONS_FLAG:INTERNAL=1 \
+        -D CXX_SUPPORTS_FUNWIND_TABLES_FLAG:INTERNAL=1 \
+        -D LLVM_ENABLE_LLD=ON \
+        -DLLVM_PARALLEL_COMPILE_JOBS=$jobs \
+        -DLLVM_PARALLEL_LINK_JOBS=$jobs \
+        -D LLDB_ENABLE_LZMA=OFF \
+        -D LLDB_DISABLE_LIBEDIT:BOOL=ON \
+        -D LLDB_DISABLE_PYTHON:BOOL=ON \
+        -D LLDB_EXPORT_ALL_SYMBOLS:BOOL=ON \
+        -D LLVM_CMAKE_DIR="/usr/lib/llvm/$version_target" \
+        -D CMAKE_INSTALL_PREFIX:PATH="/usr" \
+        -D CMAKE_INSTALL_RPATH:PATH="\$ORIGIN/../lib" \
+        -D LIBCXXABI_ENABLE_EXCEPTIONS=ON \
+        -D LIBCXX_ENABLE_EXCEPTIONS:BOOL=ON \
+        -D CMAKE_POSITION_INDEPENDENT_CODE=ON \
+        -D LIBCXXABI_ENABLE_STATIC_UNWINDER=ON \
+        -D LLVM_DISTRIBUTION_COMPONENTS="$LLVM_DISTRIBUTION_COMPONENTS" \
+        -D LLVM_RUNTIME_TARGETS="$KISS_XHOST_TRIPLE" \
+        -D CMAKE_TRY_COMPILE_TARGET_TYPE="STATIC_LIBRARY" \
+        -D Backtrace_INCLUDE_DIR="/${prefix_host}/include" \
+        -D Backtrace_LIBRARY="/${prefix_host}/lib/libexecinfo.so" \
+        -D ICONV_LIBRARY_PATH="/${prefix_host}/lib/libc.so" \
+        -Wno-dev || kill 0
+
+    # -D CMAKE_POLICY_DEFAULT_CMP0002="NEW" \
+    # -D CMAKE_INSTALL_PREFIX=/usr \
+    # -D LLVM_ENABLE_PROJECTS="llvm;lld;clang;clang-tools-extra;lldb;polly" \
+    # -D HAVE_LSEEK64=0 \
+    # -U HAVE_LSEEK64 \
+    # -D LIBUNWIND_ENABLE_SHARED=OFF \
+    # Wonn't work. Hardcoded
+    # -DCMAKE_MODULE_PATH="cmake/modules clang/cmake/modules ${CMAKE_MODULE_PATH}" \
+
+    # -DLLVM_ENABLE_PROJECTS="llvm;clang;lld;clang-tools-extra" \
+    # -DLLVM_HOST_TRIPLE="$(cc -dumpmachine)" \
+    cmake --build $OUTPUT_FOLDER --target llvm-tblgen -j $jobs 2>&1 || kill 0
+    cmake --build $OUTPUT_FOLDER --target clang-tblgen -j $jobs 2>&1 || kill 0
+
+
+# From Fuchsia
+# cmake --build   $OUTPUT_FOLDER --target toolchain-distribution -j $jobs
+# cmake --build   $OUTPUT_FOLDER --target stage2-toolchain-distribution -j $jobs
+
+# cmake --build   $OUTPUT_FOLDER --target install-distribution -j $jobs
+# cmake --build   $OUTPUT_FOLDER --target stage2-install-distribution -j $jobs
+}
+
+build
+    ninja -C $OUTPUT_FOLDER cxx cxxabi
+    ninja -C $OUTPUT_FOLDER check-cxx check-cxxabi
+    ninja -C $OUTPUT_FOLDER install-cxx install-cxxabi
+runtimes="pstl;libcxx;libcxxabi;libunwind"
+build
+    ninja -C $OUTPUT_FOLDER cxx cxxabi unwind
+    ninja -C $OUTPUT_FOLDER check-cxx check-cxxabi check-unwind
+    ninja -C $OUTPUT_FOLDER install-cxx install-cxxabi install-unwind
+    ninja -C $OUTPUT_FOLDER runtimes
+    ninja -C $OUTPUT_FOLDER check-runtimes
+    ninja -C $OUTPUT_FOLDER install-runtimes
+# add_custom_target cannot create target "install-openmp" because another
+# target with the same name already exists.  The existing target is a custom
+# target created in source directory
+# So, the following list can not have duplicated elements
+runtimes="pstl;libcxx;libcxxabi;libunwind;compiler-rt;openmp"
+
+LLVM_DISTRIBUTION_COMPONENTS="cmake-exports;clang-cmake-exports;clang;clangd;clang-cpp;clang-format;clang-headers;clang-resource-headers;libclang;libclang-headers;lld;llvm-libraries;llvm-headers;LTO;Polly;builtins;openmp;pstl;runtimes;${LLVM_TOOLCHAIN_TOOLS}"
+build
+
+cmake --build $OUTPUT_FOLDER -j $jobs
+cmake --install $OUTPUT_FOLDER
+# python3 llvm/utils/lit/setup.py $OUTPUT_FOLDER 2>&1 || kill 0
+
+build_dir="$PWD"
+[ -d "$DESTDIR/usr/bin" ] || mkdir -p "$DESTDIR/usr/bin"
+cp -r libcxxabi/include "$DESTDIR/usr"
+[ ! -f "${build_dir}/bin/llvm-tblgen" ] ||
+cp "${build_dir}/bin/llvm-tblgen"   "$DESTDIR/usr/bin/" || kill 0
+[ ! -f "${build_dir}/bin/clang-tblgen" ] ||
+cp "${build_dir}/bin/clang-tblgen"  "$DESTDIR/usr/bin/" || kill 0
+[ ! -f "${build_dir}/lib/libPollyISL.a" ] ||
+cp "${build_dir}/lib/libPollyISL.a" "$DESTDIR/usr/lib/" || kill 0
+echo "\$PWD = $PWD"
+# LLD: Replace GNU binutils
+ln -s -f ld.lld "$DESTDIR/usr/bin/ld"
+
+# Clang: Some legacy programs may require cc
+ln -s -f clang "$DESTDIR/usr/bin/cc"
+
+# Clang: equivalent for c++
+ln -s -f clang++ "$DESTDIR/usr/bin/c++"
+
+# Clang: equivalent for cpp
+ln -s -f clang-cpp "$DESTDIR/usr/bin/cpp"
+
+# Clang: POSIX compliance
+cp c99 "$DESTDIR/usr/bin/"
+chmod 755 "$DESTDIR/usr/bin/c99"
+
+# Clang: Override libexec, the path is hardcoded, unfortunately.
+mv -f \
+    "$DESTDIR/usr/libexec/"*analyze* \
+    "$DESTDIR/usr/libexec/"*intercept* \
+    "$DESTDIR/usr/lib/clang"
+
+rmdir "$DESTDIR/usr/libexec"
+
+sed "s|libexec|lib/clang|" "$DESTDIR/usr/bin/scan-build" > _
+
+mv -f _ "$DESTDIR/usr/bin/scan-build"
+chmod +x "$DESTDIR/usr/bin/scan-build"
+
+# For GCC compatibility
+cd "$DESTDIR/usr/bin"
+ln -s -f llvm-readobj  readelf
+ln -s -f llvm-objcopy  strip
+ln -s -f llvm-ar       ar
+ln -s -f llvm-nm       nm
+ln -s -f llvm-objcopy  objcopy
+ln -s -f llvm-objdump  objdump
+ln -s -f llvm-strings  strings
+ln -s -f llvm-objcopy  otool
+ln -s -f llvm-ranlib   ranlib
+ln -s -f llvm-as       as
+
+
+# kiss uses /usr/lib/clang
+# This makes things like Rust easier:
+[ -d "$DESTDIR/usr/lib/clang" ] || mkdir -p "$DESTDIR/usr/lib/clang"
+cd "$DESTDIR/usr/lib/clang"
+[ ! -d "$version_target_major" ] ||
+    mv "$version_target_major" "$version_target"
+ln -s -f "$version_target" system
+
+cd "$DESTDIR/usr/lib"
+ln -s -f "clang/$version_target/lib/linux/clang_rt.crtbegin-$libname.o"    "crtbegin.o"
+ln -s -f "clang/$version_target/lib/linux/clang_rt.crtbegin-$libname.o"    "crtbeginS.o"
+ln -s -f "clang/$version_target/lib/linux/clang_rt.crtend-$libname.o"      "crtend.o"
+ln -s -f "clang/$version_target/lib/linux/clang_rt.crtend-$libname.o"      "crtendS.o"
+ln -s -f "clang/$version_target/lib/linux/libclang_rt.builtins-$libname.a" "libatomic.a"
+
+[ -d "$DESTDIR/usr/lib/llvm" ] || mkdir -p "$DESTDIR/usr/lib/llvm"
+cd "$DESTDIR/usr/lib/llvm"
+# /usr/lib/llvm/17.0.0/lib/clang/17
+[ ! -d "$version_target/lib/clang/$version_target_major" ] ||
+mv "$version_target/lib/clang/$version_target_major" \
+    "$version_target/lib/clang/$version_target"
+ln -s -f "$version_target" "system"
+
+# Use new llvm-config to generate a pkg-config file.
+PATH="$1/usr/bin:$PATH"
+mkdir -p "$1/usr/lib/pkgconfig"
+
+# shellcheck disable=2016
+sed -e "s|$1||" -e 's|/usr/include|\${includedir}|' \
+    > "$1/usr/lib/pkgconfig/llvm.pc" <<EOF
+prefix=/usr
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+has_rtti=$(llvm-config --has-rtti)
+
+Name: LLVM
+Description: LLVM compiler infrastructure
+URL: https://llvm.org
+Version: $(llvm-config --version)
+Requires:
+Requires.private: zlib
+Libs: -L\${libdir} $(llvm-config --libs)
+Libs.private: -lc++ $(llvm-config --libs --link-static)
+Cflags: $(llvm-config --cflags)
+EOF
+
+# git -p diff  --unified=3 --diff-filter=abdcxr 'llvm/CMakeLists.txt' | doas tee /var/db/kiss/lm/underconstruction/llvm-test/llvm/patches/main.patch
+# git -p diff  --unified=3 --diff-filter=abdcxr ':!*/test/Driver*' ':!llvm/CMakeLists.txt'  | doas tee /var/db/kiss/lm/underconstruction/llvm-test/llvm/patches/hardcoded.patch

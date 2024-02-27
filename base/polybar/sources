@@ -1,0 +1,4 @@
+https://github.com/polybar/polybar/archive/VERSION.tar.gz
+https://github.com/polybar/xpp/archive/044e69d05db7f89339bda1ccd1efe0263b01c8f6.tar.gz xpp
+https://github.com/polybar/i3ipcpp/archive/86ddf7102c6903ae0cc543071e2d375403fc0727.tar.gz i3ipcpp
+patches/fix-version.patch

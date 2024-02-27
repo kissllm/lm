@@ -1,0 +1,17 @@
+#!/bin/sh -e
+
+(
+    mkdir -p build
+
+    cd build
+
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=None \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+        -DCMAKE_C_FLAGS="$CFLAGS"
+
+    make
+)
+
+make -C build DESTDIR="$1" install

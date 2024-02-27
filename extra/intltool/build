@@ -1,0 +1,9 @@
+#!/bin/sh -e
+
+sed -i 's:\\\${:\\\$\\{:' intltool-update.in
+
+./configure \
+    --prefix=/usr
+
+make
+make DESTDIR="$1" install

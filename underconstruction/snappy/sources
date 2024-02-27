@@ -1,0 +1,7 @@
+# https://github.com/google/snappy/archive/VERSION.tar.gz
+git+https://github.com/google/snappy.git
+# https://github.com/google/googletest/archive/18f8200e3079b0e54fa00cb7ac55d4c39dcf6da6.tar.gz googletest
+# git+https://github.com/google/googletest.git third_party/googletest
+# patches/cmakelists.patch
+# patches/fix-inline.patch
+patches/rtti.patch

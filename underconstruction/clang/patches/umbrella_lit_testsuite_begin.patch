@@ -1,0 +1,35 @@
+--- ./CMakeLists.txt
++++ ./CMakeLists.txt
+@@ -7,7 +7,9 @@
+   set(CLANG_BUILT_STANDALONE TRUE)
+ endif()
+
++list (APPEND CMAKE_MODULE_PATH "$ENV{KISS_TMPDIR}/proc/clang/build/llvm/cmake/modules")
+ # Must go below project(..)
++include(AddLLVM)
+ include(GNUInstallDirs)
+
+ if(CLANG_BUILT_STANDALONE)
+@@ -192,8 +194,9 @@
+     else()
+       set(LLVM_INCLUDE_TESTS OFF)
+     endif()
+-
+-    umbrella_lit_testsuite_begin(check-all)
++    if(LLVM_INCLUDE_TESTS)
++      umbrella_lit_testsuite_begin(check-all)
++    endif()
+   endif() # LLVM_INCLUDE_TESTS
+
+   set(BACKEND_PACKAGE_STRING "LLVM ${LLVM_PACKAGE_VERSION}")
+# --- ./utils/TableGen/ClangAttrEmitter.cpp
+# +++ ./utils/TableGen/ClangAttrEmitter.cpp
+# @@ -17,6 +17,7 @@
+#  #include "llvm/ADT/DenseMap.h"
+#  #include "llvm/ADT/DenseSet.h"
+#  #include "llvm/ADT/MapVector.h"
+# +#include "llvm/ADT/Optional.h"
+#  #include "llvm/ADT/STLExtras.h"
+#  #include "llvm/ADT/SmallString.h"
+#  #include "llvm/ADT/StringExtras.h"
+

@@ -1,0 +1,14 @@
+#!/bin/sh -e
+
+mkdir output
+cd    output
+
+meson --prefix=/usr       \
+    --buildtype=release \
+    -Dbuild-tests=false  \
+    -Db_lto=true \
+    -Dboost-shared=true \
+      ..
+
+ninja
+ninja install

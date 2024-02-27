@@ -1,0 +1,64 @@
+#!/bin/sh -e
+# Contributor: Luca Weiss <luca@z3ntu.xyz>
+# Maintainer: Luca Weiss <luca@z3ntu.xyz>
+pkgname=waybar
+pkgver=0.9.17
+pkgrel=0
+pkgdesc="Highly customizable Wayland bar for Sway and Wlroots based compositors"
+url="https://github.com/Alexays/Waybar/"
+arch="all"
+license="MIT"
+depends="tzdata"
+makedepends="
+    date-dev
+    eudev-dev
+    fmt-dev
+    gtk-layer-shell-dev
+    gtkmm3-dev
+    jsoncpp-dev
+    libdbusmenu-gtk3-dev
+    libinput-dev
+    libmpdclient-dev
+    libnl3-dev
+    meson
+    pulseaudio-dev
+    scdoc
+    spdlog-dev
+    sndio-dev
+    "
+subpackages="$pkgname-doc"
+source="https://github.com/Alexays/Waybar/archive/$pkgver/Waybar-$pkgver.tar.gz
+    config-fix-clock.patch
+    "
+options="!check" # No test suite
+# builddir="$srcdir/Waybar-$pkgver"
+builddir="$PWD"
+pkgdir="$1"
+patch -p1 < config-fix-clock.patch
+build() {
+    # -Ddefault_library=shared - to override the project defaults.
+    abuild-meson \
+        -Ddefault_library=shared \
+        -Dlibnl=enabled \
+        -Dlibudev=enabled \
+        -Dlibevdev=disabled \
+        -Dpulseaudio=enabled \
+        -Dsystemd=disabled \
+        -Ddbusmenu-gtk=enabled \
+        -Dman-pages=enabled \
+        -Dmpd=enabled \
+        -Dgtk-layer-shell=enabled \
+        -Drfkill=enabled \
+        -Dsndio=enabled \
+        . output
+    meson compile ${JOBS:+-j ${JOBS}} -C output
+}
+build
+package() {
+    DESTDIR="$pkgdir" meson install --no-rebuild -C output
+}
+package
+sha512sums="
+51aba7649c0e2ad3ccf22f6ede3cdf9be9c84268d31d39c5eac62e150e3b115f5560b70ebd54242fd856abec0cca5eba405f1ec153cac4cd6623523f6b19189f  Waybar-0.9.17.tar.gz
+173857d836630925658af5d1c1aa3630fe91d08a8bad09a63d724fd6dc622fc063a9bc936008dfe776573a263f1a90ad9d9f3e11eba6930448dc0a132e106af2  config-fix-clock.patch
+"

@@ -1,0 +1,53 @@
+#! /bin/sh -e
+# Obarun		: 66 init/supervisor
+# Maintainer	: Eric Vidal <eric@obarun.org>
+# Maintainer	: Jean-Michel T.Dydak <jean-michel@obarun.org>
+# PkgSource		: https://git.obarun.org/observice/acpid-66serv
+#--------------------------------------------------------------------------------------
+
+service=acpid
+
+pkgname=acpid-66serv
+
+pkgdesc="acpid service for 66 tools"
+
+pkgver=0.2.1
+pkgrel=1
+
+url="https://git.obarun.org/pkg/observice/${pkgname}.git"
+
+track=branch
+target=master	 
+source="${pkgname}::git+${url}#${track}=${target}"
+
+makedepends="
+	'git'"
+
+#--------------------------------------------------------------------------------------
+
+# prepare() {
+# {
+	cd "trunk"
+	sed "s:@VERSION@:${pkgver}:" -i "${service}"
+# }
+
+#--------------------------------------------------------------------------------------
+# package() {
+# {
+	# cd "trunk"
+	install -Dm 0644 ${service} "${pkgdir}"/usr/lib/66/service/${service}
+# }
+#--------------------------------------------------------------------------------------
+
+arch="'x86_64'"
+
+depends="
+	'66>=0.3.0.0'
+	'66-tools>=0.0.5.0'
+	'acpid'"
+
+#--------------------------------------------------------------------------------------
+
+sha512sums="'SKIP'"
+
+license="'0BSD'"

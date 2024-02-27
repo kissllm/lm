@@ -1,12 +1,15 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 mkdir -p bin
 ln -s /usr/bin/gmake "$PWD/bin/make"
 export PATH="$PWD/bin:$PATH"
 
+luajit_folder=$(\ls /usr/include/| grep luajit)
+
 # https://github.com/luarocks/luarocks/wiki/Installation-instructions-for-Unix
 ./configure --prefix="/usr" \
-    --with-lua-include=/usr/include/luajit-2.1
+    --with-lua-include=/usr/include/$luajit_folder
+    # --with-lua-include=/usr/include/luajit-2.1
 
 make
 # make DESTDIR="$1" PREFIX=/usr bootstrap

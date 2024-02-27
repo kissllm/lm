@@ -1,0 +1,48 @@
+#! /bin/sh -i
+set -e
+# Maintainer: Laurent Bercot <ska-devel@skarnet.org>
+# Contributor: John Regan <john@jrjrtech.com>
+pkgname=execline
+pkgver=2.9.3.0
+pkgrel=2
+pkgdesc="A small scripting language, to be used in place of a shell in non-interactive scripts."
+url="http://skarnet.org/software/$pkgname/"
+arch="all"
+license="ISC"
+options="!check"
+makedepends="skalibs-dev>=2.13"
+subpackages="$pkgname-static $pkgname-dev $pkgname-doc"
+source="https://skarnet.org/software/execline/execline-$pkgver.tar.gz"
+
+build() {
+    ./configure \
+        --enable-shared \
+        --enable-static \
+        --disable-allstatic \
+        --libdir=/usr/lib \
+        --with-dynlib=/lib \
+        --enable-multicall
+    make
+}
+build
+package() {
+    make DESTDIR="$pkgdir" install
+    # Compat symlink for #!/usr/bin/execlineb shebangs, remove if usrmerge
+    mkdir -p "$pkgdir/usr/bin"
+    ln -s ../../bin/execlineb "$pkgdir/usr/bin/execlineb"
+}
+package
+doc() {
+    default_doc
+    mkdir -p "$subpkgdir/usr/share/doc"
+    cp -a "$builddir/doc" "$subpkgdir/usr/share/doc/$pkgname"
+}
+doc
+static() {
+    default_static
+    rmdir -p "$pkgdir"/usr/lib || :
+}
+static
+sha512sums="
+a71a34896f2186e27959d84222ffefa15d2e43c802ad2c71a0442ee04be73aebe629079e31946ca776975e676a05840ce343e1a97f61bf420dad2cd450a948f2  execline-2.9.3.0.tar.gz
+"

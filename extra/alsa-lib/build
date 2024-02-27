@@ -1,4 +1,6 @@
-#!/usr/bin/env sh
+#!/bin/sh
+
+sed -i 's/fstat64/fstat/g' src/ucm/main.c
 
 ./configure \
     --without-debug \

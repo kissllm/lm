@@ -1,0 +1,9 @@
+https://www.netfilter.org/projects/iptables/files/iptables-VERSION.tar.xz
+patches/format-security.patch
+patches/use-sh-iptables-apply.patch
+files/ebtables.confd
+files/ebtables.initd
+files/ip6tables.confd
+files/iptables.confd
+files/iptables.initd
+files/iptables.post-upgrade

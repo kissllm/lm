@@ -1,10 +1,7 @@
-#!/usr/bin/env sh
-
-kiss-meson-config > meson.config
+#!/bin/sh -e
 
 meson \
     --prefix=/usr \
-    --cross-file="meson.config" \
     --buildtype=release \
     . output
 
