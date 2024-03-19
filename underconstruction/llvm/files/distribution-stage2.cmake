@@ -159,7 +159,6 @@ set ( LLVM_DISTRIBUTION_COMPONENTS
 	LTO
 	Polly
 	bolt
-	pstl
 	runtimes
   clang-apply-replacements
   clang-doc
@@ -175,6 +174,7 @@ set ( LLVM_DISTRIBUTION_COMPONENTS
 	${LLVM_TOOLCHAIN_TOOLS}
 	CACHE STRING "" )
 
+# pstl
 # set(LLVM_DISTRIBUTIONS "TOOLCHAIN;DEBUGGER" CACHE STRING "")
 
 

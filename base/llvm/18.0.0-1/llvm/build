@@ -1786,7 +1786,9 @@ $cxxflags  \
 		local key="$2"
 		local key_value="$3"
 		local target_triple="$4"
+		shift 4
 		deploy "$option" "$key" "$key_value" "force"
+		local target
 		for target do
 			case "$target" in
 				*"BUILTINS"*)
@@ -2205,30 +2207,30 @@ $cxxflags  \
 		deploy "-D" "CMAKE_ASM_COMPILER_WORKS"           "ON"
 		# deploy "-D" "CMAKE_ASM_COMPILER_WORKS:INTERNAL" "1"
 		# llvm/ADT ... under it and as same as "$DESTDIR/$INSTALL_PREFIX/include"
-		# deploy "-D" "LLVM_INCLUDE_DIRS:PATH"        "$MAKE_DIR/llvm/include"
+		# deploy "-D" "LLVM_INCLUDE_DIRS:PATH"           "$MAKE_DIR/llvm/include"
 		# This is FLAGS syntax
-		# deploy "-D" "LLVM_INCLUDE_DIRS:PATH"        " -isystem $DESTDIR/$INSTALL_PREFIX/include -isystem $KISS_ROOT/$INSTALL_PREFIX/include"
+		# deploy "-D" "LLVM_INCLUDE_DIRS:PATH"           " -isystem $DESTDIR/$INSTALL_PREFIX/include -isystem $KISS_ROOT/$INSTALL_PREFIX/include"
 		deploy "-D" "LLVM_INCLUDE_DIRS:PATH"             "$DESTDIR/$INSTALL_PREFIX/include"
-		# deploy "-D" "LLVM_INCLUDE_DIRS:PATH"        "$RESOURCE_DIR_HOST/include"
+		# deploy "-D" "LLVM_INCLUDE_DIRS:PATH"           "$RESOURCE_DIR_HOST/include"
 
 		# Useless
 		# deploy "-D" "STAGE2_LLVM_INCLUDE_DIRS:PATH" "$MAKE_DIR/llvm/include"
 		# clang/AST ... under it and as same as "$DESTDIR/$INSTALL_PREFIX/include"
-		# deploy "-D" "C_INCLUDE_DIRS:STRING"         "$MAKE_DIR/clang/include"
+		# deploy "-D" "C_INCLUDE_DIRS:STRING"            "$MAKE_DIR/clang/include"
 		#
 		# ignoring nonexistent directory "/working/kiss/proc/pkg/llvm/usr/include;/opt/kiss/usr/include"
-		# deploy "-D" "C_INCLUDE_DIRS:STRING"         "$DESTDIR/$INSTALL_PREFIX/include;$KISS_ROOT/$INSTALL_PREFIX/include"
+		# deploy "-D" "C_INCLUDE_DIRS:STRING"            "$DESTDIR/$INSTALL_PREFIX/include;$KISS_ROOT/$INSTALL_PREFIX/include"
 		#
 		#
 		# ignoring nonexistent directory "/working/kiss/proc/pkg/llvm/usr/include;/opt/kiss/usr/include"
-		# deploy "-D" "C_INCLUDE_DIRS:STRING"         "$DESTDIR/$INSTALL_PREFIX/include;$KISS_ROOT/$INSTALL_PREFIX/include"
+		# deploy "-D" "C_INCLUDE_DIRS:STRING"            "$DESTDIR/$INSTALL_PREFIX/include;$KISS_ROOT/$INSTALL_PREFIX/include"
 		#
 		# ignoring nonexistent directory "/opt/kiss-isystem /working/kiss/proc/pkg/llvm/usr/include -isystem /opt/kiss/usr/include"
-		# deploy "-D" "C_INCLUDE_DIRS:STRING"         "-isystem $DESTDIR/$INSTALL_PREFIX/include -isystem $KISS_ROOT/$INSTALL_PREFIX/include"
+		# deploy "-D" "C_INCLUDE_DIRS:STRING"            "-isystem $DESTDIR/$INSTALL_PREFIX/include -isystem $KISS_ROOT/$INSTALL_PREFIX/include"
 		# ignoring nonexistent directory "/opt/kiss -isystem /working/kiss/proc/pkg/llvm/usr/include -isystem /opt/kiss/usr/include"
-		# deploy "-D" "C_INCLUDE_DIRS:STRING"         " -isystem $DESTDIR/$INSTALL_PREFIX/include -isystem $KISS_ROOT/$INSTALL_PREFIX/include"
+		# deploy "-D" "C_INCLUDE_DIRS:STRING"            " -isystem $DESTDIR/$INSTALL_PREFIX/include -isystem $KISS_ROOT/$INSTALL_PREFIX/include"
 
-		# deploy "-D" "C_INCLUDE_DIRS:STRING"         "$DESTDIR/$INSTALL_PREFIX/include"
+		# deploy "-D" "C_INCLUDE_DIRS:STRING"            "$DESTDIR/$INSTALL_PREFIX/include"
 		deploy "-D" "C_INCLUDE_DIRS:STRING"              "$KISS_ROOT/$INSTALL_PREFIX/include"
 
 		# Useless
@@ -2770,18 +2772,18 @@ $cxxflags  \
 		# deploy "-D" "LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING:BOOL" "OFF"
 		# deploy "-D" "LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING:INTERNAL" "1"
 
-		deploy "-D" "CMAKE_C_COMPILER:FILEPATH"         "/$INSTALL_PREFIX/lib/ccache/bin/clang"
-		deploy "-D" "CMAKE_ASM_COMPILER:FILEPATH"       "/$INSTALL_PREFIX/lib/ccache/bin/clang"
-		deploy "-D" "CMAKE_CXX_COMPILER:FILEPATH"       "/$INSTALL_PREFIX/lib/ccache/bin/clang++"
-		deploy "-D" "CMAKE_CPP_COMPILER:FILEPATH"       "/$INSTALL_PREFIX/lib/ccache/bin/clang++"
+		deploy "-D" "CMAKE_C_COMPILER:FILEPATH"           "/$INSTALL_PREFIX/lib/ccache/bin/clang"
+		deploy "-D" "CMAKE_ASM_COMPILER:FILEPATH"         "/$INSTALL_PREFIX/lib/ccache/bin/clang"
+		deploy "-D" "CMAKE_CXX_COMPILER:FILEPATH"         "/$INSTALL_PREFIX/lib/ccache/bin/clang++"
+		deploy "-D" "CMAKE_CPP_COMPILER:FILEPATH"         "/$INSTALL_PREFIX/lib/ccache/bin/clang++"
 		# Target system name (not lower)
-		deploy "-D" "CMAKE_SYSTEM_NAME:STRING" "$($KISS_ROOT/usr/bin/uname)"
-		deploy "-D" "CMAKE_HOST_SYSTEM_NAME"   "$(/usr/bin/uname)"
-		deploy "-D" "OS_NAME"                  "$($KISS_ROOT/usr/bin/uname)"
+		deploy "-D" "CMAKE_SYSTEM_NAME:STRING"            "$($KISS_ROOT/usr/bin/uname)"
+		deploy "-D" "CMAKE_HOST_SYSTEM_NAME"              "$(/usr/bin/uname)"
+		deploy "-D" "OS_NAME"                             "$($KISS_ROOT/usr/bin/uname)"
 		# Deprecated
-		# deploy "-D" "DEFAULT_SYSROOT" "$SYS_ROOT"
-		# deploy "-D" "CMAKE_SYSROOT" "$KISS_ROOT"
-		deploy "-D" "KISS_ROOT"     "$KISS_ROOT"
+		# deploy "-D" "DEFAULT_SYSROOT"                   "$SYS_ROOT"
+		# deploy "-D" "CMAKE_SYSROOT"                     "$KISS_ROOT"
+		deploy "-D" "KISS_ROOT"                           "$KISS_ROOT"
 		# deploy "-D" "CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN" "/$INSTALL_PREFIX"
 
 
@@ -2805,7 +2807,7 @@ $cxxflags  \
 		# LIBUNWIND_TARGET_TRIPLE is deprecated, please use CMAKE_CXX_COMPILER_TARGET instead
 		# LIBUNWIND_SYSROOT, LIBUNWIND_TARGET_TRIPLE and LIBUNWIND_GCC_TOOLCHAIN are
 		# not supported anymore, please use the native CMake equivalents instead
-		# deploy "-D" "LIBUNWIND_SYSROOT"         "$KISS_ROOT"
+		# deploy "-D" "LIBUNWIND_SYSROOT"                 "$KISS_ROOT"
 		# Hardcoded to OFF
 		deploy "-D" "LIBUNWIND_USE_COMPILER_RT" "ON"
 		#
@@ -2886,13 +2888,13 @@ $cxxflags  \
 		# deploy "-D" "CMAKE_CXX_LINK_FLAGS:STRING" "-l${LIBCXX_PREFIX}c++ -lc++abi -latomic -L${TOOL_LIB_ATOMIC_PATH} -L$KISS_ROOT/$INSTALL_PREFIX/lib"
 		# deploy "-D" "CMAKE_CXX_LINK_FLAGS:STRING" "-l${LIBCXX_PREFIX}c++ -lc++abi -L$KISS_ROOT/$INSTALL_PREFIX/lib -Wl,-rpath=/$INSTALL_PREFIX/lib"
 
-		# deploy "-D" "CMAKE_C_LINK_FLAGS:STRING"   "$ldflags"
+		# deploy "-D" "CMAKE_C_LINK_FLAGS:STRING"         "$ldflags"
 		deploy "-D" "CMAKE_C_LINK_FLAGS:STRING"           "$LDFLAGS"
-		# deploy "-D" "CMAKE_CXX_LINK_FLAGS:STRING" "$ldflags"
+		# deploy "-D" "CMAKE_CXX_LINK_FLAGS:STRING"       "$ldflags"
 		deploy "-D" "CMAKE_CXX_LINK_FLAGS:STRING"         "$LDFLAGS"
 
-		# deploy "-D" "CMAKE_EXE_LINKER_FLAGS" "-L$KISS_ROOT/$INSTALL_PREFIX/lib -l${LIBCXX_PREFIX}c++"
-		# deploy "-D" "CMAKE_EXE_LINKER_FLAGS"      "$ldflags"
+		# deploy "-D" "CMAKE_EXE_LINKER_FLAGS"            "-L$KISS_ROOT/$INSTALL_PREFIX/lib -l${LIBCXX_PREFIX}c++"
+		# deploy "-D" "CMAKE_EXE_LINKER_FLAGS"            "$ldflags"
 		deploy "-D" "CMAKE_EXE_LINKER_FLAGS"              "$LDFLAGS"
 		# deploy "-D" "CMAKE_EXE_LINKER_FLAGS" "$ldflags \
 		# -nostdlib \
@@ -5872,11 +5874,11 @@ $DESTDIR/$INSTALL_PREFIX/lib" \
 			-D LIBCXXABI_ENABLE_STATIC=ON \
 			-D CMAKE_POSITION_INDEPENDENT_CODE=ON \
 			-D CMAKE_MODULE_PATH="${CMAKE_MODULE_PATH};$MAKE_DIR/llvm/cmake/modules" \
+			-D CMAKE_C_FLAGS="-isystem $DESTDIR/$INSTALL_PREFIX/include" \
 			-D CMAKE_CXX_FLAGS="\
 -isystem $KISS_ROOT/$INSTALL_PREFIX/include/tirpc \
 -isystem $DESTDIR/$INSTALL_PREFIX/include/c++/v1 \
 -isystem $DESTDIR/$INSTALL_PREFIX/include" \
-			-D CMAKE_C_FLAGS="-isystem $DESTDIR/$INSTALL_PREFIX/include" \
 			-D CMAKE_EXE_LINKER_FLAGS=" \
 -resource-dir=$RESOURCE_DIR_HOST \
 -L $OUTPUT_DIR/lib/$LLVM_TARGET_TRIPLE \
@@ -7615,7 +7617,7 @@ $ldflags \
 	in_tree() {
 		_level_2
 		local target="$1"
-		readonly target
+		# readonly target
 		local source="${2-"llvm"}"
 		local use_intermediate="${3-}"
 		# local runtimes_individual="${4-}"
@@ -7996,12 +7998,12 @@ $ldflags \
 	}
 
 	// individual "$TOOLCHAIN_PREFIX" & build_id=$!
-	// progress "$build_id" "bootstrap_00"
+	// progress "$repo_name" "$build_id" "bootstrap_00"
 
 	# // toolchain_reset "stage_00"
 	#
 	# // individual "$TOOLCHAIN_PREFIX" & build_id=$!
-	# // progress "$build_id" "bootstrap_01"
+	# // progress "$repo_name" "$build_id" "bootstrap_01"
 	#
 
 	# Discover problems in advance and avoid wasting a lot of time on useless efforts before a failure
@@ -8100,7 +8102,7 @@ $ldflags \
 		ninja -C "$OUTPUT_DIR" all ||
 		kill 0
 		) & build_id=$!
-		// progress "$build_id" "all"
+		// progress "$repo_name" "$build_id" "all"
 		ninja -C "$OUTPUT_DIR" install
 		// check_clang || // die 'clang' "build invalid targets"
 
@@ -8114,7 +8116,7 @@ $ldflags \
 	# ninja -C "$OUTPUT_DIR" runtimes || kill 0
 
 	// build_all "$TOOLCHAIN_PREFIX" & build_id=$!
-	// progress "$build_id" "build_all"
+	// progress "$repo_name" "$build_id" "build_all"
 
 	# [ -f "$DESTDIR/$INSTALL_PREFIX/bin/clang" ] ||
 	# // clang_in_tree "$TOOLCHAIN_PREFIX"
@@ -8136,7 +8138,7 @@ $ldflags \
 		#
 	# Failed
 	# // in_tree "runtimes" "llvm" "use_intermediate" & build_id=$!
-	# // progress "$build_id" "runtimes"
+	# // progress "$repo_name" "$build_id" "runtimes"
 
 	# // cue 'compiler-rt' "construction"
 	# cmake --build "$OUTPUT_DIR" --target compiler-rt -j $jobs > /dev/null || kill 0
@@ -8222,7 +8224,7 @@ $ldflags \
 	# No ccache? the first time in tree build/install clang
 	# Failed
 	# // clang_in_tree "$TOOLCHAIN_PREFIX" & build_id=$!
-	# // progress "$build_id" "clang"
+	# // progress "$repo_name" "$build_id" "clang"
 
 	# Looking at clang/CMakeLists.txt ${CLANG_STAGE} for details
 	# Using just built binaries
@@ -8252,7 +8254,7 @@ $ldflags \
 		# builtins_apply "stage_01"
 		#
 		// build_all "$TOOLCHAIN_PREFIX" & build_id=$!
-		// progress "$build_id" "build_all"
+		// progress "$repo_name" "$build_id" "build_all"
 		# // clang_in_tree "$TOOLCHAIN_PREFIX"
 
 		# // in_tree "clang"
@@ -8299,7 +8301,7 @@ $ldflags \
 		cmake --build "$OUTPUT_DIR" --target "$build_target" -j "$jobs" || kill 0
 		# ninja -j $jobs -C "$OUTPUT_DIR" $build_target 2>&1 || kill 0
 		) & build_id=$!
-		// progress "$build_id" "$build_target"
+		// progress "$repo_name" "$build_id" "$build_target"
 
 		// cue '$build_target' "'$build_target' installation"
 		cmake --install "$OUTPUT_DIR" 2>&1 || kill 0
@@ -8312,7 +8314,7 @@ $ldflags \
 	// toolchain_reset "stage_01"
 
 	// stage_build & build_id=$!
-	// progress "$build_id" "stage_build 00"
+	// progress "$repo_name" "$build_id" "stage_build 00"
 
 	# Toolchain upgrade, and the following operations are time-consuming
 	# Because the brand new toolchain always creates its ccache from scratch
@@ -8323,7 +8325,7 @@ $ldflags \
 	// toolchain_reset "stage_02"
 
 	// stage_build & build_id=$!
-	// progress "$build_id" "stage_build 01"
+	// progress "$repo_name" "$build_id" "stage_build 01"
 
 	[ -d "$DESTDIR/$INSTALL_PREFIX/bin" ] || mkdir -p "$DESTDIR/$INSTALL_PREFIX/bin"
 	cp -r libcxxabi/include "$DESTDIR/$INSTALL_PREFIX"

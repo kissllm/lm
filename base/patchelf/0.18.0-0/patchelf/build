@@ -1,0 +1,61 @@
+#! /bin/sh -e
+default_prepare
+
+__config_site_diff="$(diff "$KISS_ROOT/usr/include/c++/v1/__config_site" "$KISS_ROOT/usr/include/x86_64-linux-musl/c++/v1/__config_site" && echo 0)"
+
+# /usr/include/c++/v1/__memory_resource/memory_resource.h:30:45: error: reference to unresolved using declaration
+#    30 |   static const size_t __max_align = alignof(max_align_t);
+#       |                                             ^
+# /usr/include/c++/v1/cstddef:64:1: note: using declaration annotated with 'using_if_exists' here
+#    64 | using ::max_align_t _LIBCPP_USING_IF_EXISTS;
+
+#include "__stddef_max_align_t.h"
+# -D __need_STDDEF_H_misc \
+
+export CFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+-resource-dir=$KISS_ROOT/usr/lib/clang/18.0.0 \
+$CFLAGS"
+
+[ "$__config_site_diff" -eq "0" ] &&
+	export CXXFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem $KISS_ROOT/usr/include/c++/v1 \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+-resource-dir=$KISS_ROOT/usr/lib/clang/18.0.0 \
+$CXXFLAGS" ||
+	export CXXFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem $KISS_ROOT/usr/include/x86_64-linux-musl/c++/v1 \
+-isystem $KISS_ROOT/usr/include/c++/v1 \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+-resource-dir=$KISS_ROOT/usr/lib/clang/18.0.0 \
+$CXXFLAGS"
+
+CXXFLAGS_NO_INCLUDE="$(printf '%s' "$CXXFLAGS" | tr ' ' '\n' |
+    grep -v "^-std=c++17$" |
+    xargs)"
+    # grep -v "^-I/usr/include$" |
+
+export CXXFLAGS="$CXXFLAGS_NO_INCLUDE"
+
+// log '$CFLAGS' "$CFLAGS"
+// log '$CXXFLAGS' "$CXXFLAGS"
+
+./bootstrap.sh
+./configure --prefix=/usr \
+    --build=$KISS_XBUILD_TRIPLE \
+    --host=$KISS_XHOST_TRIPLE \
+	--disable-dependency-tracking
+make
+
+# make check
+# sudo make install
+make install

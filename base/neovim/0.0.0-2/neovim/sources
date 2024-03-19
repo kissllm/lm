@@ -1,0 +1,9 @@
+git+https://github.com/neovim/neovim@stable
+# git+https://github.com/neovim/neovim@master
+# git+https://github.com/neovim/neovim.git
+# git+https://github.com/neovim/neovim@nightly
+# git+https://github.com/neovim/neovim@vVERSION
+patches/symlink-crrection.patch
+# patches/luajit-download.patch
+patches/prop-NOTFOUND.patch
+files/c99

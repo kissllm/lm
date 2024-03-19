@@ -1,0 +1,3 @@
+git+https://github.com/autotools-mirror/libtool.git
+# https://ftp.gnu.org/gnu/libtool/libtool-2.4.7.tar.xz
+patches/libtool-fix-cross-compile.patch

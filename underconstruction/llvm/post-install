@@ -2,57 +2,51 @@
 
 version_target="$2"
 
-[ ! -d "$KISS_ROOT/usr/lib/clang" ] || {
-	cd "$KISS_ROOT/usr/lib/clang"
-	[ -d "$version_target" ] ||
-	[ -h "$version_target" ] || {
-		[ -d "${version_target%%.*}" ] &&
-		ln -sf "${version_target%%.*}" "$version_target" ||
-		// die 'Target version' "does not exist"
-	}
+mount_point_name="system"
 
-	{
-		[ ! -d "system" ] || [ -h "system" ]
-	} && {
-		[ -f "system" ] && rm -f "system"
-		[ ! -h "system" ] &&
-		ln -s -f "$version_target" "system" ||
-		[ "$(readlink -fn "system")" = "$(readlink -fn "$version_target")" ] || {
-			rm -f "system"
-			ln -s -f "$version_target" "system"
-		}
-	} || {
-		# [ ! -d ".backup" ] || \rm -rf ".backup"
-		rsync -aqz "system" ".backup/" && sync
-		\rm -rf "system"
-		ln -s -f "$version_target" "system"
-	}
+[ ! -d "$KISS_ROOT/usr/lib/clang" ] || {
+	version_target_major="${version_target%%.*}"
+	// ver_naming "$KISS_ROOT/usr/lib/clang" "$version_target" "$version_target_major"
+	cd "$KISS_ROOT/usr/lib/clang"
+	# [ -d "$version_target" ] ||
+	# [ -h "$version_target" ] || {
+	# 	[ -d "${version_target%%.*}" ] &&
+	# 	ln -sf "${version_target%%.*}" "$version_target" ||
+	# 	// die 'Target version' "does not exist"
+	# }
+
+	// ver_mount "$KISS_ROOT/usr/lib/clang" "$mount_point_name" "$version_target"
+
+	# {
+	# 	[ ! -d "$mount_point_name" ] || [ -h "$mount_point_name" ]
+	# } && {
+	# 	[ ! -h "$mount_point_name" ] && {
+	# 		[ ! -f "$mount_point_name" ] || rm -f "$mount_point_name"
+	# 		ln -s -f "$version_target" "$mount_point_name"
+	# 	} ||
+	# 	[ "$(readlink -fn "$mount_point_name")" = "$(readlink -fn "$version_target")" ] || {
+	# 		rm -f "$mount_point_name"
+	# 		ln -s -f "$version_target" "$mount_point_name"
+	# 	}
+	# } || {
+	# 	# [ ! -d ".backup" ] || \rm -rf ".backup"
+	# 	rsync -aqz "$mount_point_name" ".backup/" && sync
+	# 	\rm -rf "$mount_point_name"
+	# 	ln -s -f "$version_target" "$mount_point_name"
+	# }
 }
 
 [ ! -d "$KISS_ROOT/usr/lib/llvm" ] || {
+	version_target_major="${version_target%%.*}"
+	// ver_naming "$KISS_ROOT/usr/lib/llvm" "$version_target" "$version_target_major"
 	cd "$KISS_ROOT/usr/lib/llvm"
-	[ -d "$version_target" ] ||
-	[ -h "$version_target" ] || {
-		[ -d "${version_target%%.*}" ] &&
-		ln -sf "${version_target%%.*}" "$version_target" ||
-		// die 'Target version' "does not exist"
-	}
+	# [ -d "$version_target" ] ||
+	# [ -h "$version_target" ] || {
+	# 	[ -d "${version_target%%.*}" ] &&
+	# 	ln -sf "${version_target%%.*}" "$version_target" ||
+	# 	// die 'Target version' "does not exist"
+	# }
 
-	{
-		[ ! -d "system" ] || [ -h "system" ]
-	} && {
-		[ -f "system" ] && rm -f "system"
-		[ ! -h "system" ] &&
-		ln -s -f "$version_target" "system" ||
-		[ "$(readlink -fn "system")" = "$(readlink -fn "$version_target")" ] || {
-			rm -f "system"
-			ln -s -f "$version_target" "system"
-		}
-	} || {
-		# [ ! -d ".backup" ] || \rm -rf ".backup"
-		rsync -aqz "system" ".backup/" && sync
-		\rm -rf "system"
-		ln -s -f "$version_target" "system"
-	}
+	// ver_mount "$KISS_ROOT/usr/lib/llvm" "$mount_point_name" "$version_target"
 
 }

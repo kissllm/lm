@@ -57,6 +57,7 @@ target() {
 	local upstream_name="$1"
 	local _local_dir="$2"
 	local url="$3"
+	local repo_name="llvm"
 
 	// log '$@' "$(esceval "$@")"
 
@@ -75,7 +76,7 @@ target() {
 			awk '{print $2}')" # & query_pid="$!"
 
 		// log '$tag_list' "$(esceval "$tag_list")"
-		# progress "git query" "$query_pid"
+		# progress "$repo_name" "$query_pid" "git query"
 
 		[ ! -z "$tag_list" ] || {
 			# awk 'BEGIN{ FS = "/" } {print $NF}' 2> /dev/null || {
@@ -88,7 +89,7 @@ target() {
 					--sort='version:refname' --tags "$url" 2> /dev/null |
 					awk '{print $2}'
 			)" # & query_pid="$!"
-			# progress "git query" "$query_pid"
+			# progress "$repo_name" "$query_pid" "git query"
 		}
 
 		[ -z "${upstream_name:+x}" ] ||

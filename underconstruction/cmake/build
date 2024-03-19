@@ -1,0 +1,159 @@
+#! /bin/sh -e
+
+compiler_version="$($cc --version | grep version | awk -F " " '{print $NF}')"
+
+# export C_INCLUDE_PATH=" \
+# -isystem /usr/lib/clang/$compiler_version/include \
+# -isystem /usr/include \
+# "
+# # -isystem /usr/lib/clang/$compiler_version/include/llvm_libc_wrappers \
+
+# export CPLUS_INCLUDE_PATH=" \
+# -isystem /usr/include/x86_64-linux-musl/c++/v1 \
+# -isystem /usr/include/c++/v1 \
+# -isystem /usr/lib/clang/$compiler_version/include \
+# -isystem /usr/include \
+# "
+# -isystem /usr/lib/clang/$compiler_version/include/llvm_libc_wrappers \
+
+# export CFLAGS=" \
+# -D __NEED_max_align_t \
+# -isysroot $KISS_ROOT \
+# -isystem /usr/lib/clang/$compiler_version/include \
+# -isystem /usr/include \
+# -resource-dir=/usr/lib/clang/$compiler_version \
+# $CFLAGS"
+#
+# export CXXFLAGS=" \
+# -D __NEED_max_align_t \
+# -isysroot $KISS_ROOT \
+# -isystem /usr/include/c++/v1 \
+# -isystem /usr/lib/clang/$compiler_version/include \
+# -isystem /usr/include \
+# -resource-dir=/usr/lib/clang/$compiler_version \
+# $CXXFLAGS"
+
+export CC=/usr/lib/ccache/bin/cc
+export CXX=/usr/lib/ccache/bin/c++
+
+// log '$PATH' "$PATH"
+
+export DESTDIR="$1"
+OUTPUT_DIR="$OBJ_ROOT/cmake"
+
+# stolen from sabotage linux. should fix linking issues with static netbsd-curses libs
+sed 's,curses_version,baudrate,' Source/Checks/Curses/CheckCurses.c > _
+mv -f _ Source/Checks/Curses/CheckCurses.c
+sed 's,defined(HAVE_LIBCRYPTO),0,' Utilities/cmlibarchive/libarchive/archive_hmac.c > _
+mv -f _ Utilities/cmlibarchive/libarchive/archive_hmac.c
+
+default_prepare
+
+# PATH="$(printf '%s' "$PATH" | tr ':' '\n' | grep -v "ccache" | xargs | tr ' ' ':')"
+# export PATH
+
+# export CC="/usr/bin/cc"
+# export CXX="/usr/bin/c++"
+
+CFLAGS="$CFLAGS" \
+CXXFLAGS="$CXXFLAGS" \
+CPPFLAGS="$CXXFLAGS" \
+./bootstrap
+
+export NO_IMPLICIT_INCLUDE_DIRECTORIES=
+export ZLIB_ROOT="/usr"
+
+# It build a cmake first, then configure again with the just-built cmake
+# And, it's a in-tree build (find things in $MAKE_DIR)
+#
+# if kiss l cmake; then
+is_repos "$KISS_ROOT$REPO_ROOT/installed/cmake" &&
+[ "$(which cmake)" != "" ] &&
+command -v /usr/bin/cmake > /dev/null 2>&1 && {
+# This is not an out of source build even set the $OUTPUT_DIR
+	cmake -B $OUTPUT_DIR -G Ninja \
+		-D CMAKE_INSTALL_PREFIX=/usr \
+		-D CMAKE_BUILD_TYPE=Release \
+		-D CMAKE_USE_SYSTEM_CURL=True \
+		-D CMAKE_C_FLAGS="$CFLAGS" \
+		-D CMAKE_CXX_FLAGS="$CXXFLAGS" \
+		-D CMAKE_CPP_FLAGS="$CPPFLAGS" \
+		-D ZLIB_INCLUDE_DIR=/usr/include \
+		-D ZLIB_LIBRARY=/usr/lib/libz.so \
+		-D CMAKE_USE_SYSTEM_ZLIB=True \
+		-D ZLIB_USE_STATIC_LIBS=ON \
+		-D CMAKE_USE_SYSTEM_EXPAT=True \
+		-D CMAKE_USE_SYSTEM_BZIP2=True \
+		-D CMAKE_USE_SYSTEM_NGHTTP2=False \
+		-D BUILD_CursesDialog=OFF \
+		-D IMPLICIT_INCLUDE_DIRECTORIES=OFF \
+		-D __UNIX_PATHS_INCLUDED=ON \
+		-D BUILD_TESTING=OFF ||
+		// die 'cmake' "configuration failed"
+
+		# Hardcoded ?
+		# -- Using system-installed ZLIB
+		# -- Could NOT find ZLIB (missing: ZLIB_LIBRARY ZLIB_INCLUDE_DIR)
+		# CMake Error at Source/Modules/CMakeBuildUtilities.cmake:116 (message):
+		#   CMAKE_USE_SYSTEM_ZLIB is ON but a zlib is not found!
+		# Call Stack (most recent call first):
+		#   CMakeLists.txt:442 (include)
+
+		# Make sure zlib works on the system (libz.so)
+		# -D CMAKE_USE_SYSTEM_ZLIB=True \
+
+	cmake --build   $OUTPUT_DIR --parallel ||
+		// die 'cmake' "building failed"
+
+	cmake --install $OUTPUT_DIR ||
+		// die 'cmake' "installation failed"
+	:
+} || {
+# else
+# This is not an out of source build
+  ./configure \
+	  --prefix=/usr \
+	  --system-zlib \
+	  --system-curl \
+	  --system-expat \
+	  --system-bzip2 \
+	  --parallel="$(grep -scF 'core id' /proc/cpuinfo)" -- \
+	  -D CMAKE_INSTALL_PREFIX=/usr \
+	  -D PATH=$PATH \
+	  -D CMAKE_MAKE_PROGRAM=$(which ninja) \
+	  -D CMAKE_BUILD_TYPE=Release \
+	  -D CMAKE_USE_SYSTEM_CURL=True \
+	  -D CMAKE_C_FLAGS="$CFLAGS" \
+	  -D CMAKE_CXX_FLAGS="$CXXFLAGS" \
+	  -D CMAKE_CPP_FLAGS="$CPPFLAGS" \
+	  -D CMAKE_INCLUDE_PATH=/usr/include \
+	  -D CMAKE_SYSTEM_INCLUDE_PATH=/usr/include \
+	  -D ZLIB_INCLUDE_DIR=/usr/include \
+	  -D ZLIB_LIBRARY=/usr/lib/libz.so \
+	  -D CMAKE_USE_SYSTEM_ZLIB=True \
+	  -D ZLIB_USE_STATIC_LIBS=ON \
+	  -D CMAKE_USE_SYSTEM_EXPAT=True \
+	  -D CMAKE_USE_SYSTEM_BZIP2=True \
+	  -D CMAKE_USE_SYSTEM_NGHTTP2=False \
+	  -D BUILD_TESTING=OFF \
+	  -D IMPLICIT_INCLUDE_DIRECTORIES=OFF \
+	  -D __UNIX_PATHS_INCLUDED=ON \
+	  -D BUILD_CursesDialog=OFF ||
+	  // die 'cmake' "configuration failed"
+	  # --system-zlib \
+	  # -B $OUTPUT_DIR \
+	  # -G "Unix Makefiles" \
+	  # -B $OUTPUT_DIR -G Ninja \
+
+  make -j $(($(nproc) + 1)) ||
+	  // die 'cmake' "building failed"
+
+  make install ||
+	  // die 'cmake' "installation failed"
+# fi
+}
+
+rm -rf \
+	"$1/usr/doc" \
+	"$1/usr/share/cmake"*/Help \
+	"$1/usr/share/bash-completion"

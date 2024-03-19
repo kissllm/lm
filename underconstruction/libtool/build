@@ -1,0 +1,108 @@
+#!/bin/sh -e
+
+
+# Maintainer: Natanael Copa <ncopa@alpinelinux.org>
+pkgname=libtool
+pkgver=2.4.7
+pkgrel=3
+pkgdesc="A generic library support script"
+arch="all"
+license="LGPL-2.0-or-later AND GPL-2.0-or-later"
+url="https://www.gnu.org/software/libtool"
+source="https://ftp.gnu.org/gnu/libtool/libtool-$pkgver.tar.gz
+	libtool-fix-cross-compile.patch
+	"
+depends="libltdl"
+makedepends="m4 help2man"
+checkdepends="gawk autoconf automake gzip"
+subpackages="libltdl-static libltdl $pkgname-doc"
+options="libtool"
+
+
+compiler_version="$($cc --version | grep version | awk -F " " '{print $NF}')"
+export C_INCLUDE_PATH=" \
+-isystem /usr/lib/clang/$compiler_version/include \
+-isystem /usr/include \
+"
+# -isystem /usr/lib/clang/$compiler_version/include/llvm_libc_wrappers \
+
+export CPLUS_INCLUDE_PATH=" \
+-isystem /usr/include/$KISS_XHOST_TRIPLE/c++/v1 \
+-isystem /usr/include/c++/v1 \
+-isystem /usr/lib/clang/$compiler_version/include \
+-isystem /usr/include \
+"
+# -isystem /usr/lib/clang/$compiler_version/include/llvm_libc_wrappers \
+
+export CFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem /usr/lib/clang/$compiler_version/include \
+-isystem /usr/include \
+-resource-dir=/usr/lib/clang/$compiler_version \
+-Werror -Wno-unused-command-line-argument \
+$CFLAGS"
+# -isystem /usr/lib/clang/$compiler_version/include/llvm_libc_wrappers \
+
+	export CXXFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem /usr/include/c++/v1 \
+-isystem /usr/lib/clang/$compiler_version/include \
+-isystem /usr/include \
+-resource-dir=/usr/lib/clang/$compiler_version \
+-Werror -Wno-unused-command-line-argument \
+$CXXFLAGS"
+# -isystem /usr/lib/clang/$compiler_version/include/llvm_libc_wrappers \
+
+export CC="/usr/bin/cc"
+export CXX="/usr/bin/c++"
+
+default_prepare
+
+# failing gnulib tests
+# sed -i \
+# 	-e "s|test-funclib-quote.sh||" \
+# 	-e "s|test-option-parser.sh||" \
+# 	gnulib-tests/Makefile.in
+
+export CPPFLAGS="-D_FORTIFY_SOURCE=2 \
+$CFLAGS"
+
+export LDFLAGS=-Wl,-O1,--sort-common,--as-needed,-z,relro
+export CC="/usr/bin/cc"
+export CXX="/usr/bin/c++"
+# export CPP='/usr/bin/cpp -E'
+export CPP='/usr/bin/cpp'
+
+# clang configure: error: C preprocessor "/lib/cpp" fails sanity check
+CFLAGS="$CFLAGS" \
+	CXXFLAGS="$CXXFLAGS" \
+	CPPFLAGS="$CXXFLAGS" \
+	bootstrap
+	# autoreconf --verbose --install --force --warnings=all
+
+./configure \
+	--build=$CBUILD \
+	--host=$CHOST \
+	--prefix=/usr
+make
+make DESTDIR="$1" install
+
+check() {
+	# Test 69 shlibpath_overrides_runpath fails
+	# Test 169 repeats the entire test suite with shorter max_cmd_len
+	make check TESTSUITEFLAGS="1-68 70-168"
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+}
+
+libltdl() {
+	pkgdesc="Runtime libraries for GNU Libtool Dynamic Module Loader"
+	depends=
+	amove usr/lib/libltdl.so*
+}
+
+

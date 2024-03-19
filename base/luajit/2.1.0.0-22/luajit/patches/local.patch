@@ -1,0 +1,46 @@
+diff --git a/Makefile b/Makefile
+index 792d7e5..40700d0 100644
+--- a/Makefile
++++ b/Makefile
+@@ -30,7 +30,7 @@ VERSION= $(MMVERSION).$(RELVER)
+ # Change the installation path as needed. This automatically adjusts
+ # the paths in src/luaconf.h, too. Note: PREFIX must be an absolute path!
+ #
+-export PREFIX= /usr/local
++export PREFIX= /usr
+ export MULTILIB= lib
+ ##############################################################################
+ 
+
+
+diff --git a/src/Makefile b/src/Makefile
+index 3a6a432..efa0bb3 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -23,7 +23,7 @@ NODOTABIVER= 51
+ # removing the '#' in front of them. Make sure you force a full recompile
+ # with "make clean", followed by "make" if you change any options.
+ #
+-DEFAULT_CC = gcc
++DEFAULT_CC = cc
+ #
+ # LuaJIT builds as a native 32 or 64 bit binary by default.
+ CC= $(DEFAULT_CC)
+@@ -213,7 +213,7 @@ TARGET_LD= $(CROSS)$(CC)
+ TARGET_AR= $(CROSS)ar rcus
+ TARGET_STRIP= $(CROSS)strip
+ 
+-TARGET_LIBPATH= $(or $(PREFIX),/usr/local)/$(or $(MULTILIB),lib)
++TARGET_LIBPATH= $(or $(PREFIX),/usr)/$(or $(MULTILIB),lib)
+ TARGET_SONAME= libluajit-$(ABIVER).so.$(MAJVER)
+ TARGET_DYLIBNAME= libluajit-$(ABIVER).$(MAJVER).dylib
+ TARGET_DYLIBPATH= $(TARGET_LIBPATH)/$(TARGET_DYLIBNAME)
+@@ -286,7 +286,7 @@ TARGET_XCFLAGS+= $(CCOPT_$(TARGET_LJARCH))
+ TARGET_ARCH+= $(patsubst %,-DLUAJIT_TARGET=LUAJIT_ARCH_%,$(TARGET_LJARCH))
+ 
+ ifneq (,$(PREFIX))
+-ifneq (/usr/local,$(PREFIX))
++ifneq (/usr,$(PREFIX))
+   TARGET_XCFLAGS+= -DLUA_ROOT=\"$(PREFIX)\"
+   ifneq (/usr,$(PREFIX))
+     TARGET_DYNXLDOPTS= -Wl,-rpath,$(TARGET_LIBPATH)

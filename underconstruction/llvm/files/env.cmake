@@ -35,3 +35,15 @@ macro(env_prepend env_name value)
 
 endmacro()
 
+
+function(filter_prefixed list prefix outvar)
+  foreach(str ${list})
+    string(FIND "${str}" "${prefix}" out)
+    if(NOT "${out}" EQUAL 0)
+      list(APPEND result ${str})
+    endif()
+  endforeach()
+  set(${outvar} ${result} PARENT_SCOPE)
+endfunction()
+
+

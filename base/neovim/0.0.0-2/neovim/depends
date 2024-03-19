@@ -1,0 +1,10 @@
+automake  make
+cmake     make
+libtool   make
+pkgconf   make
+tree-sitter
+# libtermkey
+# libvterm
+# luv
+# msgpack-c
+# unibilium

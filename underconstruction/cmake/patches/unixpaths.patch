@@ -1,0 +1,49 @@
+diff --git a/Modules/Platform/UnixPaths.cmake b/Modules/Platform/UnixPaths.cmake
+index 32bc7bdf..3e23586e 100644
+--- a/Modules/Platform/UnixPaths.cmake
++++ b/Modules/Platform/UnixPaths.cmake
+@@ -71,28 +71,33 @@ list(APPEND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
+   /lib /lib32 /lib64 /usr/lib /usr/lib32 /usr/lib64
+   )
+ 
+-if(CMAKE_SYSROOT_COMPILE)
+-  set(_cmake_sysroot_compile "${CMAKE_SYSROOT_COMPILE}")
+-else()
+-  set(_cmake_sysroot_compile "${CMAKE_SYSROOT}")
+-endif()
++if((NOT DEFINED NO_IMPLICIT_INCLUDE_DIRECTORIES AND
++NOT DEFINED ENV{NO_IMPLICIT_INCLUDE_DIRECTORIES}) OR IMPLICIT_INCLUDE_DIRECTORIES)
++
++  if(CMAKE_SYSROOT_COMPILE)
++    set(_cmake_sysroot_compile "${CMAKE_SYSROOT_COMPILE}")
++  else()
++    set(_cmake_sysroot_compile "${CMAKE_SYSROOT}")
++  endif()
+ 
+-# Default per-language values.  These may be later replaced after
+-# parsing the implicit directory information from compiler output.
+-set(_CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES_INIT
++  # Default per-language values.  These may be later replaced after
++  # parsing the implicit directory information from compiler output.
++  set(_CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES_INIT
+   ${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}
+   "${_cmake_sysroot_compile}/usr/include"
+   )
+-set(_CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES_INIT
++  set(_CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES_INIT
+   ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}
+   "${_cmake_sysroot_compile}/usr/include"
+   )
+-set(_CMAKE_CUDA_IMPLICIT_INCLUDE_DIRECTORIES_INIT
++  set(_CMAKE_CUDA_IMPLICIT_INCLUDE_DIRECTORIES_INIT
+   ${CMAKE_CUDA_IMPLICIT_INCLUDE_DIRECTORIES}
+   "${_cmake_sysroot_compile}/usr/include"
+   )
+ 
+-unset(_cmake_sysroot_compile)
++  unset(_cmake_sysroot_compile)
++
++endif ()
+ 
+ # Reminder when adding new locations computed from environment variables
+ # please make sure to keep Help/variable/CMAKE_SYSTEM_PREFIX_PATH.rst

@@ -303,8 +303,8 @@ index 7f00391d1dce..9c26c4423d50 100644
  
 +set (CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 +set (CMAKE_CXX_FLAGS " \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 +")
 +
@@ -2148,8 +2148,8 @@ index 1545340aa8a8..c580039e9323 100644
 #  
 # +set (CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 # +set (CMAKE_CXX_FLAGS " \
-# +-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-# +-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 # +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 # +")
 # +
@@ -2226,8 +2226,8 @@ index 094c23a73f36..5933f000f72d 100644
  
 +set (CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 +set (CMAKE_CXX_FLAGS " \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 +")
 +
@@ -2261,32 +2261,49 @@ index 094c23a73f36..5933f000f72d 100644
    list(APPEND SCUDO_LINK_LIBS atomic)
 
 
-
-
-# diff a/polly/lib/External/CMakeLists.txt b/polly/lib/External/CMakeLists.txt
-# --- a/polly/lib/External/CMakeLists.txt
-# +++ b/polly/lib/External/CMakeLists.txt
-# @@ -12,6 +12,20 @@
-#    set(DISABLE_WARNING_FLAGS "-w")
-#  endif ()
+# diff --git a/polly/lib/CMakeLists.txt b/polly/lib/CMakeLists.txt
+# index 5b58d0ba8d2d..fc2962ef97de 100644
+# --- a/polly/lib/CMakeLists.txt
+# +++ b/polly/lib/CMakeLists.txt
+# @@ -108,6 +108,8 @@ add_llvm_pass_plugin(Polly
+#    )
+#  set_target_properties(obj.Polly PROPERTIES FOLDER "Polly")
+#  set_target_properties(Polly PROPERTIES FOLDER "Polly")
+# +set_property(TARGET Polly APPEND PROPERTY COMPILE_OPTIONS "-fPIC")
+# +add_compile_options (-fPIC)
 # 
-# +set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
+#  if (MSVC_IDE OR XCODE)
+#    # Configure source groups for Polly source files. By default, in the IDE there
+
+
+# diff --git a/polly/CMakeLists.txt b/polly/CMakeLists.txt
+# index 5d0f2cd7f00e..b01c310be6d7 100644
+# --- a/polly/CMakeLists.txt
+# +++ b/polly/CMakeLists.txt
+# @@ -8,6 +8,22 @@ endif()
+#  # Must go below project(..)
+#  include(GNUInstallDirs)
+#  
+# +set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC \
 # +-isystem $ENV{MAKE_DIR}/clang/lib/Headers \
 # +-isystem $ENV{OUTPUT_DIR}/runtimes/runtimes-bins/pstl/generated_headers \
 # +-isystem $ENV{MAKE_DIR}/pstl/include \
-# +-isystem $ENV{MAKE_DIR}/libcxx/include \
-# +${CMAKE_C_FLAGS}")
-# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
-# +-isystem $ENV{MAKE_DIR}/clang/lib/Headers \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include ${CMAKE_C_FLAGS}")
+# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 # +-isystem $ENV{OUTPUT_DIR}/runtimes/runtimes-bins/pstl/generated_headers \
 # +-isystem $ENV{MAKE_DIR}/pstl/include \
-# +-isystem $ENV{MAKE_DIR}/libcxx/include \
-# +${CMAKE_CXX_FLAGS}")
-# +message(STATUS "\${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
-# +message(STATUS "\${CMAKE_CXX_FLAGS} = ${CMAKE_CXX_FLAGS}")
-# 
-#  # External: Integer Set Library
-#  if (POLLY_BUNDLED_ISL)
+# +-isystem $ENV{MAKE_DIR}/libcxx/include -isystem $ENV{MAKE_DIR}/clang/lib/Headers \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include ${CMAKE_CXX_FLAGS}")
+# +message(STATUS "polly/CMakeLists.txt \${CMAKE_C_COMPILER} = ${CMAKE_C_COMPILER}")
+# +message(STATUS "polly/CMakeLists.txt \${CMAKE_CXX_COMPILER} = ${CMAKE_CXX_COMPILER}")
+# +message(STATUS "polly/CMakeLists.txt \${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
+# +message(STATUS "polly/CMakeLists.txt \${CMAKE_CXX_FLAGS} = ${CMAKE_CXX_FLAGS}")
+# +
+#  if(POLLY_STANDALONE_BUILD)
+#    # Where is LLVM installed?
+#    find_package(LLVM CONFIG REQUIRED)
+
 
 # diff --git a/polly/lib/External/CMakeLists.txt b/polly/lib/External/CMakeLists.txt
 # index c0a5b32e283f..26bd1befdd8e 100644
@@ -2296,18 +2313,18 @@ index 094c23a73f36..5933f000f72d 100644
 #    set(DISABLE_WARNING_FLAGS "-w")
 #  endif ()
 # 
-# +set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
-# +-isystem $ENV{MAKE_DIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
+# +set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} \
+# +-isystem /usr/include/c++/v1 \
 # +-isystem $ENV{OUTPUT_DIR}/runtimes/runtimes-bins/pstl/generated_headers \
 # +-isystem $ENV{MAKE_DIR}/pstl/include \
-# +-isystem $ENV{MAKE_DIR}/libcxx/include \
-# +${CMAKE_C_FLAGS}")
-# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
-# +-isystem $ENV{MAKE_DIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
+# +-isystem $ENV{MAKE_DIR}/libcxx/include -isystem $ENV{MAKE_DIR}/clang/lib/Headers \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include ${CMAKE_C_FLAGS}")
+# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} \
+# +-isystem /usr/include/c++/v1 \
 # +-isystem $ENV{OUTPUT_DIR}/runtimes/runtimes-bins/pstl/generated_headers \
 # +-isystem $ENV{MAKE_DIR}/pstl/include \
-# +-isystem $ENV{MAKE_DIR}/libcxx/include \
-# +${CMAKE_CXX_FLAGS}")
+# +-isystem $ENV{MAKE_DIR}/libcxx/include -isystem $ENV{MAKE_DIR}/clang/lib/Headers \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include ${CMAKE_CXX_FLAGS}")
 # +message(STATUS "polly/lib/External/CMakeLists.txt \${CMAKE_C_COMPILER} = ${CMAKE_C_COMPILER}")
 # +message(STATUS "polly/lib/External/CMakeLists.txt \${CMAKE_CXX_COMPILER} = ${CMAKE_CXX_COMPILER}")
 # +message(STATUS "polly/lib/External/CMakeLists.txt \${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
@@ -2325,47 +2342,6 @@ index 094c23a73f36..5933f000f72d 100644
 #    target_compile_options(PollyISL PRIVATE ${DISABLE_WARNING_FLAGS})
 #    target_compile_options(polly-isl-test PRIVATE ${DISABLE_WARNING_FLAGS})
 
-# diff --git a/polly/lib/CMakeLists.txt b/polly/lib/CMakeLists.txt
-# index 5b58d0ba8d2d..fc2962ef97de 100644
-# --- a/polly/lib/CMakeLists.txt
-# +++ b/polly/lib/CMakeLists.txt
-# @@ -108,6 +108,8 @@ add_llvm_pass_plugin(Polly
-#    )
-#  set_target_properties(obj.Polly PROPERTIES FOLDER "Polly")
-#  set_target_properties(Polly PROPERTIES FOLDER "Polly")
-# +set_property(TARGET Polly APPEND PROPERTY COMPILE_OPTIONS "-fPIC")
-# +add_compile_options (-fPIC)
-# 
-#  if (MSVC_IDE OR XCODE)
-#    # Configure source groups for Polly source files. By default, in the IDE there
-
-# diff --git a/polly/CMakeLists.txt b/polly/CMakeLists.txt
-# index 5d0f2cd7f00e..b01c310be6d7 100644
-# --- a/polly/CMakeLists.txt
-# +++ b/polly/CMakeLists.txt
-# @@ -8,6 +8,22 @@ endif()
-#  # Must go below project(..)
-#  include(GNUInstallDirs)
-#  
-# +set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC -isystem ${KISS_ROOT}/usr/include \
-# +-isystem $ENV{MAKE_DIR}/clang/lib/Headers \
-# +-isystem $ENV{OUTPUT_DIR}/runtimes/runtimes-bins/pstl/generated_headers \
-# +-isystem $ENV{MAKE_DIR}/pstl/include \
-# +${CMAKE_C_FLAGS}")
-# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC -isystem ${KISS_ROOT}/usr/include \
-# +-isystem $ENV{MAKE_DIR}/clang/lib/Headers -isystem ${KISS_ROOT}/usr/include/c++/v1 \
-# +-isystem $ENV{OUTPUT_DIR}/runtimes/runtimes-bins/pstl/generated_headers \
-# +-isystem $ENV{MAKE_DIR}/pstl/include \
-# +-isystem $ENV{MAKE_DIR}/libcxx/include \
-# +${CMAKE_CXX_FLAGS}")
-# +message(STATUS "polly/lib/External/CMakeLists.txt \${CMAKE_C_COMPILER} = ${CMAKE_C_COMPILER}")
-# +message(STATUS "polly/lib/External/CMakeLists.txt \${CMAKE_CXX_COMPILER} = ${CMAKE_CXX_COMPILER}")
-# +message(STATUS "polly/lib/External/CMakeLists.txt \${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
-# +message(STATUS "polly/lib/External/CMakeLists.txt \${CMAKE_CXX_FLAGS} = ${CMAKE_CXX_FLAGS}")
-# +
-#  if(POLLY_STANDALONE_BUILD)
-#    # Where is LLVM installed?
-#    find_package(LLVM CONFIG REQUIRED)
 
 # diff --git a/polly/lib/External/CMakeLists.txt b/polly/lib/External/CMakeLists.txt
 # index 458925f9b6e4..a3fe810f6ab5 100644
@@ -2377,8 +2353,8 @@ index 094c23a73f36..5933f000f72d 100644
 #  
 # +set(CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 # +set(CMAKE_CXX_FLAGS " \
-# +-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-# +-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 # +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 # +")
 # +
@@ -2394,11 +2370,11 @@ index 094c23a73f36..5933f000f72d 100644
 # +set(SAFE_CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}")
 # +list(APPEND CMAKE_REQUIRED_FLAGS ${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS})
 # +list(APPEND CMAKE_REQUIRED_INCLUDES
-# +$ENV{TOOLCHAIN_PREFIX}/include/c++/v1
-# +$ENV{TOOLCHAIN_PREFIX}/lib/clang/$ENV{TOOLCHAIN_VERSION}/include
-# +$ENV{TOOLCHAIN_PREFIX}/include
+# +$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1
+# +$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/lib/clang/${CLANG_VERSION}/include
+# +$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include
 # +$ENV{MAKE_DIR}/libcxx/include
-# +$ENV{KISS_ROOT}/usr/include
+# +$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include
 # +)
 # +
 # +foreach(path ${CMAKE_REQUIRED_INCLUDES})
@@ -2413,7 +2389,7 @@ index 094c23a73f36..5933f000f72d 100644
 #      foreach (file_name ${_files})
 # -      set(_includes "${_includes}#include<${file_name}>\n")
 # +      if("${file_name}" STREQUAL "stdint.h")
-# +        set(_includes "${_includes}#include \"$ENV{KISS_ROOT}/usr/include/${file_name}\"\n")
+# +        set(_includes "${_includes}#include \"$ENV{XHOST_PREFIX}/include/${file_name}\"\n")
 # +      else()
 # +        set(_includes "${_includes}#include<${file_name}>\n")
 # +      endif()
@@ -2450,7 +2426,7 @@ index 094c23a73f36..5933f000f72d 100644
 #  
 #    check_c_type_exists(uint8_t "" HAVE_UINT8T)
 # -  check_c_type_exists(uint8_t "stdint.h" HAVE_STDINT_H)
-# +  if(EXISTS "$ENV{KISS_ROOT}/usr/include/stdint.h")
+# +  if(EXISTS "$ENV{XHOST_PREFIX}/include/stdint.h")
 # +    # check_c_type_exists(uint8_t "stdint.h" HAVE_STDINT_H)
 # +    set(HAVE_STDINT_H ON)
 # +  else()
@@ -2476,8 +2452,8 @@ index 458925f9b6e4..c141130baaf0 100644
  
 +set(CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 +set(CMAKE_CXX_FLAGS " \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 +")
 +
@@ -2502,7 +2478,7 @@ index 458925f9b6e4..c141130baaf0 100644
      foreach (file_name ${_files})
 -      set(_includes "${_includes}#include<${file_name}>\n")
 +      if("${file_name}" STREQUAL "stdint.h")
-+        set(_includes "${_includes}#include \"$ENV{KISS_ROOT}/usr/include/${file_name}\"\n")
++        set(_includes "${_includes}#include \"$ENV{XHOST_PREFIX}/include/${file_name}\"\n")
 +      else()
 +        set(_includes "${_includes}#include<${file_name}>\n")
 +      endif()
@@ -2539,7 +2515,7 @@ index 458925f9b6e4..c141130baaf0 100644
  
    check_c_type_exists(uint8_t "" HAVE_UINT8T)
 -  check_c_type_exists(uint8_t "stdint.h" HAVE_STDINT_H)
-+  if(EXISTS "$ENV{KISS_ROOT}/usr/include/stdint.h")
++  if(EXISTS "$ENV{XHOST_PREFIX}/include/stdint.h")
 +    # check_c_type_exists(uint8_t "stdint.h" HAVE_STDINT_H)
 +    set(HAVE_STDINT_H ON)
 +  else()
@@ -2550,11 +2526,52 @@ index 458925f9b6e4..c141130baaf0 100644
    if (HAVE_UINT8T)
 
 
+# diff --git a/llvm/lib/Support/CMakeLists.txt b/llvm/lib/Support/CMakeLists.txt
+# index 87fe7bebf688..21677e146ee2 100644
+# --- a/llvm/lib/Support/CMakeLists.txt
+# +++ b/llvm/lib/Support/CMakeLists.txt
+# @@ -272,7 +272,7 @@ add_llvm_component_library(LLVMSupport
+#    ${Backtrace_INCLUDE_DIRS}
+#  
+#    LINK_LIBS
+# -  ${system_libs} ${imported_libs} ${delayload_flags}
+# +  ${system_libs} ${imported_libs} ${delayload_flags} "--unwindlib=libunwind"
+#  
+#    LINK_COMPONENTS
+#    Demangle
+# @@ -318,10 +318,24 @@ endif()
+#  
+#  set_property(TARGET LLVMSupport PROPERTY LLVM_SYSTEM_LIBS "${llvm_system_libs}")
+#  
+# +set_property(TARGET LLVMSupport APPEND PROPERTY COMPILE_OPTIONS "-fPIC")
+# +set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+# +add_compile_options (-fPIC)
+# +remove_definitions( -DHAVE_LSEEK64=1 )
+# +add_definitions( -UHAVE_LSEEK64 )
+# +set_property(TARGET LLVMSupport PROPERTY HAVE_LSEEK64 0)
+# +add_compile_options (-UHAVE_LSEEK64)
+# +target_compile_options(LLVMSupport PRIVATE -UHAVE_LSEEK64)
+# +get_target_property(defs LLVMSupport DEFINITIONS)
+# +list(FILTER defs EXCLUDE REGEX [[^HAVE_LSEEK64=.*$]])
+# +set_property(TARGET LLVMSupport PROPERTY DEFINITIONS ${defs})
+# +target_include_directories(LLVMSupport PUBLIC
+# +$ENV{MAKE_DIR}/utils/bazel/llvm-project-overlay/llvm/include
+# +$ENV{MAKE_DIR}/utils/bazel/llvm-project-overlay/clang/include)
+#  
+#  if(LLVM_INTEGRATED_CRT_ALLOC)
+#    if(LLVM_INTEGRATED_CRT_ALLOC MATCHES "snmalloc$")
+# -    set_property(TARGET LLVMSupport PROPERTY CXX_STANDARD 17)
+# +    set_property(TARGET LLVMSupport PROPERTY CXX_STANDARD 23)
+#      add_compile_definitions(_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
+#      if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND
+#          "${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86_64")
+
+
 diff --git a/llvm/lib/Support/CMakeLists.txt b/llvm/lib/Support/CMakeLists.txt
-index 87fe7bebf688..21677e146ee2 100644
+index 87fe7bebf688..a8882e3d1bf6 100644
 --- a/llvm/lib/Support/CMakeLists.txt
 +++ b/llvm/lib/Support/CMakeLists.txt
-@@ -272,7 +272,7 @@ add_llvm_component_library(LLVMSupport
+@@ -272,12 +272,58 @@ add_llvm_component_library(LLVMSupport
    ${Backtrace_INCLUDE_DIRS}
  
    LINK_LIBS
@@ -2563,9 +2580,7 @@ index 87fe7bebf688..21677e146ee2 100644
  
    LINK_COMPONENTS
    Demangle
-@@ -318,10 +318,24 @@ endif()
- 
- set_property(TARGET LLVMSupport PROPERTY LLVM_SYSTEM_LIBS "${llvm_system_libs}")
+   )
  
 +set_property(TARGET LLVMSupport APPEND PROPERTY COMPILE_OPTIONS "-fPIC")
 +set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
@@ -2578,9 +2593,52 @@ index 87fe7bebf688..21677e146ee2 100644
 +get_target_property(defs LLVMSupport DEFINITIONS)
 +list(FILTER defs EXCLUDE REGEX [[^HAVE_LSEEK64=.*$]])
 +set_property(TARGET LLVMSupport PROPERTY DEFINITIONS ${defs})
++
++message(WARNING "Original \${CLANG_VERSION} = ${CLANG_VERSION}")
++if (NOT DEFINED CLANG_VERSION OR CLANG_VERSION STREQUAL "")
++  set (CLANG_VERSION $ENV{CLANG_VERSION} CACHE STRING "" )
++  if (NOT DEFINED CLANG_VERSION OR CLANG_VERSION STREQUAL "")
++    message(FATAL_ERROR "Failed to set \${CLANG_VERSION} = ${CLANG_VERSION}")
++  endif ()
++endif ()
++
++message(WARNING "Current \${CLANG_VERSION} = ${CLANG_VERSION}")
 +target_include_directories(LLVMSupport PUBLIC
 +$ENV{MAKE_DIR}/utils/bazel/llvm-project-overlay/llvm/include
 +$ENV{MAKE_DIR}/utils/bazel/llvm-project-overlay/clang/include)
++
++set (CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "")
++
++target_include_directories(LLVMSupport SYSTEM
++    PRIVATE
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/${LLVM_DEFAULT_TARGET_TRIPLE}/c++/v1
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/lib/clang/${CLANG_VERSION}/include
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include
++)
++
++# list(APPEND CMAKE_REQUIRED_INCLUDES
++# $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/${LLVM_DEFAULT_TARGET_TRIPLE}/c++/v1
++# $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1
++# $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/lib/clang/${CLANG_VERSION}/include
++# $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include
++# )
++
++foreach(path ${CMAKE_REQUIRED_INCLUDES})
++  message(WARNING "CMAKE_REQUIRED_INCLUDES : ${path}")
++endforeach()
++
+ set(llvm_system_libs ${system_libs})
+ 
+ # This block is only needed for llvm-config. When we deprecate llvm-config and
+@@ -317,11 +363,13 @@ if(LLVM_ENABLE_TERMINFO)
+ endif()
+ 
+ set_property(TARGET LLVMSupport PROPERTY LLVM_SYSTEM_LIBS "${llvm_system_libs}")
+-
++message(WARNING "\${LLVM_SYSTEM_LIBS} = ${LLVM_SYSTEM_LIBS}")
++message(WARNING "\${CMAKE_C_COMPILER} = ${CMAKE_C_COMPILER}")
++message(WARNING "\${CMAKE_CXX_COMPILER} = ${CMAKE_CXX_COMPILER}")
  
  if(LLVM_INTEGRATED_CRT_ALLOC)
    if(LLVM_INTEGRATED_CRT_ALLOC MATCHES "snmalloc$")
@@ -2589,6 +2647,52 @@ index 87fe7bebf688..21677e146ee2 100644
      add_compile_definitions(_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
      if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND
          "${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86_64")
+@@ -336,3 +384,45 @@ if(LLVM_WITH_Z3)
+     ${Z3_INCLUDE_DIR}
+     )
+ endif()
++
++get_target_property(LLVMSupport_INCLUDE_DIRECTORIES LLVMSupport INCLUDE_DIRECTORIES)
++
++foreach(path ${LLVMSupport_INCLUDE_DIRECTORIES})
++  message(WARNING "LLVMSupport_INCLUDE_DIRECTORIES : ${path}")
++endforeach()
++
++list(APPEND CMAKE_MODULE_PATH "$ENV{MAKE_DIR}/files")
++include(env)
++
++if(CMAKE_SYSROOT_COMPILE)
++  set(_cmake_sysroot_compile "${CMAKE_SYSROOT_COMPILE}")
++else()
++  set(_cmake_sysroot_compile "${CMAKE_SYSROOT}")
++endif()
++
++if (NOT DEFINED _cmake_sysroot_compile OR _cmake_sysroot_compile STREQUAL "")
++  set (_cmake_sysroot_compile "$ENV{CMAKE_SYSROOT_COMPILE}")
++  if (NOT DEFINED _cmake_sysroot_compile OR _cmake_sysroot_compile STREQUAL "")
++    set (_cmake_sysroot_compile "$ENV{CMAKE_SYSROOT}")
++    if (NOT DEFINED _cmake_sysroot_compile OR _cmake_sysroot_compile STREQUAL "")
++      message (FATAL_ERROR "Failed to set \${_cmake_sysroot_compile} = ${_cmake_sysroot_compile}")
++    endif ()
++  endif ()
++endif ()
++
++filter_prefixed("${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}"   ${_cmake_sysroot_compile} CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES)
++filter_prefixed("${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}" ${_cmake_sysroot_compile} CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES)
++filter_prefixed("${CMAKE_ASM_IMPLICIT_INCLUDE_DIRECTORIES}" ${_cmake_sysroot_compile} CMAKE_ASM_IMPLICIT_INCLUDE_DIRECTORIES)
++
++unset(_cmake_sysroot_compile)
++foreach(implicit_dir ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
++  message(WARNING "CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES : ${implicit_dir}")
++  # list(APPEND implicit_dir -I ${implicitDir})
++endforeach()
++
++
++
++
++
++
++
 
 
 diff --git a/llvm/lib/Target/CMakeLists.txt b/llvm/lib/Target/CMakeLists.txt
@@ -2823,18 +2927,18 @@ index 9869aeab0354..de79a08fb756 100644
 #    endif()
 #  endif()
 # 
-# +set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
-# +-isystem $ENV{MAKE_DIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
+# +set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} \
+# +-isystem /usr/include/c++/v1 \
 # +-isystem $ENV{OUTPUT_DIR}/runtimes/runtimes-bins/pstl/generated_headers \
 # +-isystem $ENV{MAKE_DIR}/pstl/include \
-# +-isystem $ENV{MAKE_DIR}/libcxx/include \
-# +${CMAKE_C_FLAGS}")
-# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem /usr/include \
-# +-isystem $ENV{MAKE_DIR}/clang/lib/Headers -isystem /usr/include/c++/v1 \
+# +-isystem $ENV{MAKE_DIR}/libcxx/include -isystem $ENV{MAKE_DIR}/clang/lib/Headers \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include ${CMAKE_C_FLAGS}")
+# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} \
+# +-isystem /usr/include/c++/v1 \
 # +-isystem $ENV{OUTPUT_DIR}/runtimes/runtimes-bins/pstl/generated_headers \
 # +-isystem $ENV{MAKE_DIR}/pstl/include \
-# +-isystem $ENV{MAKE_DIR}/libcxx/include \
-# +${CMAKE_CXX_FLAGS}")
+# +-isystem $ENV{MAKE_DIR}/libcxx/include -isystem $ENV{MAKE_DIR}/clang/lib/Headers \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include ${CMAKE_CXX_FLAGS}")
 # +message(STATUS "openmp/CMakeLists.txt \${CMAKE_C_COMPILER} = ${CMAKE_C_COMPILER}")
 # +message(STATUS "openmp/CMakeLists.txt \${CMAKE_CXX_COMPILER} = ${CMAKE_CXX_COMPILER}")
 # +message(STATUS "openmp/CMakeLists.txt \${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
@@ -2905,28 +3009,28 @@ index 9869aeab0354..de79a08fb756 100644
 #  # Must go below project(..)
 #  include(GNUInstallDirs)
 #  
-# +set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem ${KISS_ROOT}/usr/include \
+# +set(CMAKE_C_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} \
 # +-isystem $ENV{MAKE_DIR}/clang/lib/Headers \
 # +-isystem $ENV{OUTPUT_DIR}/runtimes/runtimes-bins/pstl/generated_headers \
 # +-isystem $ENV{MAKE_DIR}/pstl/include \
-# +${CMAKE_C_FLAGS}")
-# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} -isystem ${KISS_ROOT}/usr/include \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include ${CMAKE_C_FLAGS}")
+# +set(CMAKE_CXX_FLAGS " -D_LIBCPP_STD_VER=23 -fPIC --sysroot=${KISS_ROOT} \
 # +-isystem $ENV{MAKE_DIR}/clang/lib/Headers \
 # +-isystem $ENV{OUTPUT_DIR}/runtimes/runtimes-bins/pstl/generated_headers \
 # +-isystem $ENV{MAKE_DIR}/pstl/include \
 # +-isystem $ENV{MAKE_DIR}/libcxx/include \
-# +${CMAKE_CXX_FLAGS}")
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include ${CMAKE_CXX_FLAGS}")
 # +message(STATUS "openmp/CMakeLists.txt \${CMAKE_C_COMPILER} = ${CMAKE_C_COMPILER}")
 # +message(STATUS "openmp/CMakeLists.txt \${CMAKE_CXX_COMPILER} = ${CMAKE_CXX_COMPILER}")
 # +message(STATUS "openmp/CMakeLists.txt \${CMAKE_C_FLAGS} = ${CMAKE_C_FLAGS}")
 # +message(STATUS "openmp/CMakeLists.txt \${CMAKE_CXX_FLAGS} = ${CMAKE_CXX_FLAGS}")
 # +
-# +list(APPEND CMAKE_REQUIRED_INCLUDES "${KISS_ROOT}/usr/include \
+# +list(APPEND CMAKE_REQUIRED_INCLUDES "\
 # +$ENV{MAKE_DIR}/clang/lib/Headers \
 # +$ENV{OUTPUT_DIR}/runtimes/runtimes-bins/pstl/generated_headers \
 # +$ENV{MAKE_DIR}/pstl/include \
 # +$ENV{MAKE_DIR}/libcxx/include \
-# +")
+# +$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include ")
 # +
 # +add_compile_options (-fPIC)
 # +
@@ -2967,17 +3071,17 @@ index 9869aeab0354..de79a08fb756 100644
 
 
 diff --git a/openmp/CMakeLists.txt b/openmp/CMakeLists.txt
-index c1efcaf80b54..972da3631c2b 100644
+index c1efcaf80b54..039f74f699b3 100644
 --- a/openmp/CMakeLists.txt
 +++ b/openmp/CMakeLists.txt
-@@ -17,6 +17,36 @@ endif()
+@@ -17,6 +17,35 @@ endif()
  # Must go below project(..)
  include(GNUInstallDirs)
  
 +set(CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 +set(CMAKE_CXX_FLAGS " \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 +")
 +
@@ -2991,11 +3095,10 @@ index c1efcaf80b54..972da3631c2b 100644
 +message(STATUS "openmp/CMakeLists.txt \${CMAKE_CXX_FLAGS}     = ${CMAKE_CXX_FLAGS}")
 +
 +list(APPEND CMAKE_REQUIRED_INCLUDES
-+$ENV{TOOLCHAIN_PREFIX}/include/c++/v1
-+$ENV{TOOLCHAIN_PREFIX}/lib/clang/$ENV{TOOLCHAIN_VERSION}/include
-+$ENV{TOOLCHAIN_PREFIX}/include
-+$ENV{MAKE_DIR}/libcxx/include
-+$ENV{KISS_ROOT}/usr/include
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/${LLVM_DEFAULT_TARGET_TRIPLE}/c++/v1
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/lib/clang/${CLANG_VERSION}/include
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include
 +)
 +
 +add_compile_options (-fPIC)
@@ -3007,7 +3110,7 @@ index c1efcaf80b54..972da3631c2b 100644
  if (OPENMP_STANDALONE_BUILD)
    # CMAKE_BUILD_TYPE was not set, default to Release.
    if (NOT CMAKE_BUILD_TYPE)
-@@ -38,25 +68,32 @@ if (OPENMP_STANDALONE_BUILD)
+@@ -38,25 +67,32 @@ if (OPENMP_STANDALONE_BUILD)
      "C++ compiler to use for testing OpenMP runtime libraries.")
    set(OPENMP_LLVM_TOOLS_DIR "" CACHE PATH "Path to LLVM tools for testing.")
  
@@ -3046,7 +3149,7 @@ index c1efcaf80b54..972da3631c2b 100644
    set(CMAKE_CXX_STANDARD_REQUIRED NO)
    set(CMAKE_CXX_EXTENSIONS NO)
  endif()
-@@ -78,7 +115,7 @@ set(ENABLE_LIBOMPTARGET ON)
+@@ -78,7 +114,7 @@ set(ENABLE_LIBOMPTARGET ON)
  # Since the device plugins are only supported on Linux anyway,
  # there is no point in trying to compile libomptarget on other OSes.
  # 32-bit systems are not supported either.
@@ -3055,7 +3158,7 @@ index c1efcaf80b54..972da3631c2b 100644
    set(ENABLE_LIBOMPTARGET OFF)
  endif()
  
-@@ -102,7 +139,7 @@ if (OPENMP_ENABLE_LIBOMPTARGET)
+@@ -102,7 +138,7 @@ if (OPENMP_ENABLE_LIBOMPTARGET)
    # Check that the library can actually be built.
    if (APPLE OR WIN32)
      message(FATAL_ERROR "libomptarget cannot be built on Windows and MacOS X!")
@@ -3224,28 +3327,6 @@ index 0402a0177201..36fb0d74bd96 100644
 #  static LLVM_THREAD_LOCAL unsigned ThreadLocalSigInfoGenerationCounter = 0;
 # 
 #  namespace llvm {
-
-
-diff --git a/clang/lib/Headers/__stddef_max_align_t.h b/clang/lib/Headers/__stddef_max_align_t.h
-index e3b439285d0f..e58f21b5e216 100644
---- a/clang/lib/Headers/__stddef_max_align_t.h
-+++ b/clang/lib/Headers/__stddef_max_align_t.h
-@@ -10,6 +10,7 @@
- #ifndef __CLANG_MAX_ALIGN_T_DEFINED
- #define __CLANG_MAX_ALIGN_T_DEFINED
- 
-+#if defined(__NEED_max_align_t) && !defined(__DEFINED_max_align_t)
- #if defined(_MSC_VER)
- typedef double max_align_t;
- #elif defined(__APPLE__)
-@@ -23,5 +24,7 @@ typedef struct {
-       __attribute__((__aligned__(__alignof__(long double))));
- } max_align_t;
- #endif
-+#define __DEFINED_max_align_t
-+#endif
- 
- #endif
 
 
 diff --git a/llvm/include/llvm/Support/ScopedPrinter.h b/llvm/include/llvm/Support/ScopedPrinter.h
@@ -7512,11 +7593,47 @@ index 6af47b51d4c6..aa62d8a9a514 100644
        -DCMAKE_TOOLCHAIN_FILE=\"${LLVM_MAIN_SRC_DIR}/cmake/platforms/${toolchain}.cmake\")
 
 
+# diff --git a/llvm/tools/llvm-config/CMakeLists.txt b/llvm/tools/llvm-config/CMakeLists.txt
+# index 35b8b215605d..5b3b84613092 100644
+# --- a/llvm/tools/llvm-config/CMakeLists.txt
+# +++ b/llvm/tools/llvm-config/CMakeLists.txt
+# @@ -92,6 +92,21 @@ endif()
+#  add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/llvm-config.cpp ${BUILDVARIABLES_OBJPATH})
+#  
+#  if(CMAKE_CROSSCOMPILING)
+# +  if (((NOT DEFINED LLVM_NATIVE_TOOL_DIR) OR LLVM_NATIVE_TOOL_DIR STREQUAL "") AND (NOT $ENV{LLVM_NATIVE_TOOL_DIR} STREQUAL ""))
+# +    set(LLVM_NATIVE_TOOL_DIR "$ENV{LLVM_NATIVE_TOOL_DIR}" CACHE INTERNAL "")
+# +  endif()
+# +
+# +  if ((NOT DEFINED LLVM_NATIVE_TOOL_DIR) OR LLVM_NATIVE_TOOL_DIR STREQUAL "")
+# +    message(WARNING "\${LLVM_NATIVE_TOOL_DIR}    = ${LLVM_NATIVE_TOOL_DIR}")
+# +    if(NOT $ENV{LLVM_NATIVE_TOOL_DIR} STREQUAL "")
+# +      message(WARNING "\$ENV{LLVM_NATIVE_TOOL_DIR} = $ENV{LLVM_NATIVE_TOOL_DIR}")
+# +      set(LLVM_NATIVE_TOOL_DIR "$ENV{LLVM_NATIVE_TOOL_DIR}" CACHE INTERNAL "")
+# +    endif()
+# +  endif()
+# +  message(WARNING "\$ENV{LLVM_NATIVE_TOOL_DIR} = $ENV{LLVM_NATIVE_TOOL_DIR}")
+# +  message(WARNING "\${LLVM_NATIVE_TOOL_DIR}    = ${LLVM_NATIVE_TOOL_DIR}")
+# +  message(WARNING "\${LLVM_CONFIG_PATH}        = ${LLVM_CONFIG_PATH}")
+# +
+#    if (LLVM_NATIVE_TOOL_DIR AND NOT LLVM_CONFIG_PATH)
+#      if (EXISTS "${LLVM_NATIVE_TOOL_DIR}/llvm-config${LLVM_HOST_EXECUTABLE_SUFFIX}")
+#        set(LLVM_CONFIG_PATH "${LLVM_NATIVE_TOOL_DIR}/llvm-config${LLVM_HOST_EXECUTABLE_SUFFIX}")
+
+
 diff --git a/llvm/tools/llvm-config/CMakeLists.txt b/llvm/tools/llvm-config/CMakeLists.txt
-index 35b8b215605d..5b3b84613092 100644
+index 35b8b215605d..dd5a4b39544c 100644
 --- a/llvm/tools/llvm-config/CMakeLists.txt
 +++ b/llvm/tools/llvm-config/CMakeLists.txt
-@@ -92,6 +92,21 @@ endif()
+@@ -57,6 +57,7 @@ string(REGEX MATCH "-std=[^ ]+" LLVM_C_STD_FLAG ${CMAKE_C_FLAGS})
+ # Use configure_file to create BuildVariables.inc.
+ set(LLVM_SRC_ROOT ${LLVM_MAIN_SRC_DIR})
+ set(LLVM_OBJ_ROOT ${LLVM_BINARY_DIR})
++message(WARNING "\${LLVM_OBJ_ROOT}        = ${LLVM_OBJ_ROOT}")
+ set(LLVM_CPPFLAGS "${LLVM_DEFINITIONS}")
+ set(LLVM_CFLAGS "${LLVM_C_STD_FLAG} ${LLVM_DEFINITIONS}")
+ # The language standard potentially affects the ABI/API of LLVM, so we want
+@@ -92,6 +93,21 @@ endif()
  add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/llvm-config.cpp ${BUILDVARIABLES_OBJPATH})
  
  if(CMAKE_CROSSCOMPILING)
@@ -7538,6 +7655,69 @@ index 35b8b215605d..5b3b84613092 100644
    if (LLVM_NATIVE_TOOL_DIR AND NOT LLVM_CONFIG_PATH)
      if (EXISTS "${LLVM_NATIVE_TOOL_DIR}/llvm-config${LLVM_HOST_EXECUTABLE_SUFFIX}")
        set(LLVM_CONFIG_PATH "${LLVM_NATIVE_TOOL_DIR}/llvm-config${LLVM_HOST_EXECUTABLE_SUFFIX}")
+@@ -99,10 +115,14 @@ if(CMAKE_CROSSCOMPILING)
+   endif()
+ 
+   if (NOT LLVM_CONFIG_PATH)
+-    build_native_tool(llvm-config LLVM_CONFIG_PATH)
+-    set(LLVM_CONFIG_PATH "${LLVM_CONFIG_PATH}" CACHE STRING "")
++    build_native_tool(llvm-config LLVM_CONFIG_NATIVE_PATH)
++    set(LLVM_CONFIG_PATH "${LLVM_CONFIG_NATIVE_PATH}" CACHE STRING "")
++    message(WARNING "NATIVE \${LLVM_CONFIG_PATH} = ${LLVM_CONFIG_PATH}")
+ 
+-    add_custom_target(NativeLLVMConfig DEPENDS ${LLVM_CONFIG_PATH})
+-    add_dependencies(llvm-config NativeLLVMConfig)
++    # add_custom_target(NativeLLVMConfig DEPENDS ${LLVM_CONFIG_NATIVE_PATH})
++    # add_dependencies(llvm-config NativeLLVMConfig)
+   endif()
+ endif()
++foreach(path ${CMAKE_REQUIRED_INCLUDES})
++  message(WARNING "CMAKE_REQUIRED_INCLUDES : ${path}")
++endforeach()
+
+
+diff --git a/llvm/tools/llvm-config/llvm-config.cpp b/llvm/tools/llvm-config/llvm-config.cpp
+index e86eb2b44b10..47f2b09d891a 100644
+--- a/llvm/tools/llvm-config/llvm-config.cpp
++++ b/llvm/tools/llvm-config/llvm-config.cpp
+@@ -305,18 +305,33 @@ int main(int argc, char **argv) {
+   sys::fs::make_absolute(CurrentPath);
+   CurrentExecPrefix =
+       sys::path::parent_path(sys::path::parent_path(CurrentPath)).str();
++  std::string LLVM_OBJ_ROOT_IMPL(LLVM_OBJ_ROOT);
++  //Get the current path form the env variable $PATH
++  const char* llvm_obj_root_env = getenv("LLVM_OBJ_ROOT");
++  //If variable exists print to stdout
++  if (llvm_obj_root_env != NULL){
++#if !defined(NDEBUG)
++    outs() << "LLVM_OBJ_ROOT" << " = " << llvm_obj_root_env << std::endl;
++#endif
++    LLVM_OBJ_ROOT_IMPL = llvm_obj_root_env;
++  }
++  else{
++#if !defined(NDEBUG)
++    outs() << "LLVM_OBJ_ROOT" << " not found!" << std::endl;
++#endif
++  }
+ 
+   // Check to see if we are inside a development tree by comparing to possible
+   // locations (prefix style or CMake style).
+-  if (sys::fs::equivalent(CurrentExecPrefix, LLVM_OBJ_ROOT)) {
++  if (sys::fs::equivalent(CurrentExecPrefix, LLVM_OBJ_ROOT_IMPL)) {
+     IsInDevelopmentTree = true;
+     DevelopmentTreeLayout = CMakeStyle;
+-    ActiveObjRoot = LLVM_OBJ_ROOT;
++    ActiveObjRoot = LLVM_OBJ_ROOT_IMPL;
+   } else if (sys::fs::equivalent(sys::path::parent_path(CurrentExecPrefix),
+-                                 LLVM_OBJ_ROOT)) {
++                                 LLVM_OBJ_ROOT_IMPL)) {
+     IsInDevelopmentTree = true;
+     DevelopmentTreeLayout = CMakeBuildModeStyle;
+-    ActiveObjRoot = LLVM_OBJ_ROOT;
++    ActiveObjRoot = LLVM_OBJ_ROOT_IMPL;
+   } else {
+     IsInDevelopmentTree = false;
+     DevelopmentTreeLayout = CMakeStyle; // Initialized to avoid warnings.
 
 
 # diff --git a/llvm/include/llvm/Target/TargetSelectionDAG.td b/llvm/include/llvm/Target/TargetSelectionDAG.td
@@ -7643,8 +7823,8 @@ index 35b8b215605d..5b3b84613092 100644
 # +
 # +set(CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 # +set(CMAKE_CXX_FLAGS " \
-# +-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-# +-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 # +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 # +")
 # +
@@ -7660,11 +7840,11 @@ index 35b8b215605d..5b3b84613092 100644
 # +set(SAFE_CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}")
 # +list(APPEND CMAKE_REQUIRED_FLAGS ${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS})
 # +list(APPEND CMAKE_REQUIRED_INCLUDES
-# +$ENV{TOOLCHAIN_PREFIX}/include/c++/v1
-# +$ENV{TOOLCHAIN_PREFIX}/lib/clang/$ENV{TOOLCHAIN_VERSION}/include
-# +$ENV{TOOLCHAIN_PREFIX}/include
+# +$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1
+# +$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/lib/clang/${CLANG_VERSION}/include
+# +$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include
 # +$ENV{MAKE_DIR}/libcxx/include
-# +$ENV{KISS_ROOT}/usr/include
+# +$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include
 # +)
 #  
 #  if(MLIR_STANDALONE_BUILD)
@@ -7684,8 +7864,8 @@ index c91e9cd93dc8..a8402a292a01 100644
 +
 +set(CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 +set(CMAKE_CXX_FLAGS " \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 +")
 +
@@ -8069,9 +8249,9 @@ index 38dd233f5e33..5fa4b6b48732 100644
    ${COMPILER_RT_COMMON_CFLAGS}
    ${COMPILER_RT_CXX_CFLAGS})
 +set(CMAKE_CXX_FLAGS " \
-+-isystem ${KISS_ROOT}/usr/include/c++/v1 \
-+-isystem ${KISS_ROOT}/usr/include/tirpc \
-+-isystem ${KISS_ROOT}/usr/include \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/tirpc \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include \
 +")
  set(ORC_LINK_FLAGS ${COMPILER_RT_COMMON_LINK_FLAGS})
  set(ORC_LINK_LIBS
@@ -8173,8 +8353,8 @@ index 43ba9a102c84..bfd44ac605e6 100644
 #  
 # +set (CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 # +set (CMAKE_CXX_FLAGS " \
-# +-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-# +-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 # +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 # +")
 # +
@@ -8222,8 +8402,8 @@ index c5ec6b0ddfd2..10a46abaf056 100644
  
 +set (CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 +set (CMAKE_CXX_FLAGS " \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 +")
 +
@@ -9028,8 +9208,8 @@ index 9bbef11067ae..ec851adb01b6 100644
 # +
 # +set (CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 # +set (CMAKE_CXX_FLAGS " \
-# +-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-# +-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
+# +-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 # +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 # +")
 # +
@@ -9066,8 +9246,8 @@ index 4107e04b87d8..014e178f2d19 100644
  
 +set (CMAKE_C_FLAGS " $ENV{RUNTIMES_TARGET_CMAKE_C_FLAGS} ")
 +set (CMAKE_CXX_FLAGS " \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
-+-isystem $ENV{TOOLCHAIN_PREFIX}/include/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/$ENV{LLVM_TARGET_TRIPLE}/c++/v1 \
++-isystem $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1 \
 +$ENV{RUNTIMES_TARGET_CMAKE_CXX_FLAGS} \
 +")
 +
@@ -9127,7 +9307,7 @@ index 47a6400b4287..d20942956a0e 100644
      add_tablegen(lldb-tblgen LLDB
        LLDBOptionDefEmitter.cpp
        LLDBPropertyDefEmitter.cpp
-@@ -14,5 +23,45 @@ if (NOT DEFINED LLDB_TABLEGEN_EXE)
+@@ -14,5 +23,47 @@ if (NOT DEFINED LLDB_TABLEGEN_EXE)
        LLDBTableGenUtils.cpp
        )
      set_target_properties(lldb-tblgen PROPERTIES FOLDER "LLDB tablegenning")
@@ -9136,18 +9316,20 @@ index 47a6400b4287..d20942956a0e 100644
 +    message(WARNING "\${LDFLAGS} = ${LDFLAGS}")
 +    target_link_directories(lldb-tblgen
 +      PUBLIC
++      $ENV{OUTPUT_DIR}/lib/clang/${CLANG_VERSION}/lib/${LLVM_DEFAULT_TARGET_TRIPLE}
 +      $ENV{OUTPUT_DIR}/lib/${LLVM_DEFAULT_TARGET_TRIPLE}
-+      $ENV{TOOLCHAIN_PREFIX}/lib/${LLVM_DEFAULT_TARGET_TRIPLE}
++      $ENV{RESOURCE_DIR}/lib/${LLVM_DEFAULT_TARGET_TRIPLE}
 +      $ENV{RESOURCE_DIR}/lib/linux
-+      $ENV{TOOLCHAIN_LIB_DIR}
++      $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/lib/${LLVM_DEFAULT_TARGET_TRIPLE}
++      $ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/lib
 +      )
 +    target_link_options(lldb-tblgen
 +      PUBLIC
 +      -resource-dir=$ENV{RESOURCE_DIR}
-+      -Wl,-rpath=$ENV{OUTPUT_DIR}/lib/${LLVM_DEFAULT_TARGET_TRIPLE}
-+      -Wl,-rpath=$ENV{TOOLCHAIN_PREFIX}/lib/${LLVM_DEFAULT_TARGET_TRIPLE}
-+      -Wl,-rpath=$ENV{RESOURCE_DIR}/lib/linux
-+      -Wl,-rpath=$ENV{TOOLCHAIN_LIB_DIR}
++      -Wl,-rpath=\${ORIGIN}/../lib/${LLVM_DEFAULT_TARGET_TRIPLE}
++      -Wl,-rpath=\${ORIGIN}/../lib/clang/${CLANG_VERSION}/lib/${LLVM_DEFAULT_TARGET_TRIPLE}
++      -Wl,-rpath=\${ORIGIN}/../lib/clang/${CLANG_VERSION}/lib/linux
++      -Wl,-rpath=\${ORIGIN}/../lib
 +      -fuse-ld=lld
 +      -stdlib=libc++
 +      -rtlib=compiler-rt
@@ -9286,7 +9468,7 @@ index 5acb7d873db4..2df26b4ad544 100644
  check_cxx_symbol_exists(__NR_process_vm_readv "sys/syscall.h" HAVE_NR_PROCESS_VM_READV)
  
  check_library_exists(compression compression_encode_buffer "" HAVE_LIBCOMPRESSION)
-+if(NOT EXISTS "$ENV{KISS_ROOT}/usr/include/compression.h")
++if(NOT EXISTS "$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/compression.h")
 +  unset(HAVE_LIBCOMPRESSION)
 +  unset(HAVE_LIBCOMPRESSION CACHE)
 +endif()

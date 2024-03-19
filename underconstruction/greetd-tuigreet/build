@@ -1,0 +1,48 @@
+# Contributor: Jakub Jirutka <jakub@jirutka.cz>
+# Maintainer: Jakub Jirutka <jakub@jirutka.cz>
+pkgname=greetd-tuigreet
+_projname=tuigreet
+pkgver=0.8.0
+pkgrel=3
+pkgdesc="Graphical console greeter for greetd"
+url="https://github.com/apognu/tuigreet"
+# riscv64: blocked by cargo
+# s390x: no desktop on this arch
+arch="all !riscv64 !s390x"
+license="GPL-3.0"
+depends="greetd"
+makedepends="cargo scdoc cargo-auditable"
+pkgusers="greetd"
+subpackages="$pkgname-doc"
+source="https://github.com/apognu/tuigreet/archive/$pkgver/tuigreet-$pkgver.tar.gz"
+builddir="$srcdir/$_projname-$pkgver"
+options="!check"  # no tests provided
+
+export CARGO_PROFILE_RELEASE_OPT_LEVEL="z"
+
+prepare() {
+	default_prepare
+
+	cargo fetch --target="$CTARGET" --locked
+}
+
+build() {
+	cargo auditable build --release --frozen
+
+	scdoc < contrib/man/tuigreet-1.scd > contrib/man/tuigreet.1
+}
+
+check() {
+	cargo test --frozen
+}
+
+package() {
+	install -D -m755 target/release/tuigreet -t "$pkgdir"/usr/bin/
+	install -D -m644 contrib/man/tuigreet.1 -t "$pkgdir"/usr/share/man/man1/
+
+	install -d -m700 -o greetd -g root "$pkgdir"/var/cache/tuigreet
+}
+
+sha512sums="
+a8a399fd82104042656f04aa7b453bae8e7b719e4b427aff5d39ba81e4a4ab0601d5726f5446218f9dcf3b4b5a776ee2bff0b18c9b8a8c2938dc8f8dbe126580  tuigreet-0.8.0.tar.gz
+"

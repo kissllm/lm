@@ -1,0 +1,3 @@
+git+https://github.com/Kitware/CMake.git
+patches/cpp11.patch
+patches/unixpaths.patch

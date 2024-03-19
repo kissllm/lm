@@ -2,10 +2,23 @@
 
 export CFLAGS="$CFLAGS -fPIC"
 
-./configure \
-    --prefix=/usr \
-    --libdir=/usr/lib \
-    --shared
+OUTPUT_DIR="$OBJ_ROOT/zlib"
+# ./configure \
+#   --enable-shared \
+#     --prefix=/usr
 
-make
-make install
+cmake -B "$OUTPUT_DIR" -G Ninja \
+	-D BUILD_SHARED_LIBS=ON \
+	-D CMAKE_INSTALL_PREFIX=/usr
+
+# make
+cmake --build "${OUTPUT_DIR}" --target all --parallel
+# make DESTDIR="$1" install
+cmake  --build "${OUTPUT_DIR}" --target install --parallel
+
+(
+cd "$1/usr/lib"
+lib_name="$(find . -type f -name "*libz.so*")"
+[ "$(readlink -fn "$lib_name")" = "$(readlink -fn "libz.so")" ] ||
+ln -sf "$lib_name" ./libz.so
+)

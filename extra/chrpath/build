@@ -1,0 +1,85 @@
+#! /bin/sh -e
+# Maintainer: Natanael Copa <ncopa@alpinelinux.org>
+pkgname=chrpath
+pkgver=0.16
+pkgrel=4
+pkgdesc="Modify rpath of compiled programs"
+url="https://tracker.debian.org/pkg/chrpath"
+arch="all"
+license="GPL-2.0-or-later"
+subpackages="$pkgname-doc"
+source="https://alioth-archive.debian.org/releases/chrpath/chrpath/$pkgver/chrpath-$pkgver.tar.gz"
+
+export C_INCLUDE_PATH=" \
+-isystem=$KISS_ROOT/usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+"
+
+export CPLUS_INCLUDE_PATH=" \
+-isystem $KISS_ROOT/usr/include/x86_64-linux-musl/c++/v1 \
+-isystem $KISS_ROOT/usr/include/c++/v1 \
+-isystem=$KISS_ROOT/usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+"
+
+export CFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem=$KISS_ROOT/usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+-resource-dir=$KISS_ROOT/usr/lib/clang/18.0.0 \
+-Werror -Wno-unused-command-line-argument \
+$CFLAGS"
+
+	export CXXFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem $KISS_ROOT/usr/include/c++/v1 \
+-isystem=$KISS_ROOT/usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+-resource-dir=$KISS_ROOT/usr/lib/clang/18.0.0 \
+-Werror -Wno-unused-command-line-argument \
+$CXXFLAGS"
+
+export CC="/usr/bin/cc"
+export CXX="/usr/bin/c++"
+
+
+prepare() {
+	default_prepare
+	# update_config_sub
+}
+prepare
+build() {
+	# clang configure: error: C preprocessor "/lib/cpp" fails sanity check
+	CFLAGS="$CFLAGS" \
+		CXXFLAGS="$CXXFLAGS" \
+		CPPFLAGS="$CXXFLAGS" \
+	autoreconf --verbose --install --force --warnings=all
+
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--infodir=/usr/share/info \
+		--localstatedir=/var
+
+	make
+}
+build
+check() {
+	make check
+}
+check
+package() {
+	make DESTDIR="$pkgdir" docdir=/usr/share/doc/$pkgname-$pkgver \
+		install
+}
+package
+sha512sums="aa04d490f78bff20a56fe20539cec10218c0772a668909eda8324ca825f51e8ef92001e95d9c316e79a145a043c9c327ec94d1a82e104ab408ca1021832745aa  chrpath-0.16.tar.gz"

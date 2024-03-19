@@ -1,5 +1,51 @@
 #!/bin/sh -e
+
+# compiler_version="$($cc --version | grep version | awk -F " " '{print $NF}')"
+# # compiler_triple="$(cc -dumpmachine)"
+
+# export C_INCLUDE_PATH=" \
+# -isystem $KISS_ROOT/usr/lib/clang/$compiler_version/include \
+# -isystem $KISS_ROOT/usr/include \
+# "
+# -isystem $KISS_ROOT/usr/lib/clang/$compiler_version/include/llvm_libc_wrappers \
+# 
+# export CPLUS_INCLUDE_PATH=" \
+# -isystem $KISS_ROOT/usr/include/x86_64-linux-musl/c++/v1 \
+# -isystem $KISS_ROOT/usr/include/c++/v1 \
+# -isystem $KISS_ROOT/usr/lib/clang/$compiler_version/include \
+# -isystem $KISS_ROOT/usr/include \
+# "
+# -isystem $KISS_ROOT/usr/lib/clang/$compiler_version/include/llvm_libc_wrappers \
+
+# export CFLAGS=" \
+# -D __NEED_max_align_t \
+# -isysroot=$KISS_ROOT \
+# -isystem $KISS_ROOT/usr/lib/clang/$compiler_version/include \
+# -isystem $KISS_ROOT/usr/include \
+# -resource-dir=$KISS_ROOT/usr/lib/clang/$compiler_version \
+# -Werror -Wno-unused-command-line-argument \
+# $CFLAGS"
+# -isystem $KISS_ROOT/usr/lib/clang/$compiler_version/include/llvm_libc_wrappers \
+# 
+#   export CXXFLAGS=" \
+# -D __NEED_max_align_t \
+# -isysroot=$KISS_ROOT \
+# -isystem $KISS_ROOT/usr/include/$KISS_XHOST_TRIPLE/c++/v1 \
+# -isystem $KISS_ROOT/usr/include/c++/v1 \
+# -isystem $KISS_ROOT/usr/lib/clang/$compiler_version/include \
+# -isystem $KISS_ROOT/usr/include \
+# -resource-dir=$KISS_ROOT/usr/lib/clang/$compiler_version \
+# -Werror -Wno-unused-command-line-argument \
+# $CXXFLAGS"
+# -isystem $KISS_ROOT/usr/lib/clang/$compiler_version/include/llvm_libc_wrappers \
+# 
+# export CC="/usr/bin/cc"
+# export CXX="/usr/bin/c++"
+
+// log '$CFLAGS' "$CFLAGS"
+// log '$CXXFLAGS' "$CXXFLAGS"
+
 cmake -B objects \
-    -DCMAKE_INSTALL_PREFIX=/usr
+	-DCMAKE_INSTALL_PREFIX=/usr
 cmake --build objects --target all --parallel
 cmake --build objects --target install

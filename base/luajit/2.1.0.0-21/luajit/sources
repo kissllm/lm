@@ -1,0 +1,4 @@
+# git+https://github.com/LuaJIT/LuaJIT@master
+# git+https://github.com/LuaJIT/LuaJIT@v2.1
+git+https://github.com/LuaJIT/LuaJIT
+patches/local.patch

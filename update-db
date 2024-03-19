@@ -1,16 +1,64 @@
-#! /bin/sh
+#! /bin/sh -e
+# Update reference repos
+trap 'Error at $LINENO' ERR
 SCRIPT=$(readlink -f "$0")
 SCRIPT_PATH="${SCRIPT%/*}"
 {
 	[ ! -z "${REPO_MAIN:+x}" ] &&
 	[ "$REPO_MAIN" = "$SCRIPT_PATH" ]
 } || REPO_MAIN=$SCRIPT_PATH
+
+[ ! -z "${REPO_MAIN:+x}" ] || {
+	echo "\$REPO_MAIN = ${REPO_MAIN-} looks not correct"
+	exit 1
+}
+
 echo "\$REPO_MAIN = $REPO_MAIN"
+
+repo_main_parent="${REPO_MAIN%/*}"
+repo_root="$repo_main_parent"
+
+[ ! -z "${REPO_ROOT:+x}" ] || {
+	echo "\$REPO_ROOT = ${REPO_ROOT-} looks not correct"
+	exit 1
+}
+
 echo "\$REPO_ROOT = $REPO_ROOT"
-[ ! -z "${REPO_MAIN:+x}" ] || return
-[ ! -z "${REPO_ROOT:+x}" ] || return
-cd $REPO_ROOT
-for item in $(\ls -1 "$REPO_ROOT"); do
+
+[ ! -z "${REPO_ROOT_IMPL:+x}" ] || {
+	echo "\$REPO_ROOT_IMPL = ${REPO_ROOT_IMPL-} looks not correct"
+	exit 1
+}
+
+echo "\$REPO_ROOT_IMPL = $REPO_ROOT_IMPL"
+
+[ ! -z "${repo_main_parent:+x}" ] &&
+[ -z "${repo_main_parent##*"${REPO_ROOT}"*}" ] ||  {
+	echo "\$REPO_ROOT = $REPO_ROOT"
+	echo "\$repo_main_parent = ${repo_main_parent-} looks not correct"
+	exit 1
+}
+
+[ ! -z "${repo_main_parent:+x}" ] &&
+[ -z "${repo_main_parent##*"${REPO_ROOT_IMPL}"*}" ] ||  {
+	echo "\$REPO_ROOT_IMPL = $REPO_ROOT_IMPL"
+	echo "\$repo_main_parent = ${repo_main_parent-} looks not correct"
+	exit 1
+}
+
+[ "$repo_main_parent" = "${REPO_ROOT_IMPL}" ] ||
+repo_root="${REPO_ROOT_IMPL}"
+
+[ ! -z "${repo_root:+x}" ] || {
+	echo "\$repo_root = ${repo_root-} looks not correct"
+	exit 1
+}
+
+echo "\$repo_root = $repo_root"
+
+cd $repo_root
+
+for item in $(\ls -1 "$repo_root"); do
 	[ -d "$item" ] || continue
 	echo "\$item = $item"
 	[ "$item" = "${REPO_MAIN##*/}" ] ||
@@ -27,5 +75,5 @@ for item in $(\ls -1 "$REPO_ROOT"); do
 		git reset --hard origin/$BRANCH_NAME
 		( git pull 2>/dev/null ) || echo "pull failed"
 	}
-	cd $REPO_ROOT
+	cd $repo_root
 done

@@ -1,0 +1,53 @@
+#!/bin/sh -e
+
+export C_INCLUDE_PATH=" \
+-isystem /usr/lib/clang/18.0.0/include \
+-isystem /usr/include \
+"
+# -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+
+export CPLUS_INCLUDE_PATH=" \
+-isystem /usr/include/x86_64-linux-musl/c++/v1 \
+-isystem /usr/include/c++/v1 \
+-isystem /usr/lib/clang/18.0.0/include \
+-isystem /usr/include \
+"
+# -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+
+export CFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem /usr/lib/clang/18.0.0/include \
+-isystem /usr/include \
+-resource-dir=/usr/lib/clang/18.0.0 \
+-Werror -Wno-unused-command-line-argument \
+$CFLAGS"
+# -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+
+	export CXXFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem /usr/include/c++/v1 \
+-isystem /usr/lib/clang/18.0.0/include \
+-isystem /usr/include \
+-resource-dir=/usr/lib/clang/18.0.0 \
+-Werror -Wno-unused-command-line-argument \
+$CXXFLAGS"
+# -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+
+export CC="/usr/bin/cc"
+export CXX="/usr/bin/c++"
+
+# clang configure: error: C preprocessor "/lib/cpp" fails sanity check
+CFLAGS="$CFLAGS" \
+	CXXFLAGS="$CXXFLAGS" \
+	CPPFLAGS="$CXXFLAGS" \
+	autoreconf --verbose --install --force --warnings=all
+
+./configure \
+	--prefix=/usr \
+	--build=$KISS_XBUILD_TRIPLE \
+	--host=$KISS_XHOST_TRIPLE
+
+make
+make DESTDIR="$1" install

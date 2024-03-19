@@ -881,8 +881,36 @@ index 630947abec7e..613983bde0be 100644
              ${source_directory}/Stub.cpp
 
 
+# diff --git a/lldb/CMakeLists.txt b/lldb/CMakeLists.txt
+# index 4a53d7ef3d0d..8118101c8349 100644
+# --- a/lldb/CMakeLists.txt
+# +++ b/lldb/CMakeLists.txt
+# @@ -27,7 +27,7 @@ include(GNUInstallDirs)
+#  option(LLDB_INCLUDE_TESTS "Generate build targets for the LLDB unit tests." ${LLVM_INCLUDE_TESTS})
+#  
+#  if(LLDB_BUILT_STANDALONE)
+# -  set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+# +  set(CMAKE_CXX_STANDARD 23 CACHE STRING "C++ standard to conform to")
+#    set(CMAKE_CXX_STANDARD_REQUIRED YES)
+#    set(CMAKE_CXX_EXTENSIONS NO)
+#  
+# @@ -38,8 +38,12 @@ include(LLDBConfig)
+#  include(AddLLDB)
+#  
+#  # Define the LLDB_CONFIGURATION_xxx matching the build type.
+# +message(WARNING "\${CMAKE_BUILD_TYPE} = ${CMAKE_BUILD_TYPE}")
+# +string(TOUPPER "${CMAKE_BUILD_TYPE}" uppercase_CMAKE_BUILD_TYPE)
+#  if(uppercase_CMAKE_BUILD_TYPE STREQUAL "DEBUG" )
+#    add_definitions(-DLLDB_CONFIGURATION_DEBUG)
+# +# else()
+# +#   set(LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING 1 CACHE INTERNAL "" )
+#  endif()
+#  
+#  if (WIN32)
+
+
 diff --git a/lldb/CMakeLists.txt b/lldb/CMakeLists.txt
-index 4a53d7ef3d0d..8118101c8349 100644
+index 4a53d7ef3d0d..615c21141be7 100644
 --- a/lldb/CMakeLists.txt
 +++ b/lldb/CMakeLists.txt
 @@ -27,7 +27,7 @@ include(GNUInstallDirs)
@@ -907,6 +935,22 @@ index 4a53d7ef3d0d..8118101c8349 100644
  endif()
  
  if (WIN32)
+@@ -106,6 +110,15 @@ if(CMAKE_CROSSCOMPILING AND LLDB_BUILT_STANDALONE AND NOT LLDB_TABLEGEN_EXE)
+     -DClang_DIR=${NATIVE_Clang_DIR})
+ endif()
+ 
++set (CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "")
++
++include_directories(SYSTEM
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/${LLVM_DEFAULT_TARGET_TRIPLE}/c++/v1
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/lib/clang/${CLANG_VERSION}/include
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include
++)
++
+ # TableGen
+ add_subdirectory(utils/TableGen)
+ 
 
 
 diff --git a/mlir/examples/standalone/CMakeLists.txt b/mlir/examples/standalone/CMakeLists.txt
@@ -963,8 +1007,23 @@ index 39cc9c060db7..d484de59a153 100644
    add_mlir_library(mlir_runner_utils
 
 
+# diff --git a/lld/CMakeLists.txt b/lld/CMakeLists.txt
+# index 595c286abd91..e22dc41c8d44 100644
+# --- a/lld/CMakeLists.txt
+# +++ b/lld/CMakeLists.txt
+# @@ -17,7 +17,7 @@ endif()
+#  include(GNUInstallDirs)
+#  
+#  if(LLD_BUILT_STANDALONE)
+# -  set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+# +  set(CMAKE_CXX_STANDARD 23 CACHE STRING "C++ standard to conform to")
+#    set(CMAKE_CXX_STANDARD_REQUIRED YES)
+#    set(CMAKE_CXX_EXTENSIONS NO)
+#  
+
+
 diff --git a/lld/CMakeLists.txt b/lld/CMakeLists.txt
-index 595c286abd91..e22dc41c8d44 100644
+index 595c286abd91..e2db0f9af5c0 100644
 --- a/lld/CMakeLists.txt
 +++ b/lld/CMakeLists.txt
 @@ -17,7 +17,7 @@ endif()
@@ -976,6 +1035,24 @@ index 595c286abd91..e22dc41c8d44 100644
    set(CMAKE_CXX_STANDARD_REQUIRED YES)
    set(CMAKE_CXX_EXTENSIONS NO)
  
+@@ -187,6 +187,16 @@ if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY)
+     )
+ endif()
+ 
++set (CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "")
++
++include_directories(SYSTEM
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/${LLVM_DEFAULT_TARGET_TRIPLE}/c++/v1
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include/c++/v1
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/lib/clang/${CLANG_VERSION}/include
++$ENV{SYSROOT}/$ENV{INSTALL_PREFIX}/include
++$ENV{XHOST_PREFIX}/include
++)
++
+ add_subdirectory(Common)
+ add_subdirectory(tools/lld)
+ 
+
 
 
 diff --git a/pstl/CMakeLists.txt b/pstl/CMakeLists.txt

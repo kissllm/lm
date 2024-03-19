@@ -1,0 +1,26 @@
+diff --git a/configure.ac b/configure.ac
+index 4129920..2a6394f 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -32,7 +32,7 @@ AC_ARG_WITH([asan],
+ )
+ AM_CONDITIONAL([WITH_ASAN], [test x"$with_asan" = xyes])
+ 
+-AX_CXX_COMPILE_STDCXX([17], [noext], [])
++# AX_CXX_COMPILE_STDCXX([17], [noext], [])
+ 
+ AC_ARG_WITH([ubsan],
+    AS_HELP_STRING([--with-ubsan], [Build with undefined behavior sanitizer])
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index a68d2e2..87da6b6 100644
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -112,7 +112,7 @@ big_dynstr_LDFLAGS = $(LDFLAGS_local)
+ # normal autotools rules to build the program:
+ # https://github.com/NixOS/patchelf/pull/303
+ libbig-dynstr.so: big-dynstr.c
+-	$(CC) -fPIC -shared -o $@ $<
++	$(CC) -fPIC ${CFLAGS} -shared -o $@ $<
+ libbig-dynstr.debug: libbig-dynstr.so
+ 	$(STRIP) --only-keep-debug libbig-dynstr.so -o libbig-dynstr.debug
+ check_DATA = libbig-dynstr.debug

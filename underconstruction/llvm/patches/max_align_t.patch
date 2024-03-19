@@ -1,0 +1,24 @@
+
+
+diff --git a/clang/lib/Headers/__stddef_max_align_t.h b/clang/lib/Headers/__stddef_max_align_t.h
+index e3b439285d0f..e58f21b5e216 100644
+--- a/clang/lib/Headers/__stddef_max_align_t.h
++++ b/clang/lib/Headers/__stddef_max_align_t.h
+@@ -10,6 +10,7 @@
+ #ifndef __CLANG_MAX_ALIGN_T_DEFINED
+ #define __CLANG_MAX_ALIGN_T_DEFINED
+ 
++#if !defined(__DEFINED_max_align_t)
+ #if defined(_MSC_VER)
+ typedef double max_align_t;
+ #elif defined(__APPLE__)
+@@ -23,5 +24,7 @@ typedef struct {
+       __attribute__((__aligned__(__alignof__(long double))));
+ } max_align_t;
+ #endif
++#define __DEFINED_max_align_t
++#endif
+ 
+ #endif
+
+

@@ -1,0 +1,8 @@
+#! /bin/sh -e
+
+
+OUTPUT_DIR="$OBJ_ROOT/wshowkeys"
+meson $OUTPUT_DIR
+ninja -C $OUTPUT_DIR
+ninja -C $OUTPUT_DIR install
+chmod a+s /usr/bin/wshowkeys

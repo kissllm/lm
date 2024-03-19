@@ -1,0 +1,71 @@
+#! /bin/sh -e
+
+unset DESTDIR
+# find "$PKG_ROOT/luajit/usr" -mindepth 1 -delete
+# mkdir -p bin
+# ln -s /usr/bin/gmake "$PWD/bin/make"
+# export PATH="$PWD/bin:$PATH"
+DESTDIR="$1"
+
+# luajit hardcoded to /usr/local
+default_prepare
+
+CFLAGS="${CFLAGS-} -isystem $KISS_ROOT/usr/include" \
+PREFIX="/usr" make amalg
+# build_executable=$(find "$PWD" -type f -name "luajit*")
+# echo "build_executable = "$build_executable
+DESTDIR="$1" PREFIX="/usr" make install
+# make install PREFIX="/usr"
+
+# Create these symlinks ourselves as luajit relies
+# on ldconfig to do so and musl does not provide it.
+# ln -s libluajit-5.1.so.2.0.5 "$1/usr/lib/libluajit.so"
+# ln -s libluajit-5.1.so.2.0.5 "$1/usr/lib/libluajit-5.1.so"
+# ln -s libluajit-5.1.so.2.0.5 "$1/usr/lib/libluajit-5.1.so.2"
+# ln -s libluajit-5.1.so.2.0.5 "$1/usr/lib/libluajit-5.1.so.2.0"
+# ln -s libluajit-5.1.a "$1/usr/lib/libluajit.a"
+# ln -s libluajit-5.1.a "$1/usr/lib/libluajit-5.a"
+
+# IFS=.+-_ read -r repo_major repo_minor repo_patch repo_ident \
+# 	<<- EOF
+# 		$(printf '%s\n' "$2") > /dev/null || // die "printf '%s\\n' \"$repo_ver\"" "failed"
+# 	EOF
+
+# config=$(find . -type f -name "luajit.h");
+# echo "config = "$config
+# num=$(cat "$config" | grep LUAJIT_VERSION_NUM | awk '{print $3}');
+# ver=$(expr substr $num 1 1).$(expr substr $num 3 1);
+# echo "ver = "$ver
+
+# IFS=.+-_ read -r repo_major repo_minor repo_patch repo_ident \
+# 	<<- EOF
+# 		$(printf '%s\n' "$repo_ver") > /dev/null ||
+# 		printf '%s %s\' "printf '%s\\n' \"$repo_ver\"" "failed"
+# 	EOF
+
+# luajit linked to moonjit
+# And have 3 versions of executables
+# ls: usr/bin/luajit: No such file or directory
+set +f
+# executable_name="$(\ls "usr/bin/luajit-$repo_major.$repo_minor.$repo_patch"*)" || exit 1
+executable_name="$(\ls "$1/usr/bin/luajit-"*)" || exit 1
+set -f
+executable_name="${executable_name##*/}"
+printf '%s %s\n' '$executable_name' "$executable_name"
+real_executable=$(find $1/usr/bin -type f -name "$executable_name")
+
+real_executable_dir="${real_executable%/*}"
+
+printf '%s %s\n' '$real_executable' "$real_executable"
+printf '%s %s\n' '$real_executable_dir' "$real_executable_dir"
+
+{
+	command -v $real_executable > /dev/null 2>&1 &&
+	[ "$(readlink -fn "$real_executable")" = \
+		"$(readlink -fn $real_executable_dir/luajit)" ]
+} || {
+	cd $real_executable_dir
+	ln -sf $executable_name luajit
+}
+
+

@@ -1,0 +1,8 @@
+#! /bin/sh -e
+
+ver_major="$(grep majver= "$KISS_ROOT/usr/lib/pkgconfig/luajit.pc" | awk -F = '{print $2}')"
+ver_minor="$(grep minver= "$KISS_ROOT/usr/lib/pkgconfig/luajit.pc" | awk -F = '{print $2}')"
+# grep "#define LUA_LJDIR" src/luaconf.h
+
+# luarocks config variables.LUA_INCDIR /usr/include/luajit-2.1
+ /usr/bin/luarocks config variables.LUA_INCDIR /usr/include/luajit-$ver_major.$ver_minor

@@ -1,4 +1,21 @@
-#!/bin/sh -e
+#! /bin/sh -e
+
+export CFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+-resource-dir=$KISS_ROOT/usr/lib/clang/18.0.0 \
+$CFLAGS"
+
+export CXXFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem $KISS_ROOT/usr/include/c++/v1 \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+-resource-dir=$KISS_ROOT/usr/lib/clang/18.0.0 \
+$CXXFLAGS"
 
 export DESTDIR="$1"
 
@@ -7,12 +24,14 @@ sed 's,curses_version,baudrate,' Source/Checks/Curses/CheckCurses.c > _
 mv -f _ Source/Checks/Curses/CheckCurses.c
 sed 's,defined(HAVE_LIBCRYPTO),0,' Utilities/cmlibarchive/libarchive/archive_hmac.c > _
 mv -f _ Utilities/cmlibarchive/libarchive/archive_hmac.c
-
+default_prepare
 if kiss l cmake; then
-    cmake -B build \
+    cmake -B $OUTPUT_DIR -G Ninja \
         -DCMAKE_INSTALL_PREFIX=/usr \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_USE_SYSTEM_CURL=True \
+        -DCMAKE_C_FLAGS="$CFLAGS" \
+        -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
         -DCMAKE_USE_SYSTEM_EXPAT=True \
         -DCMAKE_USE_SYSTEM_ZLIB=True \
         -DCMAKE_USE_SYSTEM_BZIP2=True \
@@ -20,8 +39,8 @@ if kiss l cmake; then
         -DBUILD_CursesDialog=OFF \
         -DBUILD_TESTING=OFF
 
-    cmake --build   build
-    cmake --install build
+    cmake --build   $OUTPUT_DIR
+    cmake --install $OUTPUT_DIR
 
 else
     ./configure \

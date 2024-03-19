@@ -8,6 +8,7 @@ files/env.cmake                                                 files
 files/color.cmake                                               files
 files/runtimes.cmake                                            files
 patches/main.patch                                              patches
+patches/max_align_t.patch                                       patches
 patches/musl.patch                                              patches
 patches/cmake.patch                                             patches
 patches/hardcoded.patch                                         patches

@@ -1,23 +1,24 @@
-#!/usr/bin/env sh
+#! /bin/sh -e
 
 export CFLAGS="$CFLAGS -fPIC"
 
-patch -p1 < cross.patch
+# patch -p1 < cross.patch
 
 # ./configure \
 #     --prefix=/usr \
 #     --archs="-arch $KISS_XHOST_ARCH"
 
-BUILD_PATH="objects"
+OUTPUT_DIR="$OBJ_ROOT/zlib-ng"
 
-cmake -S . -B "${BUILD_PATH}" -DCMAKE_INSTALL_PREFIX=/usr \
--UZLIB_COMPAT
+cmake -S . -B "${OUTPUT_DIR}" -DCMAKE_INSTALL_PREFIX=/usr
+# cmake -S . -B "${OUTPUT_DIR}" -DCMAKE_INSTALL_PREFIX=/usr \
+# -UZLIB_COMPAT
 
 # make CC=clang CXX=clang++
-cmake --build "${BUILD_PATH}" --target all --parallel
+cmake --build "${OUTPUT_DIR}" --target all --parallel
 
 # make DESTDIR="$1" PREFIX=/usr CC=clang CXX=clang++ install
-doas cmake  --build "${BUILD_PATH}" --target install --parallel
+cmake  --build "${OUTPUT_DIR}" --target install --parallel
 
 # Install the license
 install -Dm755 LICENSE.md "$1/usr/share/LICENSES/zlib.license"

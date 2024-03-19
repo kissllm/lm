@@ -1,0 +1,138 @@
+#! /bin/sh -e
+default_prepare
+
+__config_site_diff="$(diff "$KISS_ROOT/usr/include/c++/v1/__config_site" "$KISS_ROOT/usr/include/x86_64-linux-musl/c++/v1/__config_site" && echo 0)"
+
+# /usr/include/c++/v1/__memory_resource/memory_resource.h:30:45: error: reference to unresolved using declaration
+#    30 |   static const size_t __max_align = alignof(max_align_t);
+#       |                                             ^
+# /usr/include/c++/v1/cstddef:64:1: note: using declaration annotated with 'using_if_exists' here
+#    64 | using ::max_align_t _LIBCPP_USING_IF_EXISTS;
+
+#include "__stddef_max_align_t.h"
+# -D __need_STDDEF_H_misc \
+
+export C_INCLUDE_PATH=" \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+"
+# -isystem $KISS_ROOT/usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+
+export CPLUS_INCLUDE_PATH=" \
+-isystem $KISS_ROOT/usr/include/x86_64-linux-musl/c++/v1 \
+-isystem $KISS_ROOT/usr/include/c++/v1 \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+"
+# -isystem $KISS_ROOT/usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+# https://bugs.gentoo.org/921182
+# CFLAGS="-mcpu=apple-m2 -O3 -pipe -mbranch-protection=standard -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -fdebug-default-version=4 -gdwarf-4 -frecord-gcc-switches -flto=thin \
+# -mbranch-protection=standard \
+# -mcpu=x86_64 \
+#
+# -O3 -pipe \
+# -frecord-gcc-switches \
+# -gdwarf-4 \
+# -fdebug-default-version=4 \
+# -mno-omit-leaf-frame-pointer \
+# -fno-omit-frame-pointer \
+# -flto=thin \
+export CFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+-resource-dir=$KISS_ROOT/usr/lib/clang/18.0.0 \
+-Werror -Wno-unused-command-line-argument \
+$CFLAGS"
+# -isystem $KISS_ROOT/usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+# -static \
+# -I$KISS_ROOT/usr/lib/clang/18.0.0/include \
+# -I$KISS_ROOT/usr/include \
+
+[ "$__config_site_diff" -eq "0" ] &&
+	export CXXFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem $KISS_ROOT/usr/include/c++/v1 \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+-resource-dir=$KISS_ROOT/usr/lib/clang/18.0.0 \
+-Werror -Wno-unused-command-line-argument \
+$CXXFLAGS" ||
+# -isystem $KISS_ROOT/usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+# -static \
+	export CXXFLAGS=" \
+-D __NEED_max_align_t \
+-isysroot=$KISS_ROOT \
+-isystem $KISS_ROOT/usr/include/x86_64-linux-musl/c++/v1 \
+-isystem $KISS_ROOT/usr/include/c++/v1 \
+-isystem $KISS_ROOT/usr/lib/clang/18.0.0/include \
+-isystem $KISS_ROOT/usr/include \
+-resource-dir=$KISS_ROOT/usr/lib/clang/18.0.0 \
+-Werror -Wno-unused-command-line-argument \
+$CXXFLAGS"
+# -isystem $KISS_ROOT/usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+# -static \
+
+CXXFLAGS_NO_INCLUDE="$(printf '%s' "$CXXFLAGS" | tr ' ' '\n' |
+	grep -v "^-std=c++17$" |
+	xargs)"
+	# grep -v "^-I/usr/include$" |
+
+export CXXFLAGS="$CXXFLAGS_NO_INCLUDE"
+
+// log '$CFLAGS' "$CFLAGS"
+// log '$CXXFLAGS' "$CXXFLAGS"
+
+PATH="$(printf '%s' "$PATH" | tr ':' '\n' | grep -v "ccache" | xargs | tr ' ' ':')"
+export PATH
+
+export CC="/usr/bin/cc"
+export CXX="/usr/bin/c++"
+
+CFLAGS="$CFLAGS" \
+CXXFLAGS="$CXXFLAGS" \
+CPPFLAGS="$CXXFLAGS" \
+./bootstrap.sh
+
+# CFLAGS=" \
+# -Xclang -isystem=$KISS_ROOT/usr/lib/clang/18.0.0/include \
+# -Xclang -isystem=$KISS_ROOT/usr/include \
+# $CFLAGS" \
+# CXXFLAGS="$CXXFLAGS" \
+# CPPFLAGS="$CXXFLAGS" \
+./configure --prefix=/usr \
+	--build=$KISS_XBUILD_TRIPLE \
+	--host=$KISS_XHOST_TRIPLE
+	# --disable-dependency-tracking
+
+# CC="/usr/bin/cc -cc1" \
+# CXX="/usr/bin/c++ -cc1" \
+CFLAGS="$CFLAGS" \
+CXXFLAGS="$CXXFLAGS" \
+CPPFLAGS="$CXXFLAGS" \
+make
+
+# cd tests
+# https://clang.llvm.org/docs/FAQ.html
+# Failed with
+# include <stdio.h>
+# CC="$CC -cc1 -I$KISS_ROOT/usr/lib/clang/18.0.0/include -I$KISS_ROOT/usr/include" \
+# CXX="$CXX -cc1 -I$KISS_ROOT/usr/include" \
+# CFLAGS=" \
+# -Xclang -isystem=$KISS_ROOT/usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+# -Xclang -isystem=$KISS_ROOT/usr/lib/clang/18.0.0/include \
+# -Xclang -isystem=$KISS_ROOT/usr/include \
+# -Xclang -I$KISS_ROOT/usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+# -Xclang -I$KISS_ROOT/usr/lib/clang/18.0.0/include \
+# -Xclang -I$KISS_ROOT/usr/include \
+# $CFLAGS" \
+# CXXFLAGS="$CXXFLAGS" \
+# CPPFLAGS="$CXXFLAGS" \
+make check
+# make -j 1 check
+# make -j 1 check || make -j 1 check || make -j 1 check
+# cd $MAKE_DIR
+# sudo make install
+make install

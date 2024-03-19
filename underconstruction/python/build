@@ -1,0 +1,95 @@
+#!/bin/sh -e
+
+# Remove util-linux dependency among other things.
+cat >> Modules/Setup <<EOF
+*disabled*
+_uuid nis ossaudiodev
+EOF
+
+# Reported 20-27% performance improvements.
+# See: "PythonNoSemanticInterpositionSpeedup"
+export CFLAGS="$CFLAGS -fno-semantic-interposition"
+export LDFLAGS="$LDFLAGS -fno-semantic-interposition"
+
+# export C_INCLUDE_PATH=" \
+# -isystem /usr/lib/clang/18.0.0/include \
+# -isystem /usr/include \
+# "
+# # -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+#
+# export CPLUS_INCLUDE_PATH=" \
+# -isystem /usr/include/x86_64-linux-musl/c++/v1 \
+# -isystem /usr/include/c++/v1 \
+# -isystem /usr/lib/clang/18.0.0/include \
+# -isystem /usr/include \
+# "
+# # -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+#
+# export CFLAGS=" \
+# -D __NEED_max_align_t \
+# -isysroot=$KISS_ROOT \
+# -isystem /usr/lib/clang/18.0.0/include \
+# -isystem /usr/include \
+# -resource-dir=/usr/lib/clang/18.0.0 \
+# -Werror -Wno-unused-command-line-argument \
+# $CFLAGS"
+# # -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+#
+#   export CXXFLAGS=" \
+# -D __NEED_max_align_t \
+# -isysroot=$KISS_ROOT \
+# -isystem /usr/include/c++/v1 \
+# -isystem /usr/lib/clang/18.0.0/include \
+# -isystem /usr/include \
+# -resource-dir=/usr/lib/clang/18.0.0 \
+# -Werror -Wno-unused-command-line-argument \
+# $CXXFLAGS"
+# # -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+#
+# export CC="/usr/bin/cc"
+# export CXX="/usr/bin/c++"
+
+
+for patch in *.patch; do
+	patch -p1 < "$patch"
+done
+# # clang configure: error: C preprocessor "/lib/cpp" fails sanity check
+# CFLAGS="$CFLAGS" \
+#   CXXFLAGS="$CXXFLAGS" \
+#   CPPFLAGS="$CXXFLAGS" \
+#   autoreconf --verbose --install --force --warnings=all
+#
+#   WARNING: The scripts pip3 and pip3.12 are installed in '$DESTDIR/usr/bin' which is not on PATH.
+#   Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+
+# // as_own "$DESTDIR" \mkdir -p "$DESTDIR/usr/bin"
+
+./configure \
+	--prefix=/usr \
+	--enable-shared \
+	--with-system-expat \
+	--with-system-ffi \
+	--with-ensurepip=yes \
+	--without-doc-strings
+	# --no-warn-script-location
+
+make EXTRA_CFLAGS="$CFLAGS -DTHREAD_STACK_SIZE=0x100000"
+make install
+
+ln -s python3 "$1/usr/bin/python"
+ln -s pip3    "$1/usr/bin/pip"
+
+# Let's make some kind of effort to reduce the overall
+# size of Python by removing a bunch of rarely used and
+# otherwise useless components.
+#
+# This can't be done via ./configure as the build system
+# doesn't give you this much control over the process.
+{
+	cd "$1/usr/lib/python"*
+	rm -rf test ./*/test ./*/tests
+	rm -rf pydoc* idlelib turtle* config-*
+
+	cd "$1/usr/bin"
+	rm -f pydoc* idle*
+}

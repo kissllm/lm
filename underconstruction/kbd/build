@@ -1,0 +1,256 @@
+#! /bin/sh -e
+# Usage:
+# USE_COMPILER_FLAGS= kiss-debug p kbd
+#
+# Contributor: Natanael Copa <ncopa@alpinelinux.org>
+# Maintainer:  Natanael Copa <ncopa@alpinelinux.org>
+pkgname=kbd
+pkgver=2.6.3
+pkgrel=0
+pkgdesc="Tools for configuring the console (keyboard, virtual terminals, etc.)"
+url="https://kbd-project.org/"
+arch="all"
+license="GPL-2.0-or-later"
+depends="kbd-misc"
+makedepends="
+	autoconf
+	automake
+	check-dev
+	ckbcomp
+	linux-headers
+	linux-pam-dev
+	musl-legacy-error
+	xkeyboard-config-dev
+	"
+subpackages="$pkgname-bkeymaps::noarch $pkgname-legacy::noarch
+	$pkgname-misc::noarch $pkgname-doc $pkgname-openrc $pkgname-vlock"
+source="https://www.kernel.org/pub/linux/utils/kbd/kbd-$pkgver.tar.gz
+	loadkeys.initd
+	loadkeys.confd
+	"
+
+_datadir=/usr/share
+_xmapdir="$_datadir"/keymaps/xkb
+_bmapdir="$_datadir"/bkeymaps
+_badmaps="pk-ara"
+
+
+# export C_INCLUDE_PATH=" \
+# -isystem /usr/lib/clang/18.0.0/include \
+# -isystem /usr/include \
+# "
+# # -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+#
+# export CPLUS_INCLUDE_PATH=" \
+# -isystem /usr/include/$KISS_XHOST_TRIPLE/c++/v1 \
+# -isystem /usr/include/c++/v1 \
+# -isystem /usr/lib/clang/18.0.0/include \
+# -isystem /usr/include \
+# "
+# # -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+#
+# export CFLAGS=" \
+# -D __NEED_max_align_t \
+# -isysroot=$KISS_ROOT \
+# -isystem /usr/lib/clang/18.0.0/include \
+# -isystem /usr/include \
+# -resource-dir=/usr/lib/clang/18.0.0 \
+# -Wno-ignored-optimization-argument \
+# -Wno-unused-command-line-argument \
+# $(/usr/bin/llvm-config --cflags) \
+# $CFLAGS"
+# # -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+#
+# # https://gn.googlesource.com/gn/+/cdb4ad4f61a32139a02a63d0ba2044ac3cb8705f
+# # -Wno-ignored-optimization-argument \
+# #
+# # -Werror \
+# # -Werror=ignored-optimization-argument \
+#
+#   export CXXFLAGS=" \
+# -D __NEED_max_align_t \
+# -isysroot=$KISS_ROOT \
+# -isystem /usr/include/$KISS_XHOST_TRIPLE/c++/v1 \
+# -isystem /usr/include/c++/v1 \
+# -isystem /usr/lib/clang/18.0.0/include \
+# -isystem /usr/include \
+# -resource-dir=/usr/lib/clang/18.0.0 \
+# -Wno-ignored-optimization-argument \
+# -Wno-unused-command-line-argument \
+# $(/usr/bin/llvm-config --cxxflags) \
+# $CXXFLAGS"
+# # -isystem /usr/lib/clang/18.0.0/include/llvm_libc_wrappers \
+# # -Werror \
+# # -Werror=ignored-optimization-argument \
+
+export CPPFLAGS="-D_FORTIFY_SOURCE=2 \
+$CFLAGS"
+
+export LDFLAGS=-Wl,-O1,--sort-common,--as-needed,-z,relro
+export CC="/usr/bin/cc"
+export CXX="/usr/bin/c++"
+# export CPP='/usr/bin/cpp -E'
+export CPP='/usr/bin/cpp'
+
+build() {
+	sed -i 's/\(RESIZECONS_PROGS=\)yes/\1no/g' configure
+	sed -i 's/resizecons.8 //' docs/man/man8/Makefile.in
+
+	# clang configure: error: C preprocessor "/lib/cpp" fails sanity check
+	CFLAGS="$CFLAGS" \
+		CXXFLAGS="$CXXFLAGS" \
+		CPPFLAGS="$CFLAGS" \
+	autoreconf --verbose --install --force --warnings=all
+
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--disable-nls \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--datadir="$_datadir" \
+		--htmldir=/usr/share/html/$pkgname \
+		--disable-static \
+		--disable-vlock
+
+	make
+}
+build
+check() {
+	# dumpkeys-bkeymap fails
+	[ "$CARCH" = s390x ] && return 0
+	make check
+}
+check
+_listxmaps() {
+	local invariant line; invariant=false
+	grep -v '^$' /usr/share/X11/xkb/rules/base.lst | while read -r line; do
+	case "$line" in
+		'! variant') invariant=true ;;
+		'!'*) invariant=false ;;
+		*) if $invariant; then
+			echo "$line" | cut -d: -f1
+		fi ;;
+		esac
+	done
+}
+_listxmaps
+package() {
+	make DESTDIR="$pkgdir" install
+
+	install -Dm755 "$srcdir"/loadkeys.initd \
+		"$pkgdir"/etc/init.d/loadkeys
+	install -Dm644 "$srcdir"/loadkeys.confd \
+		"$pkgdir"/etc/conf.d/loadkeys
+
+	# Move and fixup legacy keymaps
+	mkdir legacy
+	mv "$pkgdir"/usr/share/keymaps/* legacy
+	mv legacy "$pkgdir"/usr/share/keymaps
+
+	cd "$pkgdir"/usr/share/keymaps/legacy/i386
+	# Make ISO-8815-9 maps the default, instead of 7-bit ones
+	ln -s pt-latin9.map.gz qwerty/pt.map.gz
+	mv azerty/fr.map.gz azerty/fr-old.map.gz
+	ln -s fr-latin9.map.gz azerty/fr.map.gz
+
+	# Add some legacy aliases
+	ln -s fr-latin9.map.gz azerty/fr-latin0.map.gz
+	ln -s sv-latin1.map.gz qwerty/se-latin1.map.gz
+	ln -s sr-cy.map.gz qwerty/sr-latin.map.gz
+
+	# Rename conflicting keymaps
+	mv fgGIod/trf.map.gz fgGIod/trf-fgGIod.map.gz
+	mv olpc/es.map.gz olpc/es-olpc.map.gz
+	mv olpc/pt.map.gz olpc/pt-olpc.map.gz
+	mv qwerty/cz.map.gz qwerty/cz-qwerty.map.gz
+
+	# Remove useless layouts
+	rm -f i386/qwerty/ro_win.map.gz
+
+	cd "$builddir"
+
+	# Compile keymaps from X.org layouts
+	mkdir -p "$pkgdir$_xmapdir"
+	local layout variant
+	_listxmaps | while read -r variant layout; do
+		if ! test -f "$pkgdir$_xmapdir"/"$layout".map.gz; then
+			echo "Generating keymap $layout..."
+			ckbcomp "$layout" | gzip > "$pkgdir$_xmapdir"/"$layout".map.gz
+		fi
+		echo "Generating keymap $layout-$variant..."
+		ckbcomp "$layout" "$variant" | gzip > "$pkgdir$_xmapdir"/"$layout"-"$variant".map.gz
+	done
+
+	# # Do some fix-ups on X.org keymaps
+	# mv "$pkgdir$_xmapdir"/fi.map.gz "$pkgdir$_xmapdir"/fi-kotoistus.map.gz
+
+	# Install html documentation
+	# mkdir -p "$pkgdir$_datadir"/html/$pkgname
+	# mv docs/doc/*.html "$pkgdir$_datadir"/html/$pkgname
+
+	# Replace busybox setfont utility.
+	mkdir -p "$pkgdir"/usr/sbin
+	mv "$pkgdir"/usr/bin/setfont "$pkgdir"/usr/sbin
+
+	# Link open to openvt
+	ln -s openvt "$pkgdir"/usr/bin/open
+}
+package
+vlock() {
+	pkgdesc="$pkgname vlock implemantation"
+	depends=
+
+	# This is the only binary needing linux-pam so moving this to a
+	# subpackage reduces the amount of depencies of the kbd package.
+
+	mkdir -p "$subpkgdir"/usr/bin
+	mv "$pkgdir"/usr/bin/vlock "$subpkgdir"/usr/bin
+}
+[ "$subpkgdir" = "$pkgdir" ] ||
+vlock
+bkeymaps() {
+	pkgdesc="X.org-derived binary keymaps"
+	depends=
+	replaces="bkeymaps"
+	provides="bkeymaps"
+
+	mkdir -p "$subpkgdir$_bmapdir"
+	local map variant layout; for map in "$pkgdir$_xmapdir"/*.map.gz; do
+		variant="$(basename "$map" | cut -d. -f1)"
+		# shellcheck disable=2254
+		case "$variant" in $_badmaps) continue ;; esac
+
+		layout="${variant%%-*}"
+		mkdir -p "$subpkgdir$_bmapdir"/$layout
+		echo "Generating binary keymap $variant..."
+		"$pkgdir"/usr/bin/loadkeys -ub "$map" | gzip > "$subpkgdir$_bmapdir"/$layout/$variant.bmap.gz
+	done
+}
+[ "$subpkgdir" = "$pkgdir" ] ||
+bkeymaps
+legacy() {
+	pkgdesc="kbd legacy keymaps"
+	depends=
+
+	mkdir -p "$subpkgdir$_datadir"/keymaps
+	mv "$pkgdir$_datadir"/keymaps/legacy "$subpkgdir$_datadir"/keymaps
+}
+[ "$subpkgdir" = "$pkgdir" ] ||
+legacy
+misc() {
+	pkgdesc="kbd keymaps and console data"
+	depends=
+
+	mkdir -p "$subpkgdir$_datadir"
+	local dir; for dir in consolefonts consoletrans keymaps unimaps; do
+		mv "$pkgdir$_datadir"/$dir "$subpkgdir$_datadir"
+	done
+}
+[ "$subpkgdir" = "$pkgdir" ] ||
+misc
+sha512sums="
+30b680025e79a89f7d4466efe9bd0437bea54d7f8470eac01023834c8814298f8da941560bc615738ca95e373e901284dd8af66036c1831a2722e9367395a769  kbd-2.6.3.tar.gz
+64b5ab4c362350521da8f507d22c0b77784da99bbe1b32f0c001cd826f63c607e3f9cd6af01f06a61af8bd709760bbf2bb3cfe2010c33925f2987a1af6ef4998  loadkeys.initd
+12028796552a5ffed1d5cb19d37fc6a73fb4f2e2bf34d837a81171c7ebee98d6c3f557715bf79706d79ce053b9b2450cd8cf1c4ea045428fb7d8a5915ae3ed78  loadkeys.confd
+"
