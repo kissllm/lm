@@ -1,5 +1,13 @@
 #! /bin/sh -e
 
+interrupt_type="$(type "interrupt" > /dev/null && type "interrupt")" || :
+[ ! -z "${interrupt_type:+x}" ] || {
+  . /usr/include/kiss/share
+  # [ -t 0 ] || // die 'fd 0' "does not work"
+}
+
+// log '$0' "$0"
+
 version() {
 	local _local_dir="$1"
 	ver_major="$(grep majver= "$_local_dir/etc/luajit.pc" | awk -F = '{print $2}')"
@@ -15,18 +23,81 @@ target() {
 	local _local_dir="$2"
 	local url="$3"
 
+	// log '$@' "$(esceval "$@")"
+
+	[ -n "${UNUSE_LATEST_TAG:+x}" ] || upstream_name=
+
+	local tag_list=
+	local query_pid=
+	local latest_target=
+	local repo_ver= repo_rel=
+	local repo_name="luajit"
+
+	[ ! -z "${KISS_FORCE+x}" ] || {
+		# refs/tags/vx.x.x-x
+		tag_list="$( \
+			git -C "$_local_dir" -c 'versionsort.suffix=-' ls-remote --exit-code --refs \
+			--sort='version:refname' --tags "$url" 2> /dev/null |
+			awk '{print $2}')" # & query_pid="$!"
+
+		// log '$tag_list' "$(esceval "$tag_list")"
+		# progress "$repo_name" "$query_pid" "git query"
+
+		[ ! -z "$tag_list" ] || {
+			# awk 'BEGIN{ FS = "/" } {print $NF}' 2> /dev/null || {
+			git -C "$_local_dir" config --local --unset remote.origin.tagopt > /dev/null 2>&1
+			git -C "$_local_dir" config --local --unset remote.origin.fetch > /dev/null 2>&1
+			git -C "$_local_dir" config --local remote.origin.fetch \
+			"+refs/heads/*:refs/remotes/origin/*" > /dev/null 2>&1
+			tag_list="$( \
+				git -C "$_local_dir" -c 'versionsort.suffix=-' ls-remote --exit-code --refs \
+					--sort='version:refname' --tags "$url" 2> /dev/null |
+					awk '{print $2}'
+			)" # & query_pid="$!"
+			# progress "$repo_name" "$query_pid" "git query"
+		}
+
+		[ -z "${upstream_name:+x}" ] ||
+			tag_list="$(printf '%s\n' "$tag_list" | grep "$upstream_name")"
+
+		[ -z "${tag_list:+x}" ] || {
+			# printf "$RS%s$FS%s$FS%s" "" "$repo_ver" "$repo_rel"
+			# return 0
+
+			local latest_target_ref=
+			latest_target_ref="$( \
+				printf '%s' "$tag_list" | tail -n 1
+				# tail -n 1 |
+				# awk -F "/" '{print $NF}'
+			)"
+
+			latest_target="$(printf '%s' "$latest_target_ref" | awk 'BEGIN{ FS = "/" } {print $NF}' 2> /dev/null)"
+		}
+	}
+
 	local repo_ver= repo_rel=
 
-	version "$_local_dir"
+	# // version "$_local_dir"
+	! // || / `version "$_local_dir" |
+		awk -v rs="$RS" -v fs="$FS" 'BEGIN { FS = fs; RS = rs } \
+	END { print "repo_ver=\""$1"\"; repo_rel=\""$2"\"" }' ||
+	printf '%s\n' "return 1"`
 
-	local target_value="$upstream_name"
+	# local latest_target="$upstream_name"
 
-	printf "$RS%s$FS%s$FS%s" "$target_value" "$repo_ver" "$repo_rel"
+	// log '$latest_target' "$latest_target"
+	// log '$repo_ver' "$repo_ver"
+	// log '$repo_rel' "$repo_rel"
+
+	printf "$RS%s$FS%s$FS%s" "$latest_target" "$repo_ver" "$repo_rel"
 }
 
 main() {
+	_level_2
 	local action="$1"
 	shift 1
+	// log '$action' "$action"
+	// log '$@' "$(esceval "$@")"
 	"$action" "$@"
 }
 

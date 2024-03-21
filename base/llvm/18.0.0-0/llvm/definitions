@@ -58,6 +58,7 @@ target() {
 	local _local_dir="$2"
 	local url="$3"
 	local repo_name="llvm"
+	local latest_target=
 
 	// log '$@' "$(esceval "$@")"
 
@@ -95,9 +96,7 @@ target() {
 		[ -z "${upstream_name:+x}" ] ||
 			tag_list="$(printf '%s\n' "$tag_list" | grep "$upstream_name")"
 
-		[ -n "${tag_list:+x}" ] || {
-			# printf "$RS%s$FS%s$FS%s" "" "$repo_ver" "$repo_rel"
-			# return 0
+		[ -z "${tag_list:+x}" ] || {
 
 			local latest_target_ref=
 			latest_target_ref="$( \
@@ -110,7 +109,12 @@ target() {
 		}
 	}
 
-	// version "$_local_dir"
+	# // version "$_local_dir"
+	! // || / `version "$_local_dir" |
+		awk -v rs="$RS" -v fs="$FS" 'BEGIN { FS = fs; RS = rs } \
+	END { print "repo_ver=\""$1"\"; repo_rel=\""$2"\"" }' ||
+	printf '%s\n' "return 1"`
+
 	# Lock the target (and version)
 	latest_target="llvmorg-18-init"
 	# repo_ver="18.0.0" repo_rel="0"

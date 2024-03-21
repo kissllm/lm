@@ -18,48 +18,58 @@
 	trap "Error at \$LINENO [pre-build]" EXIT
 }
 # nlua0
+// log 'luainlua' "installation"
 luainlua=$(luarocks list | grep "luainlua")
 [ "${luainlua}" = "luainlua" ] ||
     luarocks --lua-version 5.1 install --dev luainlua
     # luarocks --lua-version 5.1 install --dev luainlua --local
 
+// log 'lpeg_patterns' "installation"
 lpeg_patterns=$(luarocks list | grep "lpeg_patterns")
 [ "${lpeg_patterns}" = "lpeg_patterns" ] ||
     luarocks --lua-version 5.1 install --dev lpeg_patterns
 
+// log 'xmllpegparser' "installation"
 xmllpegparser=$(luarocks list | grep "xmllpegparser")
 [ "${xmllpegparser}" = "xmllpegparser" ] ||
     luarocks --lua-version 5.1 install --dev xmllpegparser
 
+// log 'snowflake' "installation"
 snowflake=$(luarocks list | grep "snowflake")
 [ -z "${snowflake:+x}" ] ||
 [ -z "${snowflake##*"dickens7-snowflake"*}" ] ||
     luarocks --lua-version 5.1 install --dev dickens7-snowflake
 
+// log 'compat53' "installation"
 compat53=$(luarocks list | grep "compat53")
 [ "${compat53}" = "compat53" ] ||
     luarocks --lua-version 5.1 install --dev compat53
 
+// log 'ltui' "installation"
 ltui=$(luarocks list | grep "ltui")
 [ "${ltui}" = "ltui" ] || {
     luarocks --lua-version 5.1 build --dev ltui
     luarocks --lua-version 5.1 install --dev ltui
 }
 
+// log 'busted' "installation"
 busted=$(luarocks list | grep "busted")
 [ "${busted}" = "busted" ] || {
     luarocks --lua-version 5.1 build --dev busted
     luarocks --lua-version 5.1 install --dev busted
 }
 
+// log 'mpack' "installation"
 mpack=$(luarocks list | grep "mpack")
 [ "${mpack}" = "mpack" ] ||
     luarocks --lua-version 5.1 install --dev mpack
 
+// log 'lpeg' "installation"
 lpeg=$(luarocks list | awk "\$1 == \"lpeg\" {print}")
 [ "${lpeg}" = "lpeg" ] ||
     luarocks --lua-version 5.1 install --dev lpeg
 
+// log 'ltreesitter' "installation"
 ltreesitter=$(luarocks list | grep "ltreesitter")
 [ "${ltreesitter}" = "ltreesitter" ] ||
     luarocks --lua-version 5.1 install --dev ltreesitter

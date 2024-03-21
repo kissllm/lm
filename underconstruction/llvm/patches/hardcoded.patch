@@ -10177,6 +10177,35 @@ index 3c0d2d41e4d1..3927dbc35666 100644
 #      return ret;
 
 
+# diff --git a/libunwind/src/DwarfParser.hpp b/libunwind/src/DwarfParser.hpp
+# index 0682942ce137..087e78b5f1a2 100644
+# --- a/libunwind/src/DwarfParser.hpp
+# +++ b/libunwind/src/DwarfParser.hpp
+# @@ -173,6 +173,7 @@ template <typename A>
+#  const char *CFI_Parser<A>::decodeFDE(A &addressSpace, pint_t fdeStart,
+#                                       FDE_Info *fdeInfo, CIE_Info *cieInfo,
+#                                       bool useCIEInfo) {
+# +  bool use_cie_info_impl = useCIEInfo;
+#    pint_t p = fdeStart;
+#    pint_t cfiLength = (pint_t)addressSpace.get32(p);
+#    p += 4;
+# @@ -184,11 +185,13 @@ const char *CFI_Parser<A>::decodeFDE(A &addressSpace, pint_t fdeStart,
+#    if (cfiLength == 0)
+#      return "FDE has zero length"; // zero terminator
+#    uint32_t ciePointer = addressSpace.get32(p);
+# -  if (ciePointer == 0)
+# -    return "FDE is really a CIE"; // this is a CIE not an FDE
+# +  if (ciePointer == 0) {
+# +    use_cie_info_impl = true;
+# +    // return "FDE is really a CIE"; // this is a CIE not an FDE
+# +  }
+#    pint_t nextCFI = p + cfiLength;
+#    pint_t cieStart = p - ciePointer;
+# -  if (useCIEInfo) {
+# +  if (use_cie_info_impl) {
+#      if (cieInfo->cieStart != cieStart)
+#        return "CIE start does not match";
+#    } else {
 
 
 

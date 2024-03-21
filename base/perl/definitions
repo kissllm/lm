@@ -33,56 +33,62 @@ target() {
 	local _local_dir="$2"
 	local url="$3"
 	local repo_name="perl"
+	local latest_target=
 
 	[ -n "${UNUSE_LATEST_TAG:+x}" ] || upstream_name=
 
 	local tag_list=
 	local query_pid=
 
-	# refs/tags/vx.x.x-x
-	tag_list="$( \
-		git -C "$_local_dir" -c 'versionsort.suffix=-' ls-remote --exit-code --refs \
-		--sort='version:refname' --tags "$url" 2> /dev/null |
-		awk '{print $2}')" # & query_pid="$!"
-
-	# progress "$repo_name" "$query_pid" "git query"
-
-	[ ! -z "$tag_list" ] || {
-		# awk 'BEGIN{ FS = "/" } {print $NF}' 2> /dev/null || {
-		git -C "$_local_dir" config --local --unset remote.origin.tagopt > /dev/null 2>&1
-		git -C "$_local_dir" config --local --unset remote.origin.fetch > /dev/null 2>&1
-		git -C "$_local_dir" config --local remote.origin.fetch \
-		"+refs/heads/*:refs/remotes/origin/*" > /dev/null 2>&1
+	[ ! -z "${KISS_FORCE+x}" ] || {
+		# refs/tags/vx.x.x-x
 		tag_list="$( \
 			git -C "$_local_dir" -c 'versionsort.suffix=-' ls-remote --exit-code --refs \
-				--sort='version:refname' --tags "$url" 2> /dev/null |
-				awk '{print $2}'
-		)" # & query_pid="$!"
+			--sort='version:refname' --tags "$url" 2> /dev/null |
+			awk '{print $2}')" # & query_pid="$!"
+
 		# progress "$repo_name" "$query_pid" "git query"
+
+		[ ! -z "$tag_list" ] || {
+			# awk 'BEGIN{ FS = "/" } {print $NF}' 2> /dev/null || {
+			git -C "$_local_dir" config --local --unset remote.origin.tagopt > /dev/null 2>&1
+			git -C "$_local_dir" config --local --unset remote.origin.fetch > /dev/null 2>&1
+			git -C "$_local_dir" config --local remote.origin.fetch \
+			"+refs/heads/*:refs/remotes/origin/*" > /dev/null 2>&1
+			tag_list="$( \
+				git -C "$_local_dir" -c 'versionsort.suffix=-' ls-remote --exit-code --refs \
+					--sort='version:refname' --tags "$url" 2> /dev/null |
+					awk '{print $2}'
+			)" # & query_pid="$!"
+			# progress "$repo_name" "$query_pid" "git query"
+		}
+
+		[ -z "${upstream_name:+x}" ] ||
+			tag_list="$(printf '%s\n' "$tag_list" | grep "$upstream_name")"
+
+		local latest_target_ref=
+		# local ver_rel=
+
+		[ -z "${tag_list:+x}" ] || {
+
+			latest_target_ref="$( \
+				printf '%s' "$tag_list" | tail -n 1
+				# tail -n 1 |
+				# awk -F "/" '{print $NF}'
+			)"
+
+			latest_target="$(printf '%s' "$latest_target_ref" | awk 'BEGIN{ FS = "/" } {print $NF}' 2> /dev/null)"
+		}
 	}
-
-	[ -z "${upstream_name:+x}" ] ||
-		tag_list="$(printf '%s\n' "$tag_list" | grep "$upstream_name")"
-
-	local latest_target_ref=
-	# local ver_rel=
-
-	# [ -n "${tag_list:+x}" ] || {
-	#   printf "$RS%s$FS%s" "$latest_target_ref" "$ver_rel"
-	#   return 0
-	# }
-
-	latest_target_ref="$( \
-		printf '%s' "$tag_list" | tail -n 1
-		# tail -n 1 |
-		# awk -F "/" '{print $NF}'
-	)"
-
-	latest_target="$(printf '%s' "$latest_target_ref" | awk 'BEGIN{ FS = "/" } {print $NF}' 2> /dev/null)"
 
 	local  repo_ver= repo_rel=
 
-	version "$_local_dir"
+	# version "$_local_dir"
+	! // || / `version "$_local_dir" |
+		awk -v rs="$RS" -v fs="$FS" 'BEGIN { FS = fs; RS = rs } \
+	END { print "repo_ver=\""$1"\"; repo_rel=\""$2"\"" }' ||
+	printf '%s\n' "return 1"`
+
 	# / "IFS=$(printf '%b' "$FS") read -r repo_ver repo_rel \
 	#   << $(// here_doc -- version "$latest_target")" \
 	#   > /dev/null || // die 'version' "failed"

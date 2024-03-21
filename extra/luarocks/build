@@ -1,4 +1,4 @@
-#!/bin/sh
+#! /bin/sh -e
 
 mkdir -p bin
 ln -s /usr/bin/gmake "$PWD/bin/make"

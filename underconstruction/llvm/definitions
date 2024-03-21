@@ -95,7 +95,7 @@ target() {
 		[ -z "${upstream_name:+x}" ] ||
 			tag_list="$(printf '%s\n' "$tag_list" | grep "$upstream_name")"
 
-		[ -n "${tag_list:+x}" ] || {
+		[ -z "${tag_list:+x}" ] || {
 			# printf "$RS%s$FS%s$FS%s" "" "$repo_ver" "$repo_rel"
 			# return 0
 

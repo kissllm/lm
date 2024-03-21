@@ -1135,6 +1135,10 @@
 		# error: call to undeclared function 'setenv'
 		cflags="$cflags -D _POSIX_SOURCE"
 
+		# libunwind: __unw_add_dynamic_fde: bad fde: FDE is really a CIE
+		# https://marc.info/?l=cfe-commits&m=163579675120126
+		cflags="$cflags -D HAVE_UNW_ADD_DYNAMIC_FDE"
+
 
 		# deploy "-D" "CMAKE_C_FLAGS" "-nostdlib"
 		# --sysroot=$SYSROOT \
@@ -1267,6 +1271,7 @@
 		# In runtimes/CMakeLists.txt
 		# -nostdinc++ \
 
+		# $cflags include into cxxflags
 		cxxflags="$cflags $cxxflags  \
 -stdlib=libc++ \
 "
@@ -3379,8 +3384,15 @@ $cxxflags  \
 		deploy "-D" "LIBUNWIND_USES_SJLJ_EXCEPTIONS:INTERNAL" "0"
 		deploy "-D" "LIBUNWIND_DEFAULT_HIDE_SYMBOLS:BOOL" "OFF"
 		deploy "-D" "LIBUNWIND_HAS_NODEFAULTLIBS_FLAG:BOOL" "OFF"
+
 		# Conceptual
 		deploy "-D" "LIBUNWIND_ENABLE_EXCEPTIONS"         "ON"
+
+		# libunwind: __unw_add_dynamic_fde: bad fde: FDE is really a CIE
+		# [Getting warning bad fde: FDE is really a CIE - GCC 6.3.1 extern "C" #86](https://github.com/llvm/llvm-project/issues/86)
+		deploy_combine "-D" "LIBUNWIND_ENABLE_ASSERTIONS" "OFF" \
+			"permanent" \
+			"$LLVM_TARGET_TRIPLE" "BUILTINS" "RUNTIMES"  "BOOTSTRAP"
 
 		[ "$libname" != "x86_64" ] || {
 			# deploy "-D" "LIBUNWIND_ADDITIONAL_COMPILE_FLAGS" "\${LIBUNWIND_CXX_FLAGS}"
